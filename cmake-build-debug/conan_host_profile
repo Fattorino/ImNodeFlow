@@ -1,0 +1,11 @@
+[settings]
+arch=x86_64
+os=Windows
+compiler=gcc
+compiler.version=13
+compiler.cppstd=17
+compiler.libcxx=libstdc++11
+build_type=Debug
+[conf]
+tools.cmake.cmaketoolchain:generator=Ninja
+tools.build:compiler_executables={"c":"C:/Program Files/JetBrains/CLion 2023.2.2/bin/mingw/bin/gcc.exe","cpp":"C:/Program Files/JetBrains/CLion 2023.2.2/bin/mingw/bin/g++.exe"}

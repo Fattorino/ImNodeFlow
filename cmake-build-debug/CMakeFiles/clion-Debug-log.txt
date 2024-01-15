@@ -1,0 +1,86 @@
+"C:\Program Files\JetBrains\CLion 2023.2.2\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=C:/Program Files/JetBrains/CLion 2023.2.2/bin/ninja/win/x64/ninja.exe" -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=conan_provider.cmake -G Ninja -S C:\AA-FILE\PROGRAMS\CPP\ImNodeFlow -B C:\AA-FILE\PROGRAMS\CPP\ImNodeFlow\cmake-build-debug
+-- CMake-Conan: first find_package() found. Installing dependencies with Conan
+-- CMake-Conan: Checking if a default profile exists
+C:\Users\admin\.conan2\profiles\default
+-- CMake-Conan: cmake_system_name=Windows
+-- CMake-Conan: cmake_system_processor=x86_64
+-- CMake-Conan: CMake compiler=GNU
+-- CMake-Conan: CMake compiler version=13.1.0
+-- CMake-Conan: [settings] compiler=gcc
+-- CMake-Conan: [settings] compiler.version=13
+-- CMake-Conan: Creating profile C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/conan_host_profile
+-- CMake-Conan: Profile: 
+[settings]
+arch=x86_64
+os=Windows
+compiler=gcc
+compiler.version=13
+compiler.cppstd=17
+compiler.libcxx=libstdc++11
+build_type=Debug
+[conf]
+tools.cmake.cmaketoolchain:generator=Ninja
+tools.build:compiler_executables={"c":"C:/Program Files/JetBrains/CLion 2023.2.2/bin/mingw/bin/gcc.exe","cpp":"C:/Program Files/JetBrains/CLion 2023.2.2/bin/mingw/bin/g++.exe"}
+
+-- CMake-Conan: Installing single configuration Debug
+-- CMake-Conan: conan install C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow -of=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/conan --profile:host=default;--profile:host=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/conan_host_profile;--profile:build=default;--build=missing
+
+======== Input profiles ========
+Profile host:
+[settings]
+arch=x86_64
+build_type=Debug
+compiler=gcc
+compiler.cppstd=17
+compiler.libcxx=libstdc++11
+compiler.version=13
+os=Windows
+[conf]
+tools.cmake.cmaketoolchain:generator=Ninja
+tools.build:compiler_executables={'c': 'C:/Program Files/JetBrains/CLion 2023.2.2/bin/mingw/bin/gcc.exe', 'cpp': 'C:/Program Files/JetBrains/CLion 2023.2.2/bin/mingw/bin/g++.exe'}
+
+Profile build:
+[settings]
+arch=x86_64
+build_type=Release
+compiler=gcc
+compiler.cppstd=gnu17
+compiler.libcxx=libstdc++11
+compiler.version=13
+os=Windows
+
+
+======== Computing dependency graph ========
+Graph root
+    conanfile.py: C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow\conanfile.py
+Requirements
+    imgui/1.90#f848b6ce0252ed4ee9a01c460a7e936f - Cache
+
+======== Computing necessary packages ========
+Requirements
+    imgui/1.90#f848b6ce0252ed4ee9a01c460a7e936f:26c25a003bb3b7e4442c6036ea3f34cf49de4264#902502e53a6afc9d63095d8360efe0c2 - Cache
+
+======== Installing packages ========
+imgui/1.90: Already installed! (1 of 1)
+imgui/1.90: Appending PATH env var with : C:\Users\admin\.conan2\p\b\imguic170492e74256\p\bin
+WARN: deprecated: Usage of deprecated Conan 1.X features that will be removed in Conan 2.X:
+WARN: deprecated:     'env_info' used in: imgui/1.90
+
+======== Finalizing install (deploy, generators) ========
+conanfile.py: Writing generators to C:\AA-FILE\PROGRAMS\CPP\ImNodeFlow\cmake-build-debug\conan\build\Debug\generators
+conanfile.py: Generator 'CMakeDeps' calling 'generate()'
+conanfile.py: Calling generate()
+conanfile.py: Generators folder: C:\AA-FILE\PROGRAMS\CPP\ImNodeFlow\cmake-build-debug\conan\build\Debug\generators
+conanfile.py: CMakeToolchain generated: conan_toolchain.cmake
+conanfile.py: Preset 'conan-debug' added to CMakePresets.json. Invoke it manually using 'cmake --preset conan-debug' if using CMake>=3.23
+conanfile.py: If your CMake version is not compatible with CMakePresets (<3.23) call cmake like: 'cmake <path> -G Ninja -DCMAKE_TOOLCHAIN_FILE=C:\AA-FILE\PROGRAMS\CPP\ImNodeFlow\cmake-build-debug\conan\build\Debug\generators\conan_toolchain.cmake -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_BUILD_TYPE=Debug'
+conanfile.py: CMakeToolchain generated: CMakePresets.json
+conanfile.py: Generating aggregated env files
+conanfile.py: Generated aggregated env files: ['conanbuild.bat', 'conanrun.bat']
+Install finished successfully
+-- CMake-Conan: CONAN_GENERATORS_FOLDER=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/conan/build/Debug/generators
+-- CMake-Conan: CONANFILE=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/conanfile.py
+-- Conan: Target declared 'imgui::imgui'
+-- Configuring done (1.4s)
+-- Generating done (0.0s)
+-- Build files have been written to: C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug
