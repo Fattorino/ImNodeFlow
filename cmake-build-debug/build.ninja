@@ -57,38 +57,6 @@ build CMakeFiles/ImNodeFlow.dir/src/ImNodeFlow.cpp.obj: CXX_COMPILER__ImNodeFlow
   OBJECT_DIR = CMakeFiles\ImNodeFlow.dir
   OBJECT_FILE_DIR = CMakeFiles\ImNodeFlow.dir\src
 
-build CMakeFiles/ImNodeFlow.dir/imgui_node_editor/crude_json.cpp.obj: CXX_COMPILER__ImNodeFlow_unscanned_Debug C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/imgui_node_editor/crude_json.cpp || cmake_object_order_depends_target_ImNodeFlow
-  DEFINES = -DIMGUI_DEFINE_MATH_OPERATORS
-  DEP_FILE = CMakeFiles\ImNodeFlow.dir\imgui_node_editor\crude_json.cpp.obj.d
-  FLAGS = -g -fdiagnostics-color=always
-  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include
-  OBJECT_DIR = CMakeFiles\ImNodeFlow.dir
-  OBJECT_FILE_DIR = CMakeFiles\ImNodeFlow.dir\imgui_node_editor
-
-build CMakeFiles/ImNodeFlow.dir/imgui_node_editor/imgui_canvas.cpp.obj: CXX_COMPILER__ImNodeFlow_unscanned_Debug C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/imgui_node_editor/imgui_canvas.cpp || cmake_object_order_depends_target_ImNodeFlow
-  DEFINES = -DIMGUI_DEFINE_MATH_OPERATORS
-  DEP_FILE = CMakeFiles\ImNodeFlow.dir\imgui_node_editor\imgui_canvas.cpp.obj.d
-  FLAGS = -g -fdiagnostics-color=always
-  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include
-  OBJECT_DIR = CMakeFiles\ImNodeFlow.dir
-  OBJECT_FILE_DIR = CMakeFiles\ImNodeFlow.dir\imgui_node_editor
-
-build CMakeFiles/ImNodeFlow.dir/imgui_node_editor/imgui_node_editor.cpp.obj: CXX_COMPILER__ImNodeFlow_unscanned_Debug C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/imgui_node_editor/imgui_node_editor.cpp || cmake_object_order_depends_target_ImNodeFlow
-  DEFINES = -DIMGUI_DEFINE_MATH_OPERATORS
-  DEP_FILE = CMakeFiles\ImNodeFlow.dir\imgui_node_editor\imgui_node_editor.cpp.obj.d
-  FLAGS = -g -fdiagnostics-color=always
-  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include
-  OBJECT_DIR = CMakeFiles\ImNodeFlow.dir
-  OBJECT_FILE_DIR = CMakeFiles\ImNodeFlow.dir\imgui_node_editor
-
-build CMakeFiles/ImNodeFlow.dir/imgui_node_editor/imgui_node_editor_api.cpp.obj: CXX_COMPILER__ImNodeFlow_unscanned_Debug C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/imgui_node_editor/imgui_node_editor_api.cpp || cmake_object_order_depends_target_ImNodeFlow
-  DEFINES = -DIMGUI_DEFINE_MATH_OPERATORS
-  DEP_FILE = CMakeFiles\ImNodeFlow.dir\imgui_node_editor\imgui_node_editor_api.cpp.obj.d
-  FLAGS = -g -fdiagnostics-color=always
-  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include
-  OBJECT_DIR = CMakeFiles\ImNodeFlow.dir
-  OBJECT_FILE_DIR = CMakeFiles\ImNodeFlow.dir\imgui_node_editor
-
 
 # =============================================================================
 # Link build statements for STATIC_LIBRARY target ImNodeFlow
@@ -97,7 +65,7 @@ build CMakeFiles/ImNodeFlow.dir/imgui_node_editor/imgui_node_editor_api.cpp.obj:
 #############################################
 # Link the static library libImNodeFlow.a
 
-build libImNodeFlow.a: CXX_STATIC_LIBRARY_LINKER__ImNodeFlow_Debug CMakeFiles/ImNodeFlow.dir/src/ImNodeFlow.cpp.obj CMakeFiles/ImNodeFlow.dir/imgui_node_editor/crude_json.cpp.obj CMakeFiles/ImNodeFlow.dir/imgui_node_editor/imgui_canvas.cpp.obj CMakeFiles/ImNodeFlow.dir/imgui_node_editor/imgui_node_editor.cpp.obj CMakeFiles/ImNodeFlow.dir/imgui_node_editor/imgui_node_editor_api.cpp.obj
+build libImNodeFlow.a: CXX_STATIC_LIBRARY_LINKER__ImNodeFlow_Debug CMakeFiles/ImNodeFlow.dir/src/ImNodeFlow.cpp.obj
   LANGUAGE_COMPILE_FLAGS = -g
   OBJECT_DIR = CMakeFiles\ImNodeFlow.dir
   POST_BUILD = cd .
@@ -112,13 +80,13 @@ build libImNodeFlow.a: CXX_STATIC_LIBRARY_LINKER__ImNodeFlow_Debug CMakeFiles/Im
 #############################################
 # Order-only phony target for ImNodeFlow_dev
 
-build cmake_object_order_depends_target_ImNodeFlow_dev: phony || cmake_object_order_depends_target_ImNodeFlow
+build cmake_object_order_depends_target_ImNodeFlow_dev: phony || cmake_object_order_depends_target_ImGuiHandler cmake_object_order_depends_target_ImNodeFlow
 
 build CMakeFiles/ImNodeFlow_dev.dir/main.cpp.obj: CXX_COMPILER__ImNodeFlow_dev_unscanned_Debug C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/main.cpp || cmake_object_order_depends_target_ImNodeFlow_dev
   DEFINES = -DIMGUI_DEFINE_MATH_OPERATORS
   DEP_FILE = CMakeFiles\ImNodeFlow_dev.dir\main.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
-  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include
+  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/include -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include -isystem C:/Users/admin/.conan2/p/b/glfwda36766526193/p/include
   OBJECT_DIR = CMakeFiles\ImNodeFlow_dev.dir
   OBJECT_FILE_DIR = CMakeFiles\ImNodeFlow_dev.dir
 
@@ -130,10 +98,10 @@ build CMakeFiles/ImNodeFlow_dev.dir/main.cpp.obj: CXX_COMPILER__ImNodeFlow_dev_u
 #############################################
 # Link the executable ImNodeFlow_dev.exe
 
-build ImNodeFlow_dev.exe: CXX_EXECUTABLE_LINKER__ImNodeFlow_dev_Debug CMakeFiles/ImNodeFlow_dev.dir/main.cpp.obj | libImNodeFlow.a C$:/Users/admin/.conan2/p/b/imguic170492e74256/p/lib/libimgui.a || libImNodeFlow.a
+build ImNodeFlow_dev.exe: CXX_EXECUTABLE_LINKER__ImNodeFlow_dev_Debug CMakeFiles/ImNodeFlow_dev.dir/main.cpp.obj | libImNodeFlow.a ImGuiHandler/libImGuiHandler.a C$:/Users/admin/.conan2/p/b/imguic170492e74256/p/lib/libimgui.a C$:/Users/admin/.conan2/p/b/glfwda36766526193/p/lib/libglfw3.a || ImGuiHandler/libImGuiHandler.a libImNodeFlow.a
   FLAGS = -g
-  LINK_LIBRARIES = libImNodeFlow.a  C:/Users/admin/.conan2/p/b/imguic170492e74256/p/lib/libimgui.a  -limm32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
-  LINK_PATH = -LC:/Users/admin/.conan2/p/b/imguic170492e74256/p/lib
+  LINK_LIBRARIES = libImNodeFlow.a  ImGuiHandler/libImGuiHandler.a  C:/Users/admin/.conan2/p/b/imguic170492e74256/p/lib/libimgui.a  -limm32  C:/Users/admin/.conan2/p/b/glfwda36766526193/p/lib/libglfw3.a  -lopengl32  -lgdi32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_PATH = -LC:/Users/admin/.conan2/p/b/imguic170492e74256/p/lib   -LC:/Users/admin/.conan2/p/b/glfwda36766526193/p/lib
   OBJECT_DIR = CMakeFiles\ImNodeFlow_dev.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
@@ -165,11 +133,140 @@ build CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
 build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 
 # =============================================================================
+# Write statements declared in CMakeLists.txt:
+# C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/CMakeLists.txt
+# =============================================================================
+
+# =============================================================================
+# Object build statements for STATIC_LIBRARY target ImGuiHandler
+
+
+#############################################
+# Order-only phony target for ImGuiHandler
+
+build cmake_object_order_depends_target_ImGuiHandler: phony || ImGuiHandler/CMakeFiles/ImGuiHandler.dir
+
+build ImGuiHandler/CMakeFiles/ImGuiHandler.dir/src/ImGuiHandler.cpp.obj: CXX_COMPILER__ImGuiHandler_unscanned_Debug C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/src/ImGuiHandler.cpp || cmake_object_order_depends_target_ImGuiHandler
+  DEFINES = -DIMGUI_DEFINE_MATH_OPERATORS
+  DEP_FILE = ImGuiHandler\CMakeFiles\ImGuiHandler.dir\src\ImGuiHandler.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include -isystem C:/Users/admin/.conan2/p/b/glfwda36766526193/p/include
+  OBJECT_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler.dir
+  OBJECT_FILE_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler.dir\src
+
+build ImGuiHandler/CMakeFiles/ImGuiHandler.dir/src/imgui_stdlib.cpp.obj: CXX_COMPILER__ImGuiHandler_unscanned_Debug C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/src/imgui_stdlib.cpp || cmake_object_order_depends_target_ImGuiHandler
+  DEFINES = -DIMGUI_DEFINE_MATH_OPERATORS
+  DEP_FILE = ImGuiHandler\CMakeFiles\ImGuiHandler.dir\src\imgui_stdlib.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include -isystem C:/Users/admin/.conan2/p/b/glfwda36766526193/p/include
+  OBJECT_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler.dir
+  OBJECT_FILE_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler.dir\src
+
+build ImGuiHandler/CMakeFiles/ImGuiHandler.dir/imgui_bindings/imgui_impl_glfw.cpp.obj: CXX_COMPILER__ImGuiHandler_unscanned_Debug C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/imgui_bindings/imgui_impl_glfw.cpp || cmake_object_order_depends_target_ImGuiHandler
+  DEFINES = -DIMGUI_DEFINE_MATH_OPERATORS
+  DEP_FILE = ImGuiHandler\CMakeFiles\ImGuiHandler.dir\imgui_bindings\imgui_impl_glfw.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include -isystem C:/Users/admin/.conan2/p/b/glfwda36766526193/p/include
+  OBJECT_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler.dir
+  OBJECT_FILE_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler.dir\imgui_bindings
+
+build ImGuiHandler/CMakeFiles/ImGuiHandler.dir/imgui_bindings/imgui_impl_opengl3.cpp.obj: CXX_COMPILER__ImGuiHandler_unscanned_Debug C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/imgui_bindings/imgui_impl_opengl3.cpp || cmake_object_order_depends_target_ImGuiHandler
+  DEFINES = -DIMGUI_DEFINE_MATH_OPERATORS
+  DEP_FILE = ImGuiHandler\CMakeFiles\ImGuiHandler.dir\imgui_bindings\imgui_impl_opengl3.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include -isystem C:/Users/admin/.conan2/p/b/glfwda36766526193/p/include
+  OBJECT_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler.dir
+  OBJECT_FILE_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler.dir\imgui_bindings
+
+
+# =============================================================================
+# Link build statements for STATIC_LIBRARY target ImGuiHandler
+
+
+#############################################
+# Link the static library ImGuiHandler\libImGuiHandler.a
+
+build ImGuiHandler/libImGuiHandler.a: CXX_STATIC_LIBRARY_LINKER__ImGuiHandler_Debug ImGuiHandler/CMakeFiles/ImGuiHandler.dir/src/ImGuiHandler.cpp.obj ImGuiHandler/CMakeFiles/ImGuiHandler.dir/src/imgui_stdlib.cpp.obj ImGuiHandler/CMakeFiles/ImGuiHandler.dir/imgui_bindings/imgui_impl_glfw.cpp.obj ImGuiHandler/CMakeFiles/ImGuiHandler.dir/imgui_bindings/imgui_impl_opengl3.cpp.obj
+  LANGUAGE_COMPILE_FLAGS = -g
+  OBJECT_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = ImGuiHandler\libImGuiHandler.a
+  TARGET_PDB = ImGuiHandler.a.dbg
+
+# =============================================================================
+# Object build statements for EXECUTABLE target ImGuiHandler_dev
+
+
+#############################################
+# Order-only phony target for ImGuiHandler_dev
+
+build cmake_object_order_depends_target_ImGuiHandler_dev: phony || cmake_object_order_depends_target_ImGuiHandler
+
+build ImGuiHandler/CMakeFiles/ImGuiHandler_dev.dir/main.cpp.obj: CXX_COMPILER__ImGuiHandler_dev_unscanned_Debug C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/main.cpp || cmake_object_order_depends_target_ImGuiHandler_dev
+  DEFINES = -DIMGUI_DEFINE_MATH_OPERATORS
+  DEP_FILE = ImGuiHandler\CMakeFiles\ImGuiHandler_dev.dir\main.cpp.obj.d
+  FLAGS = -g -fdiagnostics-color=always
+  INCLUDES = -IC:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/include -isystem C:/Users/admin/.conan2/p/b/imguic170492e74256/p/include -isystem C:/Users/admin/.conan2/p/b/glfwda36766526193/p/include
+  OBJECT_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler_dev.dir
+  OBJECT_FILE_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler_dev.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target ImGuiHandler_dev
+
+
+#############################################
+# Link the executable ImGuiHandler\ImGuiHandler_dev.exe
+
+build ImGuiHandler/ImGuiHandler_dev.exe: CXX_EXECUTABLE_LINKER__ImGuiHandler_dev_Debug ImGuiHandler/CMakeFiles/ImGuiHandler_dev.dir/main.cpp.obj | ImGuiHandler/libImGuiHandler.a C$:/Users/admin/.conan2/p/b/imguic170492e74256/p/lib/libimgui.a C$:/Users/admin/.conan2/p/b/glfwda36766526193/p/lib/libglfw3.a || ImGuiHandler/libImGuiHandler.a
+  FLAGS = -g
+  LINK_LIBRARIES = ImGuiHandler/libImGuiHandler.a  C:/Users/admin/.conan2/p/b/imguic170492e74256/p/lib/libimgui.a  -limm32  C:/Users/admin/.conan2/p/b/glfwda36766526193/p/lib/libglfw3.a  -lopengl32  -lgdi32  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_PATH = -LC:/Users/admin/.conan2/p/b/imguic170492e74256/p/lib   -LC:/Users/admin/.conan2/p/b/glfwda36766526193/p/lib
+  OBJECT_DIR = ImGuiHandler\CMakeFiles\ImGuiHandler_dev.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = ImGuiHandler\ImGuiHandler_dev.exe
+  TARGET_IMPLIB = ImGuiHandler\libImGuiHandler_dev.dll.a
+  TARGET_PDB = ImGuiHandler_dev.exe.dbg
+
+
+#############################################
+# Utility command for edit_cache
+
+build ImGuiHandler/CMakeFiles/edit_cache.util: CUSTOM_COMMAND
+  COMMAND = cmd.exe /C "cd /D C:\AA-FILE\PROGRAMS\CPP\ImNodeFlow\cmake-build-debug\ImGuiHandler && "C:\Program Files\JetBrains\CLion 2023.2.2\bin\cmake\win\x64\bin\cmake.exe" -E echo "No interactive CMake dialog available.""
+  DESC = No interactive CMake dialog available...
+  restat = 1
+
+build ImGuiHandler/edit_cache: phony ImGuiHandler/CMakeFiles/edit_cache.util
+
+
+#############################################
+# Utility command for rebuild_cache
+
+build ImGuiHandler/CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
+  COMMAND = cmd.exe /C "cd /D C:\AA-FILE\PROGRAMS\CPP\ImNodeFlow\cmake-build-debug\ImGuiHandler && "C:\Program Files\JetBrains\CLion 2023.2.2\bin\cmake\win\x64\bin\cmake.exe" --regenerate-during-build -SC:\AA-FILE\PROGRAMS\CPP\ImNodeFlow -BC:\AA-FILE\PROGRAMS\CPP\ImNodeFlow\cmake-build-debug"
+  DESC = Running CMake to regenerate build system...
+  pool = console
+  restat = 1
+
+build ImGuiHandler/rebuild_cache: phony ImGuiHandler/CMakeFiles/rebuild_cache.util
+
+# =============================================================================
 # Target aliases.
+
+build ImGuiHandler: phony ImGuiHandler/libImGuiHandler.a
+
+build ImGuiHandler_dev: phony ImGuiHandler/ImGuiHandler_dev.exe
+
+build ImGuiHandler_dev.exe: phony ImGuiHandler/ImGuiHandler_dev.exe
 
 build ImNodeFlow: phony libImNodeFlow.a
 
 build ImNodeFlow_dev: phony ImNodeFlow_dev.exe
+
+build libImGuiHandler.a: phony ImGuiHandler/libImGuiHandler.a
 
 # =============================================================================
 # Folder targets.
@@ -179,7 +276,14 @@ build ImNodeFlow_dev: phony ImNodeFlow_dev.exe
 #############################################
 # Folder: C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug
 
-build all: phony libImNodeFlow.a ImNodeFlow_dev.exe
+build all: phony libImNodeFlow.a ImNodeFlow_dev.exe ImGuiHandler/all
+
+# =============================================================================
+
+#############################################
+# Folder: C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/ImGuiHandler
+
+build ImGuiHandler/all: phony ImGuiHandler/libImGuiHandler.a ImGuiHandler/ImGuiHandler_dev.exe
 
 # =============================================================================
 # Built-in targets
@@ -188,14 +292,14 @@ build all: phony libImNodeFlow.a ImNodeFlow_dev.exe
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja: RERUN_CMAKE | C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/CMakeLists.txt C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/conan_provider.cmake C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/conanfile.py C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeFindDependencyMacro.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeRCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CheckCXXSourceCompiles.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Internal/CheckSourceCompiles.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-C-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/WindowsPaths.cmake CMakeCache.txt CMakeFiles/3.26.4/CMakeCCompiler.cmake CMakeFiles/3.26.4/CMakeCXXCompiler.cmake CMakeFiles/3.26.4/CMakeRCCompiler.cmake CMakeFiles/3.26.4/CMakeSystem.cmake conan/build/Debug/generators/cmakedeps_macros.cmake conan/build/Debug/generators/imgui-Target-debug.cmake conan/build/Debug/generators/imgui-config-version.cmake conan/build/Debug/generators/imgui-config.cmake conan/build/Debug/generators/imgui-debug-x86_64-data.cmake conan/build/Debug/generators/imguiTargets.cmake
+build build.ninja: RERUN_CMAKE | C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/CMakeLists.txt C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/CMakeLists.txt C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/conan_provider.cmake C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/conanfile.py C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeFindDependencyMacro.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeRCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CheckCXXSourceCompiles.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Internal/CheckSourceCompiles.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-C-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/WindowsPaths.cmake CMakeCache.txt CMakeFiles/3.26.4/CMakeCCompiler.cmake CMakeFiles/3.26.4/CMakeCXXCompiler.cmake CMakeFiles/3.26.4/CMakeRCCompiler.cmake CMakeFiles/3.26.4/CMakeSystem.cmake conan/build/Debug/generators/cmakedeps_macros.cmake conan/build/Debug/generators/glfw3-Target-debug.cmake conan/build/Debug/generators/glfw3-config-version.cmake conan/build/Debug/generators/glfw3-config.cmake conan/build/Debug/generators/glfw3-debug-x86_64-data.cmake conan/build/Debug/generators/glfw3Targets.cmake conan/build/Debug/generators/imgui-Target-debug.cmake conan/build/Debug/generators/imgui-config-version.cmake conan/build/Debug/generators/imgui-config.cmake conan/build/Debug/generators/imgui-debug-x86_64-data.cmake conan/build/Debug/generators/imguiTargets.cmake conan/build/Debug/generators/opengl_system-Target-debug.cmake conan/build/Debug/generators/opengl_system-config-version.cmake conan/build/Debug/generators/opengl_system-config.cmake conan/build/Debug/generators/opengl_system-debug-x86_64-data.cmake conan/build/Debug/generators/opengl_systemTargets.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/CMakeLists.txt C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/conan_provider.cmake C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/conanfile.py C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeFindDependencyMacro.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeRCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CheckCXXSourceCompiles.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Internal/CheckSourceCompiles.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-C-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/WindowsPaths.cmake CMakeCache.txt CMakeFiles/3.26.4/CMakeCCompiler.cmake CMakeFiles/3.26.4/CMakeCXXCompiler.cmake CMakeFiles/3.26.4/CMakeRCCompiler.cmake CMakeFiles/3.26.4/CMakeSystem.cmake conan/build/Debug/generators/cmakedeps_macros.cmake conan/build/Debug/generators/imgui-Target-debug.cmake conan/build/Debug/generators/imgui-config-version.cmake conan/build/Debug/generators/imgui-config.cmake conan/build/Debug/generators/imgui-debug-x86_64-data.cmake conan/build/Debug/generators/imguiTargets.cmake: phony
+build C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/CMakeLists.txt C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler/CMakeLists.txt C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/conan_provider.cmake C$:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/conanfile.py C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeFindDependencyMacro.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeRCInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/CheckCXXSourceCompiles.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Compiler/GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Internal/CheckSourceCompiles.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-C-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-C.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU-CXX.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/Windows.cmake C$:/Program$ Files/JetBrains/CLion$ 2023.2.2/bin/cmake/win/x64/share/cmake-3.26/Modules/Platform/WindowsPaths.cmake CMakeCache.txt CMakeFiles/3.26.4/CMakeCCompiler.cmake CMakeFiles/3.26.4/CMakeCXXCompiler.cmake CMakeFiles/3.26.4/CMakeRCCompiler.cmake CMakeFiles/3.26.4/CMakeSystem.cmake conan/build/Debug/generators/cmakedeps_macros.cmake conan/build/Debug/generators/glfw3-Target-debug.cmake conan/build/Debug/generators/glfw3-config-version.cmake conan/build/Debug/generators/glfw3-config.cmake conan/build/Debug/generators/glfw3-debug-x86_64-data.cmake conan/build/Debug/generators/glfw3Targets.cmake conan/build/Debug/generators/imgui-Target-debug.cmake conan/build/Debug/generators/imgui-config-version.cmake conan/build/Debug/generators/imgui-config.cmake conan/build/Debug/generators/imgui-debug-x86_64-data.cmake conan/build/Debug/generators/imguiTargets.cmake conan/build/Debug/generators/opengl_system-Target-debug.cmake conan/build/Debug/generators/opengl_system-config-version.cmake conan/build/Debug/generators/opengl_system-config.cmake conan/build/Debug/generators/opengl_system-debug-x86_64-data.cmake conan/build/Debug/generators/opengl_systemTargets.cmake: phony
 
 
 #############################################

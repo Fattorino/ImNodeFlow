@@ -1,161 +1,73 @@
 #include "ImNodeFlow.h"
 
-bool INF::m_validateMultiLink(BasePin* fromPinPtr, BasePin* toPinPtr)
+namespace ImFlow
 {
-	if (!fromPinPtr->canMultiLink())
-	{
-		for (auto& link : m_nodeLinks)
-		{
-			if (link->fromPin == fromPinPtr || link->toPin == fromPinPtr)
-				return false;
-		}
-	}
-
-	if (!toPinPtr->canMultiLink())
-	{
-		for (auto& link : m_nodeLinks)
-		{
-			if (link->fromPin == toPinPtr || link->toPin == toPinPtr)
-				return false;
-		}
-	}
-
-	return true;
-}
-
-bool INF::m_validateLink(BasePin* fromPinPtr, BasePin* toPinPtr)
-{
-	if (fromPinPtr->isInput() != toPinPtr->isInput() && fromPinPtr->getParent() != toPinPtr->getParent() &&
-            m_validateMultiLink(fromPinPtr, toPinPtr))
-	{
-		return true;
-	}
-	return false;
-}
-
-ImNode::EditorContext* INF::m_editorContext = nullptr;
-std::vector<std::shared_ptr<BaseNode>>* INF::m_nodes = nullptr;
-int INF::m_uniqueID = 1;
-std::vector<BaseLink*> INF::m_nodeLinks;
-
-void INF::init(std::vector<std::shared_ptr<BaseNode>>* nodes)
-{
-    ImNode::Config config;
-    config.SettingsFile = "Simple.json";
-    m_editorContext = ImNode::CreateEditor(&config);
-	ImNode::SetCurrentEditor(m_editorContext);
-
-    m_nodes = nodes;
-}
-
-void INF::destroy()
-{
-	ImNode::SetCurrentEditor(nullptr);
-    ImNode::DestroyEditor(m_editorContext);
-}
-
-void INF::update()
-{
-	// ImNode::SetCurrentEditor(m_editorContext);
-	ImNode::Begin("FLexPlotEditor", ImVec2(0.0, 0.0f));
-
-	for (auto& node : *m_nodes)
-	{
-		node->render();
-	}
-
-	// Submit Links
-	for (auto& link : m_nodeLinks)
-		ImNode::Link(link->id, link->fromPin->getID(), link->toPin->getID());
-
-	// Handle Link Creation
-	if (ImNode::BeginCreate())
-	{
-		ImNode::PinId fromPinId, toPinId;
-		if (ImNode::QueryNewLink(&fromPinId, &toPinId) && fromPinId && toPinId)
-		{
-			auto* fromPinPtr = reinterpret_cast<BasePin*>(fromPinId.Get());
-			auto* toPinPtr = reinterpret_cast<BasePin*>(toPinId.Get());
-
-			if (m_validateLink(fromPinPtr, toPinPtr))
-			{
-				// ImNode::AcceptNewItem() return true when user release mouse button.
-				if (ImNode::AcceptNewItem())
-				{
-					if (toPinPtr->isInput())
-                    {
-                        auto* link = new BaseLink(&m_uniqueID, fromPinPtr, toPinPtr);
-						m_nodeLinks.emplace_back(link);
-                        toPinPtr->setLink(link);
-                    }
-					else
-                    {
-                        auto* link = new BaseLink(&m_uniqueID, toPinPtr, fromPinPtr);
-                        m_nodeLinks.emplace_back(link);
-                        fromPinPtr->setLink(link);
-                    }
-
-					// Draw new link.
-					ImNode::Link(m_nodeLinks.back()->id, m_nodeLinks.back()->fromPin->getID(), m_nodeLinks.back()->toPin->getID());
-				}
-			}
-		}
-	}
-	ImNode::EndCreate();
-
-	// Handle Link Deletion
-	if (ImNode::BeginDelete())
-	{
-		// There may be many links marked for deletion, let's loop over them.
-		ImNode::LinkId deletedLinkId;
-		while (ImNode::QueryDeletedLink(&deletedLinkId))
-		{
-			// If you agree that link can be deleted, accept deletion.
-			if (ImNode::AcceptDeletedItem())
-			{
-                for (auto& link : m_nodeLinks)
-                {
-                    if (link->id == deletedLinkId)
-                    {
-                        link->toPin->setLink(nullptr);
-                        delete link;
-                        link = nullptr;
-                    }
-                }
-                m_nodeLinks.erase(std::remove(m_nodeLinks.begin(), m_nodeLinks.end(), nullptr), m_nodeLinks.end());
-			}
-			// You may reject link deletion by calling:
-			// ImNode::RejectDeletedItem();
-		}
-	}
-	ImNode::EndDelete();
-
-	ImNode::End();
-	// ImNode::SetCurrentEditor(nullptr);
-
-	// RESOLVE ENDS
-	for (auto& node : *m_nodes)
-	{
-		if (node->getNodeType() == ImNodeType_End)
-		{
-			node->resolveChain();
-		}
-	}
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-void BasePin::render()
-{
-    if (m_kind == ImNode::PinKind::Output && m_parent->getWidth() > 0.f)
+    void BaseNode::update(ImVec2 offset)
     {
-        ImGui::Indent(m_parent->getWidth() - ImGui::CalcTextSize(m_text.c_str()).x);
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImGui::PushID(this);
+
+        draw_list->ChannelsSetCurrent(1); // Foreground
+        ImGui::SetCursorScreenPos(offset + m_pos);
+        ImGui::BeginGroup();
+        draw();
+        ImGui::EndGroup();
+
+        m_size = ImGui::GetItemRectSize();
+        draw_list->ChannelsSetCurrent(0); // Background
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+            m_dragged = true;
+        if(m_dragged)
+        {
+            m_pos += ImGui::GetIO().MouseDelta;
+            if(ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+                m_dragged = false;
+        }
+        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(60, 60, 60, 255), 4.0f);
+        draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(100, 100, 100, 255), 4.0f);
+
+        ImGui::PopID();
     }
-    ImNode::BeginPin(m_id, m_kind);
-    ImGui::Text(m_text.c_str());
-    ImNode::EndPin();
-    if (m_kind == ImNode::PinKind::Output && m_parent->getWidth() > 0.f)
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    void ImNodeFlow::update()
     {
-        ImGui::Unindent(m_parent->getWidth() - ImGui::CalcTextSize(m_text.c_str()).x);
+        // Create our child canvas
+        ImGui::Text("Hold middle mouse button to scroll (%.2f,%.2f)", m_scroll.x, m_scroll.y);
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(60, 60, 70, 200));
+        ImGui::BeginChild(m_name.c_str(), ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+        ImGui::PopStyleVar(2); // WindowPadding
+        ImGui::PopStyleColor();
+        ImGui::PushItemWidth(120.0f);
+
+        m_offset = ImGui::GetCursorScreenPos() + m_scroll;
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        // Display grid
+        ImU32 GRID_COLOR = IM_COL32(200, 200, 200, 40);
+        float GRID_SZ = 64.0f;
+        ImVec2 win_pos = ImGui::GetCursorScreenPos();
+        ImVec2 canvas_sz = ImGui::GetWindowSize();
+        for (float x = fmodf(m_scroll.x, GRID_SZ); x < canvas_sz.x; x += 64)
+            draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, GRID_COLOR);
+        for (float y = fmodf(m_scroll.y, GRID_SZ); y < canvas_sz.y; y += 64)
+            draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, GRID_COLOR);
+
+        // Display nodes
+        draw_list->ChannelsSplit(2);
+        for (auto& node : m_nodes)
+        {
+            node->update(m_offset);
+        }
+        draw_list->ChannelsMerge();
+
+        // Scrolling
+        if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.0f))
+            m_scroll = m_scroll + ImGui::GetIO().MouseDelta;
+
+        ImGui::EndChild();
     }
 }

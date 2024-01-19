@@ -54,17 +54,26 @@ os=Windows
 Graph root
     conanfile.py: C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow\conanfile.py
 Requirements
+    glfw/3.3.8#fa80260213e8f8da1315ba152e023e3e - Cache
     imgui/1.90#f848b6ce0252ed4ee9a01c460a7e936f - Cache
+    opengl/system#b29589c04d6df84c110d6acb066ab653 - Cache
 
 ======== Computing necessary packages ========
 Requirements
+    glfw/3.3.8#fa80260213e8f8da1315ba152e023e3e:8017d78d70cd810fbc93ef6c919368c5a0f66568#3cade9bcfeaaa6c3ef1e89cf09d75b77 - Cache
     imgui/1.90#f848b6ce0252ed4ee9a01c460a7e936f:26c25a003bb3b7e4442c6036ea3f34cf49de4264#902502e53a6afc9d63095d8360efe0c2 - Cache
+    opengl/system#b29589c04d6df84c110d6acb066ab653:da39a3ee5e6b4b0d3255bfef95601890afd80709#0ba8627bd47edc3a501e8f0eb9a79e5e - Cache
 
 ======== Installing packages ========
-imgui/1.90: Already installed! (1 of 1)
+imgui/1.90: Already installed! (1 of 3)
 imgui/1.90: Appending PATH env var with : C:\Users\admin\.conan2\p\b\imguic170492e74256\p\bin
+opengl/system: Already installed! (2 of 3)
+glfw/3.3.8: Already installed! (3 of 3)
 WARN: deprecated: Usage of deprecated Conan 1.X features that will be removed in Conan 2.X:
 WARN: deprecated:     'env_info' used in: imgui/1.90
+WARN: deprecated:     'cpp_info.filenames' used in: glfw/3.3.8, opengl/system
+WARN: deprecated:     'cpp_info.names' used in: glfw/3.3.8
+WARN: deprecated:     'cpp_info.build_modules' used in: glfw/3.3.8
 
 ======== Finalizing install (deploy, generators) ========
 conanfile.py: Writing generators to C:\AA-FILE\PROGRAMS\CPP\ImNodeFlow\cmake-build-debug\conan\build\Debug\generators
@@ -81,6 +90,11 @@ Install finished successfully
 -- CMake-Conan: CONAN_GENERATORS_FOLDER=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/conan/build/Debug/generators
 -- CMake-Conan: CONANFILE=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/conanfile.py
 -- Conan: Target declared 'imgui::imgui'
--- Configuring done (1.4s)
+-- CMake-Conan: find_package(imgui) found, 'conan install' already ran
+-- CMake-Conan: find_package(opengl_system) found, 'conan install' already ran
+-- Conan: Target declared 'opengl::opengl'
+-- CMake-Conan: find_package(glfw3) found, 'conan install' already ran
+-- Conan: Target declared 'glfw'
+-- Configuring done (1.5s)
 -- Generating done (0.0s)
 -- Build files have been written to: C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug

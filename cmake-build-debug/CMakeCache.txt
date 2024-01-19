@@ -252,6 +252,24 @@ CONAN_COMMAND:FILEPATH=C:/Program Files/Conan/conan/conan.exe
 CONAN_HOST_PROFILE:STRING=default;auto-cmake
 
 //Value Computed by CMake
+ImGuiHandler_BINARY_DIR:STATIC=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/ImGuiHandler
+
+//Value Computed by CMake
+ImGuiHandler_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+ImGuiHandler_SOURCE_DIR:STATIC=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler
+
+//Value Computed by CMake
+ImGuiHandler_dev_BINARY_DIR:STATIC=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/ImGuiHandler
+
+//Value Computed by CMake
+ImGuiHandler_dev_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+ImGuiHandler_dev_SOURCE_DIR:STATIC=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/ImGuiHandler
+
+//Value Computed by CMake
 ImNodeFlow_BINARY_DIR:STATIC=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug
 
 //Value Computed by CMake
@@ -269,8 +287,14 @@ ImNodeFlow_dev_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 ImNodeFlow_dev_SOURCE_DIR:STATIC=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow
 
+//The directory containing a CMake configuration file for glfw3.
+glfw3_DIR:PATH=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/conan/build/Debug/generators
+
 //The directory containing a CMake configuration file for imgui.
 imgui_DIR:PATH=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/conan/build/Debug/generators
+
+//The directory containing a CMake configuration file for opengl_system.
+opengl_system_DIR:PATH=C:/AA-FILE/PROGRAMS/CPP/ImNodeFlow/cmake-build-debug/conan/build/Debug/generators
 
 
 ########################
@@ -375,7 +399,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=1
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=2
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP

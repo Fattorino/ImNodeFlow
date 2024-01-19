@@ -1,144 +1,112 @@
 #pragma once
 
-#include <imgui.h>
+#include <string>
 #include <utility>
 #include <vector>
-#include <functional>
+#include <cmath>
 #include <memory>
+#include <imgui.h>
 
-#include "../imgui_node_editor/imgui_node_editor.h"
-#include "../imgui_node_editor/imgui_node_editor_internal.h"
-
-namespace ImNode = ax::NodeEditor;
-
-class BasePin;
-class BaseLink;
-class BaseNode;
-
-enum ImNodeType
+namespace ImFlow
 {
-	ImNodeType_Start,
-	ImNodeType_Middle,
-	ImNodeType_End
-};
+    template<typename T> class Link;
+    class BaseNode;
 
-// ---------------------------------------------------------------------------------------------------------------------
+    class Pin
+    {
+    public:
+        explicit Pin(std::string name) { m_name = std::move(name); }
+        virtual void draw() = 0;
+    protected:
+        std::string m_name;
+    };
 
-class INF
-{
-public:
-	friend class BaseNode;
+    template<typename T> class InPin : public Pin
+    {
+    public:
+        explicit InPin(std::string name) : Pin(name) {}
 
-    INF() = delete;
+        void setLink(Link<T>* link) { m_link = link; }
+        const T& val();
 
-    static void init(std::vector<std::shared_ptr<BaseNode>>* nodes);
-    static void destroy();
+        void draw() override { ImGui::Text(m_name.c_str()); }
+    private:
+        Link<T>* m_link = nullptr;
+        const T defaultVal = 0;
+    };
 
-    static void update();
+    template<typename T> class OutPin : public Pin
+    {
+    public:
+        explicit OutPin(std::string name, BaseNode* parent) : Pin(name) {m_parent = parent;}
+
+        uintptr_t me() { return reinterpret_cast<uintptr_t>(this); }
+        const T& val();
+        OutPin& operator<<(const T&& val) { m_val = val; return *this; }
+
+        void draw() override { ImGui::Text(m_name.c_str()); }
+    private:
+        uintptr_t m_me = reinterpret_cast<uintptr_t>(this);
+        BaseNode* m_parent;
+        T m_val;
+    };
+
+    template<typename T> class Link
+    {
+    public:
+        explicit Link(OutPin<T>* left) { m_left = left; }
+
+        const T& val() { return m_left->val(); }
+    private:
+        OutPin<T>* m_left;
+    };
+
+    class BaseNode
+    {
+    public:
+        friend class ImNodeFlow;
+
+        explicit BaseNode(ImVec2 pos) { m_pos = pos; }
+        virtual void draw() = 0;
+        virtual void resolve(uintptr_t me) {}
+    private:
+        ImVec2 m_pos;
+        ImVec2 m_size;
+        bool m_dragged = false;
+        ImVec2 m_padding = ImVec2(5.f, 5.f);
+
+        void update(ImVec2 offset);
+    };
 
     template<typename T>
-    static void pushNode(ImVec2 pos = ImVec2(0.f, 0.f), bool convert = false);
+    const T &InPin<T>::val() { if(m_link) return m_link->val(); else return defaultVal; }
 
-private:
-    static ImNode::EditorContext* m_editorContext;
+    template<typename T>
+    const T &OutPin<T>::val() { m_parent->resolve(m_me); return m_val; }
 
-    static std::vector<std::shared_ptr<BaseNode>>* m_nodes;
-    static int m_uniqueID;
-    static std::vector<BaseLink*> m_nodeLinks;
+    // -----------------------------------------------------------------------------------------------------------------
 
-    static bool m_validateMultiLink(BasePin* fromPinPtr, BasePin* toPinPtr);
-    static bool m_validateLink(BasePin* fromPinPtr, BasePin* toPinPtr);
-};
+    class ImNodeFlow
+    {
+    public:
+        static ImVec2 screen2canvas(const ImVec2&& pos) {return {};}
+    public:
+        ImNodeFlow() = default;
+        explicit ImNodeFlow(const std::string&& name) { m_name = name; }
 
-// ---------------------------------------------------------------------------------------------------------------------
+        void update();
+        void resolve();
 
-class BasePin
-{
-public:
-	BasePin(BaseNode* parent, ImNode::PinKind kind, bool allowMultiLink, const std::string&& text)
-	{
-		m_parent = parent;
-		m_kind = kind;
-        m_allowMultiLink = allowMultiLink;
-		m_text = text;
-	}
-
-	void render();
-
-    void setLink(BaseLink* link) { m_link = link; }
-
-	[[nodiscard]] ImNode::PinId getID() const { return m_id; }
-	BaseNode* getParent() { return m_parent; }
-	bool isInput() { return m_kind == ImNode::PinKind::Input; }
-	[[nodiscard]] bool canMultiLink() const { return m_allowMultiLink; }
-    BaseLink* getLink() { return m_link; }
-
-private:
-	uintptr_t m_id = reinterpret_cast<uintptr_t>(this);
-	ImNode::PinKind m_kind;
-
-	BaseNode* m_parent;
-    BaseLink* m_link = nullptr;
-	bool m_allowMultiLink;
-
-	std::string m_text;
-
-};
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-class BaseLink
-{
-public:
-	BaseLink(int* id, BasePin* fromPin, BasePin* toPin)
-	{
-		this->id = *id;
-		*id += 1;
-		this->fromPin = fromPin;
-		this->toPin = toPin;
-	}
-
-	ImNode::LinkId id;
-	BasePin* fromPin;
-	BasePin* toPin;
-};
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-class BaseNode
-{
-public:
-	explicit BaseNode(int nodeType, float width = 0.f)
-	{
-		m_id = INF::m_uniqueID++;
-		m_nodeType = nodeType;
-		m_width = width;
-	}
-
-	virtual void render() = 0;
-
-	virtual std::vector<float> getOut(int index) { return {}; }
-	virtual void resolveChain() {}
-
-	ImNode::NodeId getID() { return m_id; }
-	[[nodiscard]] int getNodeType() const { return m_nodeType; }
-	[[nodiscard]] float getWidth() const { return m_width; }
-
-private:
-	ImNode::NodeId m_id;
-	int m_nodeType;
-	float m_width;
-};
-
-// ---------------------------------------------------------------------------------------------------------------------
-
-template<typename T>
-void INF::pushNode(ImVec2 pos, bool convert)
-{
-    static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not subclass of BaseNode!");
-    m_nodes->emplace_back(std::make_shared<T>());
-    if (convert)
-        ImNode::SetNodePosition(m_nodes->back()->getID(), reinterpret_cast<ImNode::Detail::EditorContext*>(m_editorContext)->ToCanvas(pos));
-    else
-        ImNode::SetNodePosition(m_nodes->back()->getID(), pos);
+        template<typename T>
+        void pushNode(const ImVec2&& pos)
+        {
+            static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not subclass of BaseNode!");
+            m_nodes.emplace_back(std::make_shared<T>(pos));
+        }
+    private:
+        std::string m_name = "FlowGrid";
+        ImVec2 m_scroll = ImVec2(0.0f, 0.0f);
+        ImVec2 m_offset = ImVec2(0.0f, 0.0f);
+        std::vector<std::shared_ptr<BaseNode>> m_nodes;
+    };
 }
