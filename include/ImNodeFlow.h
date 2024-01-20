@@ -9,47 +9,53 @@
 
 namespace ImFlow
 {
-    template<typename T> class Link;
-    class BaseNode;
+    template<typename T> class InPin;
+    template<typename T> class OutPin;
+    class Pin;
 
-    class Pin
+    // -----------------------------------------------------------------------------------------------------------------
+    // BASE NODE
+
+    class BaseNode
     {
     public:
-        explicit Pin(std::string name) { m_name = std::move(name); }
+        friend class ImNodeFlow;
+
+        explicit BaseNode(ImVec2 pos) { m_pos = pos; }
+
         virtual void draw() = 0;
-    protected:
-        std::string m_name;
-    };
+        virtual void resolve(uintptr_t me) {}
 
-    template<typename T> class InPin : public Pin
-    {
-    public:
-        explicit InPin(std::string name) : Pin(name) {}
+        template<typename T>
+        void addIN(const char* name)
+        {
+            m_ins.emplace_back(std::make_shared<InPin<T>>(name));
+        }
 
-        void setLink(Link<T>* link) { m_link = link; }
-        const T& val();
+        template<typename T>
+        void addOUT(const char* name, BaseNode* parent)
+        {
+            m_outs.emplace_back(std::make_shared<OutPin<T>>(name, parent));
+        }
 
-        void draw() override { ImGui::Text(m_name.c_str()); }
+        template<typename T>
+        std::shared_ptr<InPin<T>> ins(int i) { return std::dynamic_pointer_cast<InPin<T>>(m_ins[i]); }
+        auto outs(int i) { return m_outs[i]; }
     private:
-        Link<T>* m_link = nullptr;
-        const T defaultVal = 0;
+        ImVec2 m_pos;
+        ImVec2 m_size;
+        bool m_dragged = false;
+        bool m_dragDeny = false;
+        ImVec2 m_padding = ImVec2(5.f, 5.f);
+
+        std::vector<std::shared_ptr<Pin>> m_ins;
+        std::vector<std::shared_ptr<Pin>> m_outs;
+
+        void update(ImVec2 offset, int i);
     };
 
-    template<typename T> class OutPin : public Pin
-    {
-    public:
-        explicit OutPin(std::string name, BaseNode* parent) : Pin(name) {m_parent = parent;}
-
-        uintptr_t me() { return reinterpret_cast<uintptr_t>(this); }
-        const T& val();
-        OutPin& operator<<(const T&& val) { m_val = val; return *this; }
-
-        void draw() override { ImGui::Text(m_name.c_str()); }
-    private:
-        uintptr_t m_me = reinterpret_cast<uintptr_t>(this);
-        BaseNode* m_parent;
-        T m_val;
-    };
+    // -----------------------------------------------------------------------------------------------------------------
+    // LINK
 
     template<typename T> class Link
     {
@@ -61,28 +67,69 @@ namespace ImFlow
         OutPin<T>* m_left;
     };
 
-    class BaseNode
+    // -----------------------------------------------------------------------------------------------------------------
+    // PINS
+
+    class Pin
     {
     public:
-        friend class ImNodeFlow;
-
-        explicit BaseNode(ImVec2 pos) { m_pos = pos; }
+        explicit Pin(const char*  name) { m_name = name; }
+        virtual uintptr_t me() = 0;
         virtual void draw() = 0;
-        virtual void resolve(uintptr_t me) {}
-    private:
-        ImVec2 m_pos;
-        ImVec2 m_size;
-        bool m_dragged = false;
-        ImVec2 m_padding = ImVec2(5.f, 5.f);
-
-        void update(ImVec2 offset);
+    protected:
+        std::string m_name;
     };
 
-    template<typename T>
-    const T &InPin<T>::val() { if(m_link) return m_link->val(); else return defaultVal; }
+    template<class T> class InPin : public Pin
+    {
+    public:
+        explicit InPin(const char* name) : Pin(name) {}
 
-    template<typename T>
+        void setLink(Link<T>* link) { m_link = link; }
+
+        uintptr_t me() override { return m_me; }
+        const T& val();
+
+        void draw() override;
+    private:
+        uintptr_t m_me = reinterpret_cast<uintptr_t>(this);
+        Link<T>* m_link = nullptr;
+        const T defaultVal = 0;
+    };
+
+    template<class T>
+    const T &InPin<T>::val() { if(m_link) return m_link->val(); return defaultVal; }
+
+    template<class T>
+    void InPin<T>::draw()
+    {
+        ImGui::Text(m_name.c_str());
+    }
+
+    template<class T> class OutPin : public Pin
+    {
+    public:
+        explicit OutPin(const char* name, BaseNode* parent) : Pin(name) { m_parent = parent; }
+
+        uintptr_t me() override { return m_me; }
+        const T& val();
+        OutPin& operator<<(const T&& val) { m_val = val; return *this; }
+
+        void draw() override;
+    private:
+        uintptr_t m_me = reinterpret_cast<uintptr_t>(this);
+        BaseNode* m_parent = nullptr;
+        T m_val;
+    };
+
+    template<class T>
     const T &OutPin<T>::val() { m_parent->resolve(m_me); return m_val; }
+
+    template<class T>
+    void OutPin<T>::draw()
+    {
+        ImGui::Text(m_name.c_str());
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
 

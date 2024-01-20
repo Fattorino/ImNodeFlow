@@ -2,27 +2,53 @@
 
 namespace ImFlow
 {
-    void BaseNode::update(ImVec2 offset)
+    void BaseNode::update(ImVec2 offset, int i)
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImGui::PushID(this);
 
-        draw_list->ChannelsSetCurrent(1); // Foreground
+        draw_list->ChannelsSetCurrent(i + 1); // Foreground
         ImGui::SetCursorScreenPos(offset + m_pos);
+
+        ImGui::BeginGroup();
+
+        ImGui::BeginGroup();
+        for(auto& p : m_ins)
+        {
+            p->draw();
+        }
+        ImGui::EndGroup();
+        ImGui::SameLine();
+
         ImGui::BeginGroup();
         draw();
         ImGui::EndGroup();
+        ImGui::SameLine();
+
+        ImGui::BeginGroup();
+        for (auto& p : m_outs)
+        {
+            p->draw();
+        }
+        ImGui::EndGroup();
+        ImGui::SameLine();
+
+        ImGui::EndGroup();
 
         m_size = ImGui::GetItemRectSize();
-        draw_list->ChannelsSetCurrent(0); // Background
-        if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        draw_list->ChannelsSetCurrent(i); // Background
+        if (!ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+            m_dragDeny = true;
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !m_dragDeny)
             m_dragged = true;
-        if(m_dragged)
+        if(ImGui::IsMouseReleased(ImGuiMouseButton_Left))
         {
-            m_pos += ImGui::GetIO().MouseDelta;
-            if(ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-                m_dragged = false;
+            m_dragDeny = false;
+            m_dragged = false;
         }
+        if(m_dragged)
+            m_pos += ImGui::GetIO().MouseDelta;
+
         draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(60, 60, 60, 255), 4.0f);
         draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(100, 100, 100, 255), 4.0f);
 
@@ -57,10 +83,12 @@ namespace ImFlow
             draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, GRID_COLOR);
 
         // Display nodes
-        draw_list->ChannelsSplit(2);
+        draw_list->ChannelsSplit(2 * m_nodes.size());
+        int i = 0;
         for (auto& node : m_nodes)
         {
-            node->update(m_offset);
+            node->update(m_offset, i);
+            i += 2;
         }
         draw_list->ChannelsMerge();
 

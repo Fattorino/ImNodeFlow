@@ -11,43 +11,33 @@ ImNodeFlow inf;
 class AB : public BaseNode
 {
 public:
-    explicit AB(ImVec2 pos) : BaseNode(pos) {}
+    explicit AB(ImVec2 pos) : BaseNode(pos)
+    {
+        addIN<int>("intouno");
+        addIN<int>("intoduo");
+        addOUT<int>("outoa", this);
+        addOUT<int>("outob", this);
+    }
 
     void draw() override
     {
-        ImGui::BeginGroup();
-        in_a.draw();
-        in_b.draw();
-        ImGui::EndGroup();
-        ImGui::SameLine();
-
-        ImGui::BeginGroup();
         ImGui::Text("ASDDJHGFDSA");
-        ImGui::EndGroup();
-        ImGui::SameLine();
-
-        ImGui::BeginGroup();
-        out_1.draw();
-        out_2.draw();
-        ImGui::EndGroup();
+        if (ImGui::Button("TEST"))
+            printf("TEST!!");
     }
+
     void resolve(uintptr_t me) override
     {
-        if (me == out_1.me())
+        if (me == outs(0)->me())
         {
-            out_1 << in_a.val() + m_slider;
+            outs(0) << ins<int>(0)->val() + m_slider;
         }
-        else if (me == out_2.me())
+        else if (me == outs(1)->me())
         {
-            out_2 << in_b.val() * m_slider;
+            outs(1) << ins<int>(0)->val() * m_slider;
         }
     }
 private:
-    InPin<int> in_a = InPin<int>("ina");
-    InPin<int> in_b = InPin<int>("inb");
-    OutPin<int> out_1 = OutPin<int>("out1", this);
-    OutPin<int> out_2 = OutPin<int>("out2", this);
-
     int m_slider = 2;
 };
 
