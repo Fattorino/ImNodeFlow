@@ -11,7 +11,7 @@ ImNodeFlow inf;
 class AB : public BaseNode
 {
 public:
-    explicit AB(ImVec2 pos) : BaseNode(pos)
+    explicit AB(const char* name, ImVec2 pos) : BaseNode(name, pos)
     {
         addIN<int>("intouno");
         addIN<int>("intoduo");
@@ -22,37 +22,37 @@ public:
     void draw() override
     {
         ImGui::Text("ASDDJHGFDSA");
-        if (ImGui::Button("TEST"))
-            printf("TEST!!");
+        ImGui::Combo("Test", &m_slider, "Ciao\0come\0stai\0\0");
     }
 
     void resolve(uintptr_t me) override
     {
-        if (me == outs(0)->me())
+        if (me == outs(0).me())
         {
-            outs(0) << ins<int>(0)->val() + m_slider;
+            outs<int>(0) << ins<int>(0).val() + m_slider;
         }
-        else if (me == outs(1)->me())
+        else if (me == outs(1).me())
         {
-            outs(1) << ins<int>(0)->val() * m_slider;
+            outs<int>(1) << ins<int>(0).val() * m_slider;
         }
     }
 private:
-    int m_slider = 2;
+    int m_slider = 0;
 };
 
 class Pri : public BaseNode
 {
 public:
-    explicit Pri(ImVec2 pos) : BaseNode(pos) {}
+    explicit Pri(const char* name, ImVec2 pos) : BaseNode(name, pos)
+    {
+        addIN<int>("inn");
+    }
 
     void draw() override
     {
-        in.draw();
-        ImGui::Text("%d", in.val());
+        ImGui::Text("%d", ins<int>(0).val());
     }
 private:
-    InPin<int> in = InPin<int>("in");
 };
 
 class DemoWindow : public appLayer
@@ -79,8 +79,8 @@ int main()
     IGH.pushLayer<DemoWindow>();
     IGH.setActiveWin(0);
 
-    inf.pushNode<AB>(ImVec2(0,0));
-    inf.pushNode<Pri>(ImVec2(100,0));
+    inf.pushNode<AB>("ABABABA", ImVec2(0,0));
+    inf.pushNode<Pri>("Printer ONE", ImVec2(100,0));
 
     bool done = false;
     while (!done)

@@ -21,7 +21,7 @@ namespace ImFlow
     public:
         friend class ImNodeFlow;
 
-        explicit BaseNode(ImVec2 pos) { m_pos = pos; }
+        explicit BaseNode(const char* name, ImVec2 pos) { m_name = name, m_pos = pos; }
 
         virtual void draw() = 0;
         virtual void resolve(uintptr_t me) {}
@@ -39,11 +39,17 @@ namespace ImFlow
         }
 
         template<typename T>
-        std::shared_ptr<InPin<T>> ins(int i) { return std::dynamic_pointer_cast<InPin<T>>(m_ins[i]); }
-        auto outs(int i) { return m_outs[i]; }
+        InPin<T>& ins(int i) { return *std::dynamic_pointer_cast<InPin<T>>(m_ins[i]); }
+        Pin& ins(int i) { return *m_ins[i]; }
+        template<typename T>
+        OutPin<T>& outs(int i) { return *std::dynamic_pointer_cast<OutPin<T>>(m_outs[i]); }
+        Pin& outs(int i) { return *m_outs[i]; }
+
+        ImVec2& padding() { return m_padding; }
     private:
         ImVec2 m_pos;
         ImVec2 m_size;
+        std::string m_name;
         bool m_dragged = false;
         bool m_dragDeny = false;
         ImVec2 m_padding = ImVec2(5.f, 5.f);
@@ -74,11 +80,15 @@ namespace ImFlow
     {
     public:
         explicit Pin(const char*  name) { m_name = name; }
+        void setPos(ImVec2 pos) { m_pos = pos; }
         virtual uintptr_t me() = 0;
         virtual void draw() = 0;
     protected:
+        ImVec2 m_pos = ImVec2(0, 0);
         std::string m_name;
+        bool m_dragging = false;
     };
+
 
     template<class T> class InPin : public Pin
     {
@@ -106,6 +116,7 @@ namespace ImFlow
         ImGui::Text(m_name.c_str());
     }
 
+
     template<class T> class OutPin : public Pin
     {
     public:
@@ -125,18 +136,14 @@ namespace ImFlow
     template<class T>
     const T &OutPin<T>::val() { m_parent->resolve(m_me); return m_val; }
 
-    template<class T>
-    void OutPin<T>::draw()
-    {
-        ImGui::Text(m_name.c_str());
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
 
     class ImNodeFlow
     {
     public:
         static ImVec2 screen2canvas(const ImVec2&& pos) {return {};}
+        static ImVec2 INF_scroll;
+        static bool INF_dragAllowed;
     public:
         ImNodeFlow() = default;
         explicit ImNodeFlow(const std::string&& name) { m_name = name; }
@@ -145,15 +152,40 @@ namespace ImFlow
         void resolve();
 
         template<typename T>
-        void pushNode(const ImVec2&& pos)
+        void pushNode(const char* name, const ImVec2&& pos)
         {
             static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not subclass of BaseNode!");
-            m_nodes.emplace_back(std::make_shared<T>(pos));
+            m_nodes.emplace_back(std::make_shared<T>(name, pos));
         }
     private:
         std::string m_name = "FlowGrid";
-        ImVec2 m_scroll = ImVec2(0.0f, 0.0f);
-        ImVec2 m_offset = ImVec2(0.0f, 0.0f);
         std::vector<std::shared_ptr<BaseNode>> m_nodes;
     };
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    template<class T>
+    void OutPin<T>::draw()
+    {
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        ImGui::Text(m_name.c_str());
+        ImVec2 pinDot = m_pos + ImVec2(ImGui::GetItemRectSize().x + m_parent->padding().x, ImGui::GetItemRectSize().y / 2);
+        draw_list->AddCircleFilled(pinDot, 5, IM_COL32(50, 40, 40, 254));
+
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImNodeFlow::INF_dragAllowed)
+        {
+            m_dragging = true;
+            ImNodeFlow::INF_dragAllowed = false;
+        }
+        if (m_dragging)
+        {
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+            {
+                m_dragging = false;
+                ImNodeFlow::INF_dragAllowed = true;
+            }
+            draw_list->AddBezierCubic(pinDot, pinDot + ImVec2(+50, 0), ImGui::GetMousePos() + ImVec2(-50, 0), ImGui::GetMousePos(), IM_COL32(200, 200, 100, 255), 3.0f);
+        }
+    }
 }
