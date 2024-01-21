@@ -13,8 +13,8 @@ class AB : public BaseNode
 public:
     explicit AB(const char* name, ImVec2 pos) : BaseNode(name, pos)
     {
-        addIN<int>("intouno");
-        addIN<int>("intoduo");
+        addIN<int>("intouno", this);
+        addIN<int>("intoduo", this);
         addOUT<int>("outoa", this);
         addOUT<int>("outob", this);
     }
@@ -45,7 +45,7 @@ class Pri : public BaseNode
 public:
     explicit Pri(const char* name, ImVec2 pos) : BaseNode(name, pos)
     {
-        addIN<int>("inn");
+        addIN<int>("inn", this);
     }
 
     void draw() override
@@ -67,7 +67,7 @@ public:
     }
 };
 
-// TODO: Implement Pin functionality and links and link creation and link drawing
+// TODO: Handle link drop-off, link creation, post drop-off link rendering
 
 int main()
 {

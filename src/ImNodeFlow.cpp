@@ -22,7 +22,7 @@ namespace ImFlow
         for(auto& p : m_ins)
         {
             p->setPos(ImGui::GetCursorPos() + ImGui::GetWindowPos());
-            p->draw();
+            p->update();
         }
         ImGui::EndGroup();
         ImGui::SameLine();
@@ -36,7 +36,7 @@ namespace ImFlow
         for (auto& p : m_outs)
         {
             p->setPos(ImGui::GetCursorPos() + ImGui::GetWindowPos());
-            p->draw();
+            p->update();
         }
         ImGui::EndGroup();
         ImGui::SameLine();
@@ -73,6 +73,8 @@ namespace ImFlow
 
     ImVec2 ImNodeFlow::INF_scroll = ImVec2(0.0f, 0.0f);
     bool ImNodeFlow::INF_dragAllowed = true;
+    bool ImNodeFlow::INF_linking = false;
+    std::shared_ptr<Pin> ImNodeFlow::IND_pinTarget;
 
     void ImNodeFlow::update()
     {
