@@ -6,12 +6,12 @@
 
 using namespace ImFlow;
 
-ImNodeFlow inf;
+ImNodeFlow INF("f");
 
 class AB : public BaseNode
 {
 public:
-    explicit AB(const char* name, ImVec2 pos) : BaseNode(name, pos)
+    explicit AB(const char* name, ImVec2 pos, InfInterface* inf) : BaseNode(name, pos, inf)
     {
         addIN<int>("intouno", this);
         addIN<int>("intoduo", this);
@@ -43,7 +43,7 @@ private:
 class Pri : public BaseNode
 {
 public:
-    explicit Pri(const char* name, ImVec2 pos) : BaseNode(name, pos)
+    explicit Pri(const char* name, ImVec2 pos, InfInterface* inf) : BaseNode(name, pos, inf)
     {
         addIN<int>("inn", this);
     }
@@ -62,7 +62,7 @@ public:
     {
         ImGui::SetNextWindowSize(ImVec2(700, 600), ImGuiCond_FirstUseEver);
         ImGui::Begin("FlowGrid Test");
-        inf.update();
+        INF.update();
         ImGui::End();
     }
 };
@@ -79,8 +79,8 @@ int main()
     IGH.pushLayer<DemoWindow>();
     IGH.setActiveWin(0);
 
-    inf.pushNode<AB>("ABABABA", ImVec2(0,0));
-    inf.pushNode<Pri>("Printer ONE", ImVec2(100,0));
+    INF.addNode<AB>("ABABABA", ImVec2(0, 0));
+    INF.addNode<Pri>("Printer ONE", ImVec2(100, 0));
 
     bool done = false;
     while (!done)

@@ -49,7 +49,7 @@ namespace ImFlow
         if (!ImGui::IsMouseHoveringRect(offset + m_pos - m_padding, offset + m_pos + headerSize) && ImGui::IsMouseDown(ImGuiMouseButton_Left))
         {
             m_dragDeny = true;
-            ImNodeFlow::INF_dragAllowed = false;
+            m_inf->dragAllowed(false);
         }
         if (ImGui::IsMouseHoveringRect(offset + m_pos - m_padding, offset + m_pos + headerSize) && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !m_dragDeny)
             m_dragged = true;
@@ -57,7 +57,7 @@ namespace ImFlow
         {
             m_dragDeny = false;
             m_dragged = false;
-            ImNodeFlow::INF_dragAllowed = true;
+            m_inf->dragAllowed(true);
         }
         if(m_dragged)
             m_pos += ImGui::GetIO().MouseDelta;
@@ -71,15 +71,10 @@ namespace ImFlow
 
     // -----------------------------------------------------------------------------------------------------------------
 
-    ImVec2 ImNodeFlow::INF_scroll = ImVec2(0.0f, 0.0f);
-    bool ImNodeFlow::INF_dragAllowed = true;
-    bool ImNodeFlow::INF_linking = false;
-    std::shared_ptr<Pin> ImNodeFlow::IND_pinTarget;
-
     void ImNodeFlow::update()
     {
         // Create our child canvas
-        ImGui::Text("Hold middle mouse button to scroll (%.2f,%.2f)", INF_scroll.x, INF_scroll.y);
+        ImGui::Text("Hold middle mouse button to scroll (%.2f,%.2f)", m_scroll.x, m_scroll.y);
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(60, 60, 70, 200));
@@ -88,7 +83,7 @@ namespace ImFlow
         ImGui::PopStyleColor();
         ImGui::PushItemWidth(120.0f);
 
-        ImVec2 offset = ImGui::GetCursorScreenPos() + INF_scroll;
+        ImVec2 offset = ImGui::GetCursorScreenPos() + m_scroll;
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
         // Display grid
@@ -96,9 +91,9 @@ namespace ImFlow
         float GRID_SZ = 64.0f;
         ImVec2 win_pos = ImGui::GetCursorScreenPos();
         ImVec2 canvas_sz = ImGui::GetWindowSize();
-        for (float x = fmodf(INF_scroll.x, GRID_SZ); x < canvas_sz.x; x += 64)
+        for (float x = fmodf(m_scroll.x, GRID_SZ); x < canvas_sz.x; x += 64)
             draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, GRID_COLOR);
-        for (float y = fmodf(INF_scroll.y, GRID_SZ); y < canvas_sz.y; y += 64)
+        for (float y = fmodf(m_scroll.y, GRID_SZ); y < canvas_sz.y; y += 64)
             draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, GRID_COLOR);
 
         // Display nodes
@@ -113,8 +108,10 @@ namespace ImFlow
 
         // Scrolling
         if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.0f))
-            INF_scroll = INF_scroll + ImGui::GetIO().MouseDelta;
+            m_scroll = m_scroll + ImGui::GetIO().MouseDelta;
 
         ImGui::EndChild();
+
+        m_isLinking = m_isLinkingNext;
     }
 }
