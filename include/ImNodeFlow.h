@@ -20,11 +20,13 @@ namespace ImFlow
     class Link
     {
     public:
-        explicit Link(uintptr_t left) { m_left = left; }
+        explicit Link(uintptr_t left, uintptr_t right) { m_left = left; m_right = right; }
 
         [[nodiscard]] uintptr_t left() const { return m_left; }
+        [[nodiscard]] uintptr_t right() const { return m_right; }
     private:
         uintptr_t m_left;
+        uintptr_t m_right;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -37,7 +39,8 @@ namespace ImFlow
         [[nodiscard]] bool dragAllowed() const; void dragAllowed(bool state);
         [[nodiscard]] bool isLinking() const; void isLinking(bool state);
         uintptr_t& pinTarget();
-        Link* createLink();
+        Link* createLink(uintptr_t left, uintptr_t right);
+        std::vector<Link>& links();
     private:
         ImNodeFlow& m_inf;
     };
@@ -45,12 +48,12 @@ namespace ImFlow
     class ImNodeFlow
     {
     public:
-        static ImVec2 screen2canvas(const ImVec2&& pos) {return {};}
+        // static ImVec2 screen2canvas(const ImVec2&& pos) {return {};}
     public:
         friend class InfInterface;
 
         //ImNodeFlow() { m_infInterface = new InfInterface(*this); }
-        explicit ImNodeFlow(const std::string&& name) { m_name = name; m_infInterface = new InfInterface(*this); }
+        explicit ImNodeFlow(const char* name) { m_name = name; m_infInterface = new InfInterface(*this); }
 
         void update();
         void resolve();
@@ -63,12 +66,13 @@ namespace ImFlow
         }
     private:
         InfInterface* m_infInterface;
-        std::string m_name = "FlowGrid";
+        const char* m_name;
         ImVec2 m_scroll = ImVec2(0, 0);
         bool m_dragAllowed = true;
         bool m_isLinking = false;
         bool m_isLinkingNext = false;
         uintptr_t m_pinTarget = 0;
+
         std::vector<std::shared_ptr<BaseNode>> m_nodes;
         std::vector<Link> m_links;
     };
@@ -78,11 +82,12 @@ namespace ImFlow
     inline bool InfInterface::isLinking() const { return m_inf.m_isLinking; }
     inline void InfInterface::isLinking(bool state) { m_inf.m_isLinkingNext = state; }
     inline uintptr_t& InfInterface::pinTarget() { return m_inf.m_pinTarget; }
-    inline Link* InfInterface::createLink()
+    inline Link* InfInterface::createLink(uintptr_t left, uintptr_t right)
     {
-        m_inf.m_links.emplace_back(m_inf.m_pinTarget);
+        m_inf.m_links.emplace_back(left, right);
         return &m_inf.m_links.back();
     }
+    inline std::vector<Link>& InfInterface::links() { return m_inf.m_links; }
 
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
@@ -118,6 +123,8 @@ namespace ImFlow
 
         ImVec2& padding() { return m_padding; }
     private:
+        void update(ImVec2& offset);
+    private:
         InfInterface* m_inf;
         ImVec2 m_pos;
         ImVec2 m_size;
@@ -129,7 +136,6 @@ namespace ImFlow
         std::vector<std::shared_ptr<Pin>> m_ins;
         std::vector<std::shared_ptr<Pin>> m_outs;
 
-        void update(ImVec2 offset, int i);
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -139,12 +145,17 @@ namespace ImFlow
     {
     public:
         explicit Pin(const char* name, BaseNode* parent, InfInterface* inf) :m_inf(inf) { m_name = name; m_parent = parent; }
-        void setPos(ImVec2 pos) { m_pos = pos; }
+        void pos(ImVec2 pos) { m_pos = pos; }
+        [[nodiscard]] const ImVec2& pos() { return m_pos; }
+        [[nodiscard]] const ImVec2& size() { return m_size; }
         virtual uintptr_t me() = 0;
+        BaseNode* parent() { return m_parent; }
+
         virtual void update() = 0;
     protected:
         InfInterface* m_inf;
         ImVec2 m_pos = ImVec2(0, 0);
+        ImVec2 m_size = ImVec2(10, 10);
         std::string m_name;
         BaseNode* m_parent = nullptr;
         bool m_dragging = false;
@@ -204,10 +215,11 @@ namespace ImFlow
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImGui::Text(m_name.c_str());
+        m_size = ImGui::GetItemRectSize();
         if (ImGui::IsItemHovered())
-            draw_list->AddRectFilled(m_pos - ImVec2(3,1), m_pos + ImGui::GetItemRectSize() + ImVec2(3,2), IM_COL32(100, 100, 255, 70));
-        ImVec2 pinDot = m_pos + ImVec2(-1 * m_parent->padding().x, ImGui::GetItemRectSize().y / 2);
-        draw_list->AddRect(m_pos - ImVec2(3,1), m_pos + ImGui::GetItemRectSize() + ImVec2(3,2), IM_COL32(255, 255, 255, 100));
+            draw_list->AddRectFilled(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(100, 100, 255, 70));
+        ImVec2 pinDot = m_pos + ImVec2(-1 * m_parent->padding().x, m_size.y / 2);
+        draw_list->AddRect(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(255, 255, 255, 100));
         draw_list->AddCircleFilled(pinDot, 5, IM_COL32(50, 40, 40, 255));
 
         // new link drop-off
@@ -216,25 +228,48 @@ namespace ImFlow
             if(m_inf->isLinking())
             {
                 m_inf->isLinking(false);
-                // TODO: Create link using ImNodeFlow::IND_pinTarget as "m_left" in linking constructor
-                setLink(m_inf->createLink());
+                auto* leftPin = reinterpret_cast<Pin*>(m_inf->pinTarget());
+                if ((void *)leftPin->parent() == (void *)m_parent)
+                    return;
+                if (m_link)
+                {
+                    int i = 0;
+                    for (auto& l : m_inf->links())
+                    {
+                        if(l.right() == me() && l.left() == m_inf->pinTarget())
+                        {
+                            m_inf->links().erase(m_inf->links().begin() + i);
+                            m_link = nullptr;
+                            return;
+                        }
+                        if(l.right() == me())
+                        {
+                            m_inf->links().erase(m_inf->links().begin() + i);
+                            m_link = nullptr;
+                            break;
+                        }
+                        i++;
+                    }
+                }
+                setLink(m_inf->createLink(m_inf->pinTarget(), me()));
             }
         }
     }
 
 
     template<class T>
-    const T &OutPin<T>::val() { m_parent->resolve(m_me); return m_val; }
+    const T &OutPin<T>::val() { m_parent->resolve(m_me); return m_val; } // TODO: Resolve ME somewhere else so it's not done every frame
 
     template<class T>
     void OutPin<T>::update()
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImGui::Text(m_name.c_str());
+        m_size = ImGui::GetItemRectSize();
         if (ImGui::IsItemHovered())
-            draw_list->AddRectFilled(m_pos - ImVec2(3,1), m_pos + ImGui::GetItemRectSize() + ImVec2(3,2), IM_COL32(100, 100, 255, 70));
-        ImVec2 pinDot = m_pos + ImVec2(ImGui::GetItemRectSize().x + m_parent->padding().x, ImGui::GetItemRectSize().y / 2);
-        draw_list->AddRect(m_pos - ImVec2(3,1), m_pos + ImGui::GetItemRectSize() + ImVec2(3,2), IM_COL32(255, 255, 255, 100));
+            draw_list->AddRectFilled(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(100, 100, 255, 70));
+        ImVec2 pinDot = m_pos + ImVec2(m_size.x + m_parent->padding().x, m_size.y / 2);
+        draw_list->AddRect(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(255, 255, 255, 100));
         draw_list->AddCircleFilled(pinDot, 5, IM_COL32(50, 40, 40, 255));
 
         if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_inf->dragAllowed())
@@ -246,6 +281,7 @@ namespace ImFlow
         }
         if (m_dragging)
         {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
             {
                 m_dragging = false;
