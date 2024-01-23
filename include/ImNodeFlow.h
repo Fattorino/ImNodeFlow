@@ -24,9 +24,15 @@ namespace ImFlow
 
         [[nodiscard]] uintptr_t left() const { return m_left; }
         [[nodiscard]] uintptr_t right() const { return m_right; }
+        [[nodiscard]] bool selected() const { return m_selected; }
+        void selected(bool state) { m_selected = state; }
+
+        ~Link();
+
     private:
         uintptr_t m_left;
         uintptr_t m_right;
+        bool m_selected = false;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -150,6 +156,7 @@ namespace ImFlow
         [[nodiscard]] const ImVec2& size() { return m_size; }
         virtual uintptr_t me() = 0;
         BaseNode* parent() { return m_parent; }
+        virtual void setLink(Link* link) {}
 
         virtual void update() = 0;
     protected:
@@ -167,7 +174,7 @@ namespace ImFlow
     public:
         explicit InPin(const char* name, BaseNode* parent, InfInterface* inf) : Pin(name, parent, inf) {}
 
-        void setLink(Link* link) { m_link = link; }
+        void setLink(Link* link) override { m_link = link; }
 
         uintptr_t me() override { return m_me; }
         const T& val();
@@ -239,13 +246,11 @@ namespace ImFlow
                         if(l.right() == me() && l.left() == m_inf->pinTarget())
                         {
                             m_inf->links().erase(m_inf->links().begin() + i);
-                            m_link = nullptr;
                             return;
                         }
                         if(l.right() == me())
                         {
                             m_inf->links().erase(m_inf->links().begin() + i);
-                            m_link = nullptr;
                             break;
                         }
                         i++;

@@ -1,7 +1,15 @@
 #include "ImNodeFlow.h"
+#include "imgui_bezier_math.h"
 
 namespace ImFlow
 {
+    Link::~Link()
+    {
+        reinterpret_cast<Pin*>(m_right)->setLink(nullptr);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
     void BaseNode::update(ImVec2& offset)
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -104,6 +112,15 @@ namespace ImFlow
         }
         draw_list->ChannelsMerge();
 
+        //  Deselection
+        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        {
+            for (auto& l : m_links)
+            {
+                l.selected(false);
+            }
+        }
+
         // Draw links
         for (auto& l : m_links)
         {
@@ -111,7 +128,28 @@ namespace ImFlow
             auto* rightPin = reinterpret_cast<Pin*>(l.right());
             ImVec2 start = leftPin->pos() + ImVec2(leftPin->size().x, leftPin->size().y / 2);
             ImVec2 end = rightPin->pos() + ImVec2(0, leftPin->size().y / 2);
-            draw_list->AddBezierCubic(start, start + ImVec2(50, 0), end - ImVec2(50, 0), end, IM_COL32(200, 200, 100, 255), 3.0f);
+            if (ImProjectOnCubicBezier(ImGui::GetMousePos(), start, start + ImVec2(50, 0), end - ImVec2(50, 0), end).Distance < 2.5)
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                    l.selected(true);
+
+            if (l.selected())
+                draw_list->AddBezierCubic(start, start + ImVec2(50, 0), end - ImVec2(50, 0), end, IM_COL32(80, 20, 255, 255), 4.0f);
+            draw_list->AddBezierCubic(start, start + ImVec2(50, 0), end - ImVec2(50, 0), end, IM_COL32(200, 200, 100, 255), 2.8f);
+        }
+
+        // Deletion of selected stuff
+        if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+        {
+            std::vector<int> deletions;
+
+            for (int i = 0; i < m_links.size(); i++)
+                if (m_links[i].selected())
+                    deletions.emplace_back(i);
+            for (int& i : deletions)
+                m_links.erase(m_links.begin() + i);
+            deletions.clear();
+
+            // TODO: Do the same for Nodes
         }
 
         // Scrolling

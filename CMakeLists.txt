@@ -6,14 +6,12 @@ project(ImNodeFlow)
 
 # SET SOURCE FILES FOR PROJECT
 file(GLOB_RECURSE _HDRS "include/*.h")
-file(GLOB_RECURSE _SRCS "src/*.cpp")
-#file(GLOB_RECURSE _IMGUI_NODE_EDITOR "imgui_node_editor/*.cpp" "imgui_node_editor/*.h" "imgui_node_editor/*.inl")
+file(GLOB_RECURSE _SRCS "src/*.cpp" "src/*.h" "src/*.inl")
 
 # PRE-PROCESSOR VARs
 add_compile_definitions(IMGUI_DEFINE_MATH_OPERATORS)
 
 # CREATE LIBRARY FROM SOURCE_FILES
-#add_library(ImNodeFlow ${_SRCS} ${_HDRS} ${_IMGUI_NODE_EDITOR})
 add_library(ImNodeFlow ${_SRCS} ${_HDRS})
 
 # FIND DEPENDENCIES

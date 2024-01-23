@@ -22,7 +22,7 @@ public:
     void draw() override
     {
         ImGui::Text("ASDDJHGFDSA");
-        ImGui::Combo("Test", &m_slider, "Ciao\0come\0stai\0\0");
+        ImGui::SliderInt("##SLSLSL", &m_slider, 0, 200);
     }
 
     void resolve(uintptr_t me) override
@@ -67,7 +67,9 @@ public:
     }
 };
 
-// TODO: Handle link drop-off, link creation, post drop-off link rendering
+// FIXME: dragAllowed() needs same fix as idLinking() because I block other Nodes from dragging out a link
+// FIXME: data out only flows to last Link instead of all
+// TODO: Empty Link drop-off callback, right-click pop-up callback
 
 int main()
 {
@@ -79,8 +81,11 @@ int main()
     IGH.pushLayer<DemoWindow>();
     IGH.setActiveWin(0);
 
-    INF.addNode<AB>("ABABABA", ImVec2(0, 0));
-    INF.addNode<Pri>("Printer ONE", ImVec2(100, 0));
+    INF.addNode<AB>("AA", ImVec2(0, 0));
+    INF.addNode<AB>("BB", ImVec2(0, 100));
+    INF.addNode<Pri>("Printer ONE", ImVec2(500, 0));
+    INF.addNode<Pri>("Printer TWO", ImVec2(500, 100));
+    INF.addNode<Pri>("Printer THREE", ImVec2(500, 200));
 
     bool done = false;
     while (!done)
