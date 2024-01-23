@@ -1,14 +1,17 @@
 #include "ImNodeFlow.h"
-#include "imgui_bezier_math.h"
 
 namespace ImFlow
 {
+    // -----------------------------------------------------------------------------------------------------------------
+    // LINK
+
     Link::~Link()
     {
         reinterpret_cast<Pin*>(m_right)->setLink(nullptr);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // BASE NODE
 
     void BaseNode::update(ImVec2& offset)
     {
@@ -78,6 +81,13 @@ namespace ImFlow
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+    // HANDLER
+
+    Link* ImNodeFlow::createLink(uintptr_t left, uintptr_t right)
+    {
+        m_links.emplace_back(left, right);
+        return &m_links.back();
+    }
 
     void ImNodeFlow::update()
     {
@@ -86,7 +96,7 @@ namespace ImFlow
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(60, 60, 70, 200));
-        ImGui::BeginChild(m_name, ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+        ImGui::BeginChild(m_name.c_str(), ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
         ImGui::PopStyleVar(2); // WindowPadding
         ImGui::PopStyleColor();
         ImGui::PushItemWidth(120.0f);
@@ -133,8 +143,8 @@ namespace ImFlow
                     l.selected(true);
 
             if (l.selected())
-                draw_list->AddBezierCubic(start, start + ImVec2(50, 0), end - ImVec2(50, 0), end, IM_COL32(80, 20, 255, 255), 4.0f);
-            draw_list->AddBezierCubic(start, start + ImVec2(50, 0), end - ImVec2(50, 0), end, IM_COL32(200, 200, 100, 255), 2.8f);
+                draw_list->AddBezierCubic(start, start + ImVec2(30, 0), end - ImVec2(30, 0), end, IM_COL32(80, 20, 255, 255), 4.0f);
+            draw_list->AddBezierCubic(start, start + ImVec2(30, 0), end - ImVec2(30, 0), end, IM_COL32(200, 200, 100, 255), 2.8f);
         }
 
         // Deletion of selected stuff
@@ -158,6 +168,7 @@ namespace ImFlow
 
         ImGui::EndChild();
 
+        m_dragAllowed = m_dragAllowedNext;
         m_isLinking = m_isLinkingNext;
     }
 }

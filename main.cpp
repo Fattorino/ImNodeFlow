@@ -11,7 +11,7 @@ ImNodeFlow INF("f");
 class AB : public BaseNode
 {
 public:
-    explicit AB(const char* name, ImVec2 pos, InfInterface* inf) : BaseNode(name, pos, inf)
+    explicit AB(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
         addIN<int>("intouno", this);
         addIN<int>("intoduo", this);
@@ -43,7 +43,7 @@ private:
 class Pri : public BaseNode
 {
 public:
-    explicit Pri(const char* name, ImVec2 pos, InfInterface* inf) : BaseNode(name, pos, inf)
+    explicit Pri(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
         addIN<int>("inn", this);
     }
@@ -64,6 +64,12 @@ public:
         ImGui::Begin("FlowGrid Test");
         INF.update();
         ImGui::End();
+
+        ImGui::Begin("S");
+        static int stt = 0;
+        if (ImGui::Combo("##ffff", &stt, "Classic\0Dark\0Light\0Brown\0Foggy\0\0"))
+            IGH.setStyle(static_cast<IGH_Style>(stt));
+        ImGui::End();
     }
 };
 
@@ -80,6 +86,8 @@ int main()
 
     IGH.pushLayer<DemoWindow>();
     IGH.setActiveWin(0);
+
+    ImGui::GetStyle().ItemSpacing;
 
     INF.addNode<AB>("AA", ImVec2(0, 0));
     INF.addNode<AB>("BB", ImVec2(0, 100));
