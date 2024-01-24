@@ -15,6 +15,16 @@ namespace ImFlow
         dl->AddBezierCubic(p1, p11, p22, p2, color, thickness);
     }
 
+    inline bool smart_bezier_collider(const ImVec2& p, const ImVec2& p1, const ImVec2& p2, float radius)
+    {
+        float distance = sqrt(pow((p2.x - p1.x), 2.f) + pow((p2.y - p1.y), 2.f));
+        float delta = distance * 0.4f;
+        int vert = (p1.y > p2.y) ? 1 : -1;
+        ImVec2 p11 = p1 + ImVec2(delta, 0.06f * distance * (float)vert);
+        ImVec2 p22 = p2 - ImVec2(delta, 0.06f * distance * (float)vert);
+        return ImProjectOnCubicBezier(p, p1, p11, p22, p2).Distance < radius;
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // HANDLER
 

@@ -12,7 +12,7 @@ namespace ImFlow
         ImVec2 start = leftPin->pos() + ImVec2(leftPin->size().x, leftPin->size().y / 2);
         ImVec2 end = rightPin->pos() + ImVec2(0, leftPin->size().y / 2);
         float thickness = 2.8f;
-        if (ImProjectOnCubicBezier(ImGui::GetMousePos(), start, start + ImVec2(50, 0), end - ImVec2(50, 0), end).Distance < 2.5)
+        if (smart_bezier_collider( ImGui::GetMousePos(), start, end, 2.5))
         {
             thickness = 3.5f;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -129,6 +129,15 @@ namespace ImFlow
         for (float y = fmodf(m_scroll.y, GRID_SZ); y < canvas_sz.y; y += 64)
             draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, GRID_COLOR);
 
+        //  Deselection (must be done before Nodes and Links update)
+        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        {
+            for (auto& l : m_links)
+            {
+                l->selected(false);
+            }
+        }
+
         // Update and draw nodes
         draw_list->ChannelsSplit(2);
         for (auto& node : m_nodes) { node->update(offset); }
@@ -218,15 +227,6 @@ namespace ImFlow
 
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                 m_dragOut = nullptr;
-        }
-
-        //  Deselection
-        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-        {
-            for (auto& l : m_links)
-            {
-                l->selected(false);
-            }
         }
 
         // Deletion of selected stuff

@@ -15,7 +15,8 @@ typedef void (*VoidCallback)();
 
 namespace ImFlow
 {
-    inline void smart_bezier(const ImVec2& p1, const ImVec2& p2);
+    inline void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness);
+    inline bool smart_bezier_collider(const ImVec2& p1, const ImVec2& p2);
 
     template<typename T> class InPin;
     template<typename T> class OutPin;
