@@ -10,17 +10,35 @@
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
 
-typedef void (*VoidCallback)();
-
-
 namespace ImFlow
 {
+
+    typedef void (*VoidCallback)();
+
     inline void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness);
     inline bool smart_bezier_collider(const ImVec2& p1, const ImVec2& p2);
 
     template<typename T> class InPin;
     template<typename T> class OutPin;
     class Pin; class BaseNode;
+
+    enum PinKind
+    {
+        PinKind_Input,
+        PinKind_Output
+    };
+
+    typedef int ConnectionFilter;
+    enum ConnectionFilter_
+    {
+        ConnectionFilter_None   = 0,
+        ConnectionFilter_Int    = 1 << 1,
+        ConnectionFilter_Float  = 1 << 2,
+        ConnectionFilter_Double = 1 << 3,
+        ConnectionFilter_String = 1 << 4,
+        ConnectionFilter_MakeCustom = 1 << 5,
+        ConnectionFilter_Numbers = ConnectionFilter_Int | ConnectionFilter_Float | ConnectionFilter_Double
+    };
 
     // -----------------------------------------------------------------------------------------------------------------
     // LINK
@@ -94,9 +112,9 @@ namespace ImFlow
         virtual void resolve(uintptr_t me) {}
 
         template<typename T>
-        void addIN(std::string name, T defReturn);
+        void addIN(std::string name, T defReturn, ConnectionFilter filter = ConnectionFilter_None);
         template<typename T>
-        void addOUT(std::string name);
+        void addOUT(std::string name, ConnectionFilter filter = ConnectionFilter_None);
 
         Pin& ins(int i) { return *m_ins[i]; }
         Pin& outs(int i) { return *m_outs[i]; }
@@ -125,17 +143,11 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // PINS
 
-    enum PinKind
-    {
-        PinKind_Input,
-        PinKind_Output
-    };
-
     class Pin
     {
     public:
-        explicit Pin(std::string name, PinKind kind, BaseNode* parent, ImNodeFlow* inf)
-            :m_name(std::move(name)), m_kind(kind), m_parent(parent), m_inf(inf) {}
+        explicit Pin(std::string name, ConnectionFilter filter, PinKind kind, BaseNode* parent, ImNodeFlow* inf)
+            :m_name(std::move(name)), m_filter(filter), m_kind(kind), m_parent(parent), m_inf(inf) {}
 
         virtual uintptr_t me() = 0;
         virtual void update() = 0;
@@ -148,6 +160,7 @@ namespace ImFlow
         const std::string& name() { return m_name; }
         BaseNode* parent() { return m_parent; }
         PinKind kind() { return m_kind; }
+        ConnectionFilter filter() { return m_filter; }
 
         void pos(ImVec2 pos) { m_pos = pos; }
     protected:
@@ -155,6 +168,7 @@ namespace ImFlow
         ImVec2 m_pos = ImVec2(0, 0);
         ImVec2 m_size = ImVec2(10, 10);
         PinKind m_kind;
+        ConnectionFilter m_filter;
         BaseNode* m_parent = nullptr;
         ImNodeFlow* m_inf;
         bool m_dragging = false;
@@ -164,8 +178,8 @@ namespace ImFlow
     template<class T> class InPin : public Pin
     {
     public:
-        explicit InPin(const std::string& name, PinKind kind, BaseNode* parent, T defReturn, ImNodeFlow* inf)
-            :Pin(name, kind, parent, inf), m_emptyVal(defReturn) {}
+        explicit InPin(const std::string& name, ConnectionFilter filter, PinKind kind, BaseNode* parent, T defReturn, ImNodeFlow* inf)
+            :Pin(name, filter, kind, parent, inf), m_emptyVal(defReturn) {}
 
         void update() override;
         void draw() override;
@@ -185,8 +199,8 @@ namespace ImFlow
     template<class T> class OutPin : public Pin
     {
     public:
-        explicit OutPin(const std::string& name, PinKind kind, BaseNode* parent, ImNodeFlow* inf)
-            :Pin(name, kind, parent, inf) {}
+        explicit OutPin(const std::string& name, ConnectionFilter filter, PinKind kind, BaseNode* parent, ImNodeFlow* inf)
+            :Pin(name, filter, kind, parent, inf) {}
 
         void update() override;
         void draw() override;

@@ -154,6 +154,8 @@ namespace ImFlow
                 m_droppedLinkCallback();
                 goto drop_off_end;
             }
+            if (!((m_dragOut->filter() & m_hovering->filter()) != 0 || m_dragOut->filter() == ConnectionFilter_None || m_hovering->filter() == ConnectionFilter_None)) // Check Filter
+                goto drop_off_end;
             if (m_dragOut->kind() == PinKind_Output && m_hovering->kind() == PinKind_Input) // OUT to IN
             {
                 if ((void *)m_dragOut->parent() == (void *)m_hovering->parent())

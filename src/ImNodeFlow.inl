@@ -39,15 +39,15 @@ namespace ImFlow
     // BASE NODE
 
     template<typename T>
-    void BaseNode::addIN(const std::string name, T defReturn)
+    void BaseNode::addIN(const std::string name, T defReturn, ConnectionFilter filter)
     {
-        m_ins.emplace_back(std::make_shared<InPin<T>>(name, PinKind_Input, this, defReturn, m_inf));
+        m_ins.emplace_back(std::make_shared<InPin<T>>(name, filter, PinKind_Input, this, defReturn, m_inf));
     }
 
     template<typename T>
-    void BaseNode::addOUT(const std::string name)
+    void BaseNode::addOUT(const std::string name, ConnectionFilter filter)
     {
-        m_outs.emplace_back(std::make_shared<OutPin<T>>(name, PinKind_Output, this, m_inf));
+        m_outs.emplace_back(std::make_shared<OutPin<T>>(name, filter, PinKind_Output, this, m_inf));
     }
 
     template<typename T>

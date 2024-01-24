@@ -14,10 +14,10 @@ class AB : public BaseNode
 public:
     explicit AB(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
-        addIN<int>("intouno", 0);
-        addIN<int>("intoduo", 0);
-        addOUT<int>("outoa");
-        addOUT<int>("outob");
+        addIN<int>("intouno", 0, ConnectionFilter_Int);
+        addIN<int>("intoduo", 0, ConnectionFilter_Int);
+        addOUT<int>("int", ConnectionFilter_Int);
+        addOUT<int>("float", ConnectionFilter_Float);
     }
 
     void draw() override
@@ -34,7 +34,7 @@ public:
         }
         else if (me == outs(1).me())
         {
-            outs<int>(1) << ins<int>(0).val() * m_slider;
+            outs<int>(1) << ins<int>(1).val() * m_slider;
         }
     }
 private:
@@ -46,7 +46,7 @@ class CD : public BaseNode
 public:
     explicit CD(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
-        addOUT<std::string>("str_out");
+        addOUT<std::string>("str_out", ConnectionFilter_String);
     }
 
     void draw() override
@@ -71,7 +71,10 @@ class Pri : public BaseNode
 public:
     explicit Pri(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
-        addIN<int>("inn", 0);
+        addIN<int>("INT", 0, ConnectionFilter_Int);
+        addIN<int>("FLOAT", 0, ConnectionFilter_Float);
+        addIN<int>("NUMBERS", 0, ConnectionFilter_Numbers);
+        addIN<int>("ANY", 0);
     }
 
     void draw() override
@@ -86,7 +89,7 @@ class StrPri : public BaseNode
 public:
     explicit StrPri(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
-        addIN<std::string>("Str", "Not Connected");
+        addIN<std::string>("Str", "Not Connected", ConnectionFilter_String);
     }
 
     void draw() override
@@ -109,7 +112,6 @@ public:
 };
 
 // TODO: right-click pop-up callback
-// TODO: Allow only link between same data type
 
 void foo()
 {
