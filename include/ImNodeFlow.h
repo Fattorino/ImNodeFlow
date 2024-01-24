@@ -1,6 +1,5 @@
 #ifndef IM_NODE_FLOW
 #define IM_NODE_FLOW
-
 #pragma once
 
 #include <string>
@@ -24,7 +23,6 @@ namespace ImFlow
     {
     public:
         explicit Link(uintptr_t left, uintptr_t right) :m_left(left), m_right(right) {}
-        ~Link();
 
         [[nodiscard]] uintptr_t left() const { return m_left; }
         [[nodiscard]] uintptr_t right() const { return m_right; }
@@ -54,8 +52,8 @@ namespace ImFlow
         template<typename T>
         void addNode(const std::string& name, const ImVec2&& pos);
 
-        Link* createLink(uintptr_t left, uintptr_t right);
-        std::vector<Link>& links() { return m_links; }
+        void createLink(uintptr_t left, uintptr_t right);
+        std::vector<std::shared_ptr<Link>>& links() { return m_links; }
 
         [[nodiscard]] bool dragAllowed() const { return m_dragAllowed; }
         [[nodiscard]] bool isLinking() const { return m_isLinking; }
@@ -74,7 +72,7 @@ namespace ImFlow
         uintptr_t m_pinTarget = 0;
 
         std::vector<std::shared_ptr<BaseNode>> m_nodes;
-        std::vector<Link> m_links;
+        std::vector<std::shared_ptr<Link>> m_links;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -84,6 +82,7 @@ namespace ImFlow
     {
     public:
         friend class ImNodeFlow;
+        friend class Link;
 
         explicit BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf) :m_name(std::move(name)), m_pos(pos), m_inf(inf) {}
 
@@ -102,7 +101,9 @@ namespace ImFlow
         template<typename T>
         OutPin<T>& outs(int i);
 
+        const std::string& name() { return m_name; }
         ImVec2& padding() { return m_padding; }
+
     private:
         void update(ImVec2& offset);
     private:
@@ -128,10 +129,11 @@ namespace ImFlow
 
         virtual uintptr_t me() = 0;
         virtual void update() = 0;
-        virtual void setLink(Link* link) {}
+        virtual void setLink(std::shared_ptr<Link>& link) {}
 
         [[nodiscard]] const ImVec2& pos() { return m_pos; }
         [[nodiscard]] const ImVec2& size() { return m_size; }
+        const std::string& name() { return m_name; }
         BaseNode* parent() { return m_parent; }
 
         void pos(ImVec2 pos) { m_pos = pos; }
@@ -155,10 +157,10 @@ namespace ImFlow
 
         const T& val();
 
-        void setLink(Link* link) override { m_link = link; }
+        void setLink(std::shared_ptr<Link>& link) override { m_link = link; }
     private:
         uintptr_t m_me = reinterpret_cast<uintptr_t>(this);
-        Link* m_link = nullptr;
+        std::weak_ptr<Link> m_link;
         const T defaultVal = 0;
     };
 

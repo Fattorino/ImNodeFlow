@@ -73,8 +73,6 @@ public:
     }
 };
 
-// FIXME: dragAllowed() needs same fix as idLinking() because I block other Nodes from dragging out a link
-// FIXME: data out only flows to last Link instead of all
 // TODO: Empty Link drop-off callback, right-click pop-up callback
 
 int main()

@@ -5,10 +5,7 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // LINK
 
-    Link::~Link()
-    {
-        reinterpret_cast<Pin*>(m_right)->setLink(nullptr);
-    }
+
 
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
@@ -83,10 +80,9 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // HANDLER
 
-    Link* ImNodeFlow::createLink(uintptr_t left, uintptr_t right)
+    void ImNodeFlow::createLink(uintptr_t left, uintptr_t right)
     {
-        m_links.emplace_back(left, right);
-        return &m_links.back();
+        reinterpret_cast<Pin*>(right)->setLink(m_links.emplace_back(std::make_shared<Link>(left, right)));
     }
 
     void ImNodeFlow::update()
@@ -127,22 +123,22 @@ namespace ImFlow
         {
             for (auto& l : m_links)
             {
-                l.selected(false);
+                l->selected(false);
             }
         }
 
         // Draw links
         for (auto& l : m_links)
         {
-            auto* leftPin = reinterpret_cast<Pin*>(l.left());
-            auto* rightPin = reinterpret_cast<Pin*>(l.right());
+            auto* leftPin = reinterpret_cast<Pin*>(l->left());
+            auto* rightPin = reinterpret_cast<Pin*>(l->right());
             ImVec2 start = leftPin->pos() + ImVec2(leftPin->size().x, leftPin->size().y / 2);
             ImVec2 end = rightPin->pos() + ImVec2(0, leftPin->size().y / 2);
             if (ImProjectOnCubicBezier(ImGui::GetMousePos(), start, start + ImVec2(50, 0), end - ImVec2(50, 0), end).Distance < 2.5)
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-                    l.selected(true);
+                    l->selected(true);
 
-            if (l.selected())
+            if (l->selected())
                 draw_list->AddBezierCubic(start, start + ImVec2(30, 0), end - ImVec2(30, 0), end, IM_COL32(80, 20, 255, 255), 4.0f);
             draw_list->AddBezierCubic(start, start + ImVec2(30, 0), end - ImVec2(30, 0), end, IM_COL32(200, 200, 100, 255), 2.8f);
         }
@@ -153,7 +149,7 @@ namespace ImFlow
             std::vector<int> deletions;
 
             for (int i = 0; i < m_links.size(); i++)
-                if (m_links[i].selected())
+                if (m_links[i]->selected())
                     deletions.emplace_back(i);
             for (int& i : deletions)
                 m_links.erase(m_links.begin() + i);
@@ -170,5 +166,18 @@ namespace ImFlow
 
         m_dragAllowed = m_dragAllowedNext;
         m_isLinking = m_isLinkingNext;
+
+        ImGui::Begin("Debug");
+        if (ImGui::BeginListBox("List"))
+        {
+            for ( auto& l : m_links)
+            {
+                auto* leftPin = reinterpret_cast<Pin*>(l->left());
+                auto* rightPin = reinterpret_cast<Pin*>(l->right());
+                ImGui::Text("Link: %s:%s -> %s:%s", leftPin->parent()->m_name.c_str(), leftPin->name().c_str(), rightPin->parent()->m_name.c_str(), rightPin->name().c_str());
+            }
+            ImGui::EndListBox();
+        }
+        ImGui::End();
     }
 }

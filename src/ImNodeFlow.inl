@@ -40,15 +40,11 @@ namespace ImFlow
     template<class T>
     const T& InPin<T>::val()
     {
-        if(m_link)
-        {
-            auto* leftPin = reinterpret_cast<OutPin<T>*>(m_link->left());
-            return leftPin->val();
-        }
-        else
-        {
+        if(m_link.expired())
             return defaultVal;
-        }
+
+        auto* leftPin = reinterpret_cast<OutPin<T>*>(m_link.lock()->left());
+        return leftPin->val();
     }
 
     template<class T>
@@ -68,29 +64,33 @@ namespace ImFlow
         {
             if(m_inf->isLinking())
             {
+                printf_s("GOTTA LINK!\n");
                 m_inf->isLinking(false);
                 auto* leftPin = reinterpret_cast<Pin*>(m_inf->pinTarget());
                 if ((void *)leftPin->parent() == (void *)m_parent)
                     return;
-                if (m_link)
+                if (!m_link.expired())
                 {
+                    printf_s("TRUE => ");
                     int i = 0;
                     for (auto& l : m_inf->links())
                     {
-                        if(l.right() == me() && l.left() == m_inf->pinTarget())
+                        if(l->right() == me() && l->left() == m_inf->pinTarget())
                         {
+                            printf_s("AAA\n");
                             m_inf->links().erase(m_inf->links().begin() + i);
                             return;
                         }
-                        if(l.right() == me())
+                        if(l->right() == me())
                         {
+                            printf_s("BBB\n");
                             m_inf->links().erase(m_inf->links().begin() + i);
                             break;
                         }
                         i++;
                     }
                 }
-                setLink(m_inf->createLink(m_inf->pinTarget(), me()));
+                m_inf->createLink(m_inf->pinTarget(), me());
             }
         }
     }
