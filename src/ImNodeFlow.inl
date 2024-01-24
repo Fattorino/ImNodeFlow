@@ -4,6 +4,17 @@
 
 namespace ImFlow
 {
+    inline void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness)
+    {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        float distance = sqrt(pow((p2.x - p1.x), 2.f) + pow((p2.y - p1.y), 2.f));
+        float delta = distance * 0.4f;
+        int vert = (p1.y > p2.y) ? 1 : -1;
+        ImVec2 p11 = p1 + ImVec2(delta, 0.06f * distance * (float)vert);
+        ImVec2 p22 = p2 - ImVec2(delta, 0.06f * distance * (float)vert);
+        dl->AddBezierCubic(p1, p11, p22, p2, color, thickness);
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // HANDLER
 
@@ -18,15 +29,15 @@ namespace ImFlow
     // BASE NODE
 
     template<typename T>
-    void BaseNode::addIN(const char* name, BaseNode* parent)
+    void BaseNode::addIN(const std::string name, T defReturn)
     {
-        m_ins.emplace_back(std::make_shared<InPin<T>>(name, parent, m_inf));
+        m_ins.emplace_back(std::make_shared<InPin<T>>(name, PinKind_Input, this, defReturn, m_inf));
     }
 
     template<typename T>
-    void BaseNode::addOUT(const char* name, BaseNode* parent)
+    void BaseNode::addOUT(const std::string name)
     {
-        m_outs.emplace_back(std::make_shared<OutPin<T>>(name, parent, m_inf));
+        m_outs.emplace_back(std::make_shared<OutPin<T>>(name, PinKind_Output, this, m_inf));
     }
 
     template<typename T>
@@ -41,58 +52,29 @@ namespace ImFlow
     const T& InPin<T>::val()
     {
         if(m_link.expired())
-            return defaultVal;
+            return m_emptyVal;
 
-        auto* leftPin = reinterpret_cast<OutPin<T>*>(m_link.lock()->left());
-        return leftPin->val();
+        return reinterpret_cast<OutPin<T>*>(m_link.lock()->left())->val();
     }
 
     template<class T>
     void InPin<T>::update()
+    {
+        draw();
+
+        if (ImGui::IsItemHovered())
+            m_inf->hovering(reinterpret_cast<Pin*>(this));
+    }
+
+    template<class T>
+    void InPin<T>::draw()
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImGui::Text(m_name.c_str());
         m_size = ImGui::GetItemRectSize();
         if (ImGui::IsItemHovered())
             draw_list->AddRectFilled(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(100, 100, 255, 70));
-        ImVec2 pinDot = m_pos + ImVec2(-1 * m_parent->padding().x, m_size.y / 2);
         draw_list->AddRect(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(255, 255, 255, 100));
-        draw_list->AddCircleFilled(pinDot, 5, IM_COL32(50, 40, 40, 255));
-
-        // new link drop-off
-        if(ImGui::IsMouseReleased(ImGuiMouseButton_Left) && ImGui::IsItemHovered())
-        {
-            if(m_inf->isLinking())
-            {
-                printf_s("GOTTA LINK!\n");
-                m_inf->isLinking(false);
-                auto* leftPin = reinterpret_cast<Pin*>(m_inf->pinTarget());
-                if ((void *)leftPin->parent() == (void *)m_parent)
-                    return;
-                if (!m_link.expired())
-                {
-                    printf_s("TRUE => ");
-                    int i = 0;
-                    for (auto& l : m_inf->links())
-                    {
-                        if(l->right() == me() && l->left() == m_inf->pinTarget())
-                        {
-                            printf_s("AAA\n");
-                            m_inf->links().erase(m_inf->links().begin() + i);
-                            return;
-                        }
-                        if(l->right() == me())
-                        {
-                            printf_s("BBB\n");
-                            m_inf->links().erase(m_inf->links().begin() + i);
-                            break;
-                        }
-                        i++;
-                    }
-                }
-                m_inf->createLink(m_inf->pinTarget(), me());
-            }
-        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -104,15 +86,12 @@ namespace ImFlow
     template<class T>
     void OutPin<T>::update()
     {
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImGui::Text(m_name.c_str());
-        m_size = ImGui::GetItemRectSize();
-        if (ImGui::IsItemHovered())
-            draw_list->AddRectFilled(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(100, 100, 255, 70));
-        ImVec2 pinDot = m_pos + ImVec2(m_size.x + m_parent->padding().x, m_size.y / 2);
-        draw_list->AddRect(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(255, 255, 255, 100));
-        draw_list->AddCircleFilled(pinDot, 5, IM_COL32(50, 40, 40, 255));
+        draw();
 
+        if (ImGui::IsItemHovered())
+            m_inf->hovering(reinterpret_cast<Pin*>(this));
+
+        /*// Link drag-out
         if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_inf->dragAllowed())
         {
             m_dragging = true;
@@ -130,7 +109,21 @@ namespace ImFlow
                 m_inf->isLinking(false);
             }
             if(!ImGui::IsItemHovered())
-                draw_list->AddBezierCubic(pinDot, pinDot + ImVec2(30, 0), ImGui::GetMousePos() - ImVec2(30, 0), ImGui::GetMousePos(), IM_COL32(200, 200, 100, 255), 3.0f);
-        }
+            {
+                ImVec2 pinDot = m_pos + ImVec2(m_size.x + m_parent->padding().x, m_size.y / 2);
+                ImGui::GetWindowDrawList()->AddBezierCubic(pinDot, pinDot + ImVec2(30, 0), ImGui::GetMousePos() - ImVec2(30, 0), ImGui::GetMousePos(), IM_COL32(200, 200, 100, 255), 3.0f);
+            }
+        }*/
+    }
+
+    template<class T>
+    void OutPin<T>::draw()
+    {
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImGui::Text(m_name.c_str());
+        m_size = ImGui::GetItemRectSize();
+        if (ImGui::IsItemHovered())
+            draw_list->AddRectFilled(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(100, 100, 255, 70));
+        draw_list->AddRect(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(255, 255, 255, 100));
     }
 }

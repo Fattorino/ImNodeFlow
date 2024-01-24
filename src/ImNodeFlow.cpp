@@ -5,7 +5,23 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // LINK
 
-
+    void Link::draw()
+    {
+        auto* leftPin = reinterpret_cast<Pin*>(m_left);
+        auto* rightPin = reinterpret_cast<Pin*>(m_right);
+        ImVec2 start = leftPin->pos() + ImVec2(leftPin->size().x, leftPin->size().y / 2);
+        ImVec2 end = rightPin->pos() + ImVec2(0, leftPin->size().y / 2);
+        float thickness = 2.8f;
+        if (ImProjectOnCubicBezier(ImGui::GetMousePos(), start, start + ImVec2(50, 0), end - ImVec2(50, 0), end).Distance < 2.5)
+        {
+            thickness = 3.5f;
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                m_selected = true;
+        }
+        if (m_selected)
+            smart_bezier(start, end, IM_COL32(80, 20, 255, 255), 4.0f);
+        smart_bezier(start, end, IM_COL32(200, 200, 100, 255), thickness);
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
@@ -53,23 +69,23 @@ namespace ImFlow
 
         m_size = ImGui::GetItemRectSize();
         ImVec2 headerSize = ImVec2(m_size.x + m_padding.x, headerH);
-        draw_list->ChannelsSetCurrent(0); // Background
-        if (!ImGui::IsMouseHoveringRect(offset + m_pos - m_padding, offset + m_pos + headerSize) && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+
+        if (ImGui::IsMouseHoveringRect(offset + m_pos - m_padding, offset + m_pos + headerSize) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
-            m_dragDeny = true;
-            m_inf->dragAllowed(false);
-        }
-        if (ImGui::IsMouseHoveringRect(offset + m_pos - m_padding, offset + m_pos + headerSize) && ImGui::IsMouseDown(ImGuiMouseButton_Left) && !m_dragDeny)
             m_dragged = true;
-        if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-        {
-            m_dragDeny = false;
-            m_dragged = false;
-            m_inf->dragAllowed(true);
+            m_inf->draggingNode(true);
         }
         if(m_dragged)
+        {
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+            {
+                m_dragged = false;
+                m_inf->draggingNode(false);
+            }
             m_pos += ImGui::GetIO().MouseDelta;
+        }
 
+        draw_list->ChannelsSetCurrent(0); // Background
         draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(60, 60, 60, 255), 4.0f);
         draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + headerSize, IM_COL32(40, 40, 40, 255), 4.0f);
         draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(100, 100, 100, 255), 4.0f);
@@ -87,7 +103,10 @@ namespace ImFlow
 
     void ImNodeFlow::update()
     {
-        // Create our child canvas
+        // Clearing looping stuff
+        m_hovering = nullptr;
+
+        // Create child canvas
         ImGui::Text("Hold middle mouse button to scroll (%.2f,%.2f)", m_scroll.x, m_scroll.y);
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -112,11 +131,94 @@ namespace ImFlow
 
         // Update and draw nodes
         draw_list->ChannelsSplit(2);
-        for (auto& node : m_nodes)
-        {
-            node->update(offset);
-        }
+        for (auto& node : m_nodes) { node->update(offset); }
         draw_list->ChannelsMerge();
+
+        // Draw links
+        for (auto& l : m_links) { l->draw(); }
+
+        // Links drop-off
+        if(m_dragOut && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+        {
+            if(!m_hovering)
+            {
+                m_droppedLinkCallback();
+                goto drop_off_end;
+            }
+            if (m_dragOut->kind() == PinKind_Output && m_hovering->kind() == PinKind_Input) // OUT to IN
+            {
+                if ((void *)m_dragOut->parent() == (void *)m_hovering->parent())
+                    goto drop_off_end;
+                if (m_hovering->getLink().expired())
+                {
+                    createLink(m_dragOut->me(), m_hovering->me());
+                }
+                else
+                {
+                    int i = 0;
+                    for (auto& l : m_links)
+                    {
+                        if(l->right() == m_hovering->me() && l->left() == m_dragOut->me()) // Same link --> Deletion
+                        {
+                            m_links.erase(m_links.begin() + i);
+                            break;
+                        }
+                        if(l->right() == m_hovering->me()) // New link for same IN --> Swap
+                        {
+                            m_links.erase(m_links.begin() + i);
+                            createLink(m_dragOut->me(), m_hovering->me());
+                            break;
+                        }
+                        i++;
+                    }
+                }
+            }
+            if (m_dragOut->kind() == PinKind_Input && m_hovering->kind() == PinKind_Output) // IN to OUT
+            {
+                if ((void *)m_dragOut->parent() == (void *)m_hovering->parent())
+                    goto drop_off_end;
+                if (m_dragOut->getLink().expired())
+                {
+                    createLink(m_hovering->me(), m_dragOut->me());
+                }
+                else
+                {
+                    int i = 0;
+                    for (auto& l : m_links)
+                    {
+                        if(l->right() == m_dragOut->me() && l->left() == m_hovering->me()) // Same link --> Deletion
+                        {
+                            m_links.erase(m_links.begin() + i);
+                            break;
+                        }
+                        if(l->right() == m_dragOut->me()) // New link for same IN --> Swap
+                        {
+                            m_links.erase(m_links.begin() + i);
+                            createLink(m_hovering->me(), m_dragOut->me());
+                            break;
+                        }
+                        i++;
+                    }
+                }
+            }
+        }
+        drop_off_end:
+
+        // Links drag-out
+        if (!m_draggingNode && m_hovering && !m_dragOut && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+            m_dragOut = m_hovering;
+        if (m_dragOut)
+        {
+            ImVec2 pinDot;
+            if (m_dragOut->kind() == PinKind_Output)
+                pinDot = m_dragOut->pos() + ImVec2(m_dragOut->size().x, m_dragOut->size().y / 2);
+            else
+                pinDot = m_dragOut->pos() + ImVec2(0, m_dragOut->size().y / 2);
+            smart_bezier(pinDot, ImGui::GetMousePos(), IM_COL32(200, 200, 100, 255), 3.0f);
+
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+                m_dragOut = nullptr;
+        }
 
         //  Deselection
         if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -125,22 +227,6 @@ namespace ImFlow
             {
                 l->selected(false);
             }
-        }
-
-        // Draw links
-        for (auto& l : m_links)
-        {
-            auto* leftPin = reinterpret_cast<Pin*>(l->left());
-            auto* rightPin = reinterpret_cast<Pin*>(l->right());
-            ImVec2 start = leftPin->pos() + ImVec2(leftPin->size().x, leftPin->size().y / 2);
-            ImVec2 end = rightPin->pos() + ImVec2(0, leftPin->size().y / 2);
-            if (ImProjectOnCubicBezier(ImGui::GetMousePos(), start, start + ImVec2(50, 0), end - ImVec2(50, 0), end).Distance < 2.5)
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-                    l->selected(true);
-
-            if (l->selected())
-                draw_list->AddBezierCubic(start, start + ImVec2(30, 0), end - ImVec2(30, 0), end, IM_COL32(80, 20, 255, 255), 4.0f);
-            draw_list->AddBezierCubic(start, start + ImVec2(30, 0), end - ImVec2(30, 0), end, IM_COL32(200, 200, 100, 255), 2.8f);
         }
 
         // Deletion of selected stuff
@@ -163,21 +249,5 @@ namespace ImFlow
             m_scroll = m_scroll + ImGui::GetIO().MouseDelta;
 
         ImGui::EndChild();
-
-        m_dragAllowed = m_dragAllowedNext;
-        m_isLinking = m_isLinkingNext;
-
-        ImGui::Begin("Debug");
-        if (ImGui::BeginListBox("List"))
-        {
-            for ( auto& l : m_links)
-            {
-                auto* leftPin = reinterpret_cast<Pin*>(l->left());
-                auto* rightPin = reinterpret_cast<Pin*>(l->right());
-                ImGui::Text("Link: %s:%s -> %s:%s", leftPin->parent()->m_name.c_str(), leftPin->name().c_str(), rightPin->parent()->m_name.c_str(), rightPin->name().c_str());
-            }
-            ImGui::EndListBox();
-        }
-        ImGui::End();
     }
 }
