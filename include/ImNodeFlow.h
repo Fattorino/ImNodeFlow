@@ -17,11 +17,12 @@ namespace ImFlow
     typedef void (*VoidCallback)();
 
     inline void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness);
-    inline bool smart_bezier_collider(const ImVec2& p1, const ImVec2& p2);
+    inline bool smart_bezier_collider(const ImVec2& p, const ImVec2& p1, const ImVec2& p2, float radius);
 
     template<typename T> class InPin;
     template<typename T> class OutPin;
     class Pin; class BaseNode;
+    class ImNodeFlow;
 
     enum PinKind
     {
@@ -47,7 +48,7 @@ namespace ImFlow
     class Link
     {
     public:
-        explicit Link(uintptr_t left, uintptr_t right) :m_left(left), m_right(right) {}
+        explicit Link(uintptr_t left, uintptr_t right, ImNodeFlow* inf) :m_left(left), m_right(right), m_inf(inf) {}
 
         void update();
 
@@ -59,6 +60,7 @@ namespace ImFlow
 
         void selected(bool state) { m_selected = state; }
     private:
+        ImNodeFlow* m_inf;
         uintptr_t m_left;
         uintptr_t m_right;
         bool m_hovered = false;
@@ -67,6 +69,38 @@ namespace ImFlow
 
     // -----------------------------------------------------------------------------------------------------------------
     // HANDLER
+
+    struct InfColors
+    {
+        ImU32 link = IM_COL32(200, 200, 100, 255);
+        ImU32 drag_out_link = IM_COL32(200, 200, 100, 255);
+        ImU32 link_selected_outline = IM_COL32(80, 20, 255, 255);
+
+        ImU32 node_bg = IM_COL32(60, 60, 60, 255);
+        ImU32 node_header = IM_COL32(40, 40, 40, 255);
+        ImU32 node_border = IM_COL32(100, 100, 100, 255);
+        ImU32 node_selected_border = IM_COL32(100, 50, 200, 255);
+
+        ImU32 background = IM_COL32(60, 60, 70, 200);
+        ImU32 grid = IM_COL32(200, 200, 200, 40);
+    };
+
+    struct InfStyler
+    {
+        float link_thickness = 2.8f;
+        float link_hovered_thickness = 3.5f;
+        float link_selected_outline_thickness = 0.5f;
+        float drag_out_link_thickness = 2.f;
+
+        float node_radius = 6.f;
+        float node_border_thickness = 1.f;
+        float node_border_selected_thickness = 3.f;
+
+        float grid_size = 64.f;
+        float grid_subdivisions = 4.0f;
+
+        InfColors colors;
+    };
 
     class ImNodeFlow
     {
@@ -93,6 +127,8 @@ namespace ImFlow
         void draggingNode(bool state) { m_draggingNode = state; }
         void hovering(Pin* hovering) { m_hovering = hovering; }
 
+        InfStyler* style() { return &m_style; }
+
         ImVec2 canvas2screen(const ImVec2& p);
     private:
         bool on_selected_node();
@@ -110,6 +146,8 @@ namespace ImFlow
         bool m_draggingNode = false;
         Pin* m_hovering = nullptr;
         Pin* m_dragOut = nullptr;
+
+        InfStyler m_style;
     };
 
     // -----------------------------------------------------------------------------------------------------------------

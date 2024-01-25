@@ -23,6 +23,7 @@ public:
     void draw() override
     {
         ImGui::Text("ASDDJHGFDSA");
+        ImGui::PushItemWidth(120.0f);
         ImGui::SliderInt("##SLSLSL", &m_slider, 0, 200);
     }
 
@@ -52,6 +53,7 @@ public:
     void draw() override
     {
         ImGui::Text("String Spitter");
+        ImGui::PushItemWidth(120.0f);
         ImGui::InputText("##ToSpit", &m_ss);
     }
 
@@ -111,8 +113,6 @@ public:
     }
 };
 
-// TODO: right-click pop-up callback
-
 void foo()
 {
     printf_s("DROPPED ME!!\n");
@@ -122,6 +122,8 @@ void loo()
     printf_s("RIGHT CLICK!!\n");
 }
 
+// FIXME: I can scroll down if nodes go under the bottom
+// TODO: Make it so you only select the thing on top and not also everything that might be underneath
 // TODO: Optimize code by removing some loops over Links list (by for example keeping a second list of the selected ones so I dont have to search the full list every frame
 
 int main()

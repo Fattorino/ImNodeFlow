@@ -11,20 +11,20 @@ namespace ImFlow
         auto* rightPin = reinterpret_cast<Pin*>(m_right);
         ImVec2 start = leftPin->pos() + ImVec2(leftPin->size().x, leftPin->size().y / 2);
         ImVec2 end = rightPin->pos() + ImVec2(0, leftPin->size().y / 2);
-        float thickness = 2.8f;
+        float thickness = m_inf->style()->link_thickness;
 
         if (smart_bezier_collider(ImGui::GetMousePos(), start, end, 2.5))
         {
             m_hovered = true;
-            thickness = 3.5f;
+            thickness = m_inf->style()->link_hovered_thickness;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 m_selected = true;
         }
         else { m_hovered = false; }
 
         if (m_selected)
-            smart_bezier(start, end, IM_COL32(80, 20, 255, 255), 4.0f);
-        smart_bezier(start, end, IM_COL32(200, 200, 100, 255), thickness);
+            smart_bezier(start, end, m_inf->style()->colors.link_selected_outline, thickness + m_inf->style()->link_selected_outline_thickness);
+        smart_bezier(start, end, m_inf->style()->colors.link, thickness);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -79,12 +79,12 @@ namespace ImFlow
         m_size = ImGui::GetItemRectSize();
         ImVec2 headerSize = ImVec2(m_size.x + m_padding.x, headerH);
         draw_list->ChannelsSetCurrent(0); // Background
-        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(60, 60, 60, 255), 6.0f);
-        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + headerSize, IM_COL32(40, 40, 40, 255), 6.0f, ImDrawFlags_RoundCornersTop);
+        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, m_inf->style()->colors.node_bg, m_inf->style()->node_radius);
+        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + headerSize, m_inf->style()->colors.node_header, m_inf->style()->node_radius, ImDrawFlags_RoundCornersTop);
         if(m_selected)
-            draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(100, 50, 200, 255), 6.0f, 0, 3.f);
+            draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, m_inf->style()->colors.node_selected_border, m_inf->style()->node_radius, 0, m_inf->style()->node_border_selected_thickness);
         else
-            draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(100, 100, 100, 255), 6.0f);
+            draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, m_inf->style()->colors.node_border, m_inf->style()->node_radius, 0, m_inf->style()->node_border_thickness);
 
 
         if (hovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -135,7 +135,7 @@ namespace ImFlow
 
     void ImNodeFlow::createLink(uintptr_t left, uintptr_t right)
     {
-        reinterpret_cast<Pin*>(right)->setLink(m_links.emplace_back(std::make_shared<Link>(left, right)));
+        reinterpret_cast<Pin*>(right)->setLink(m_links.emplace_back(std::make_shared<Link>(left, right, this)));
     }
 
     void ImNodeFlow::update()
@@ -147,24 +147,21 @@ namespace ImFlow
         ImGui::Text("Hold middle mouse button to scroll (%.2f,%.2f)", m_scroll.x, m_scroll.y);
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(60, 60, 70, 200));
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, m_style.colors.background);
         ImGui::BeginChild(m_name.c_str(), ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
         ImGui::PopStyleVar(2); // WindowPadding
         ImGui::PopStyleColor();
-        ImGui::PushItemWidth(120.0f);
 
         ImVec2 offset = ImGui::GetCursorScreenPos() + m_scroll;
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
         // Display grid
-        ImU32 GRID_COLOR = IM_COL32(200, 200, 200, 40);
-        float GRID_SZ = 64.0f;
         ImVec2 win_pos = ImGui::GetCursorScreenPos();
         ImVec2 canvas_sz = ImGui::GetWindowSize();
-        for (float x = fmodf(m_scroll.x, GRID_SZ); x < canvas_sz.x; x += 64)
-            draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, GRID_COLOR);
-        for (float y = fmodf(m_scroll.y, GRID_SZ); y < canvas_sz.y; y += 64)
-            draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, GRID_COLOR);
+        for (float x = fmodf(m_scroll.x, m_style.grid_size); x < canvas_sz.x; x += 64)
+            draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, m_style.colors.grid);
+        for (float y = fmodf(m_scroll.y, m_style.grid_size); y < canvas_sz.y; y += 64)
+            draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, m_style.colors.grid);
 
         //  Deselection (must be done before Nodes and Links update)
         if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -260,11 +257,15 @@ namespace ImFlow
         {
             ImVec2 pinDot;
             if (m_dragOut->kind() == PinKind_Output)
+            {
                 pinDot = m_dragOut->pos() + ImVec2(m_dragOut->size().x, m_dragOut->size().y / 2);
+                smart_bezier(pinDot, ImGui::GetMousePos(), m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
+            }
             else
+            {
                 pinDot = m_dragOut->pos() + ImVec2(0, m_dragOut->size().y / 2);
-            smart_bezier(pinDot, ImGui::GetMousePos(), IM_COL32(200, 200, 100, 255), 3.0f);
-
+                smart_bezier(ImGui::GetMousePos(), pinDot, m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
+            }
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                 m_dragOut = nullptr;
         }
