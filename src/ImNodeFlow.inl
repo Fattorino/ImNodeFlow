@@ -100,30 +100,6 @@ namespace ImFlow
 
         if (ImGui::IsItemHovered())
             m_inf->hovering(reinterpret_cast<Pin*>(this));
-
-        /*// Link drag-out
-        if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_inf->dragAllowed())
-        {
-            m_dragging = true;
-            m_inf->dragAllowed(false);
-            m_inf->isLinking(true);
-            m_inf->pinTarget() = me();
-        }
-        if (m_dragging)
-        {
-            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-            {
-                m_dragging = false;
-                m_inf->dragAllowed(true);
-                m_inf->isLinking(false);
-            }
-            if(!ImGui::IsItemHovered())
-            {
-                ImVec2 pinDot = m_pos + ImVec2(m_size.x + m_parent->padding().x, m_size.y / 2);
-                ImGui::GetWindowDrawList()->AddBezierCubic(pinDot, pinDot + ImVec2(30, 0), ImGui::GetMousePos() - ImVec2(30, 0), ImGui::GetMousePos(), IM_COL32(200, 200, 100, 255), 3.0f);
-            }
-        }*/
     }
 
     template<class T>

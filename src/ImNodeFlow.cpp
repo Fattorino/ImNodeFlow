@@ -5,19 +5,23 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // LINK
 
-    void Link::draw()
+    void Link::update()
     {
         auto* leftPin = reinterpret_cast<Pin*>(m_left);
         auto* rightPin = reinterpret_cast<Pin*>(m_right);
         ImVec2 start = leftPin->pos() + ImVec2(leftPin->size().x, leftPin->size().y / 2);
         ImVec2 end = rightPin->pos() + ImVec2(0, leftPin->size().y / 2);
         float thickness = 2.8f;
-        if (smart_bezier_collider( ImGui::GetMousePos(), start, end, 2.5))
+
+        if (smart_bezier_collider(ImGui::GetMousePos(), start, end, 2.5))
         {
+            m_hovered = true;
             thickness = 3.5f;
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
                 m_selected = true;
         }
+        else { m_hovered = false; }
+
         if (m_selected)
             smart_bezier(start, end, IM_COL32(80, 20, 255, 255), 4.0f);
         smart_bezier(start, end, IM_COL32(200, 200, 100, 255), thickness);
@@ -25,6 +29,11 @@ namespace ImFlow
 
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
+
+    bool BaseNode::hovered()
+    {
+        return ImGui::IsMouseHoveringRect(m_inf->canvas2screen(m_pos - m_padding), m_inf->canvas2screen(m_pos + m_size + m_padding));
+    }
 
     void BaseNode::update(ImVec2& offset)
     {
@@ -69,13 +78,25 @@ namespace ImFlow
 
         m_size = ImGui::GetItemRectSize();
         ImVec2 headerSize = ImVec2(m_size.x + m_padding.x, headerH);
+        draw_list->ChannelsSetCurrent(0); // Background
+        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(60, 60, 60, 255), 6.0f);
+        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + headerSize, IM_COL32(40, 40, 40, 255), 6.0f, ImDrawFlags_RoundCornersTop);
+        if(m_selected)
+            draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(100, 50, 200, 255), 6.0f, 0, 3.f);
+        else
+            draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(100, 100, 100, 255), 6.0f);
 
-        if (ImGui::IsMouseHoveringRect(offset + m_pos - m_padding, offset + m_pos + headerSize) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+
+        if (hovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            m_selected = true;
+
+        bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - m_padding, offset + m_pos + headerSize);
+        if (onHeader && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
             m_dragged = true;
             m_inf->draggingNode(true);
         }
-        if(m_dragged)
+        if(m_dragged || (m_selected && m_inf->draggingNode()))
         {
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
             {
@@ -85,16 +106,32 @@ namespace ImFlow
             m_pos += ImGui::GetIO().MouseDelta;
         }
 
-        draw_list->ChannelsSetCurrent(0); // Background
-        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(60, 60, 60, 255), 4.0f);
-        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + headerSize, IM_COL32(40, 40, 40, 255), 4.0f);
-        draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, IM_COL32(100, 100, 100, 255), 4.0f);
-
         ImGui::PopID();
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     // HANDLER
+
+    int ImNodeFlow::m_instances = 0;
+
+    bool ImNodeFlow::on_selected_node()
+    {
+        return std::any_of(m_nodes.begin(), m_nodes.end(),
+                           [](auto& n) { return n->selected() && n->hovered();});
+    }
+
+    bool ImNodeFlow::on_free_space()
+    {
+        return std::all_of(m_nodes.begin(), m_nodes.end(),
+                    [](auto& n) {return !n->hovered();})
+               && std::all_of(m_links.begin(), m_links.end(),
+                    [](auto& l) {return !l->hovered();});
+    }
+
+    ImVec2 ImNodeFlow::canvas2screen(const ImVec2 &p)
+    {
+        return p + m_scroll + ImGui::GetWindowPos();
+    }
 
     void ImNodeFlow::createLink(uintptr_t left, uintptr_t right)
     {
@@ -132,26 +169,27 @@ namespace ImFlow
         //  Deselection (must be done before Nodes and Links update)
         if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
-            for (auto& l : m_links)
-            {
-                l->selected(false);
-            }
+            for (auto& l : m_links) { l->selected(false); }
         }
 
-        // Update and draw nodes
+        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !on_selected_node())
+            for (auto& n : m_nodes) { n->selected(false); }
+
+        // Update and update nodes
         draw_list->ChannelsSplit(2);
         for (auto& node : m_nodes) { node->update(offset); }
         draw_list->ChannelsMerge();
 
         // Draw links
-        for (auto& l : m_links) { l->draw(); }
+        for (auto& l : m_links) { l->update(); }
 
         // Links drop-off
         if(m_dragOut && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
         {
             if(!m_hovering)
             {
-                m_droppedLinkCallback();
+                if(on_free_space())
+                    m_droppedLinkCallback();
                 goto drop_off_end;
             }
             if (!((m_dragOut->filter() & m_hovering->filter()) != 0 || m_dragOut->filter() == ConnectionFilter_None || m_hovering->filter() == ConnectionFilter_None)) // Check Filter
@@ -216,7 +254,7 @@ namespace ImFlow
         drop_off_end:
 
         // Links drag-out
-        if (!m_draggingNode && m_hovering && !m_dragOut && ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        if (!m_draggingNode && m_hovering && !m_dragOut && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
             m_dragOut = m_hovering;
         if (m_dragOut)
         {
@@ -245,6 +283,10 @@ namespace ImFlow
 
             // TODO: Do the same for Nodes
         }
+
+        // Right-click callback
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && on_free_space())
+            m_rightClickCallback();
 
         // Scrolling
         if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.0f))

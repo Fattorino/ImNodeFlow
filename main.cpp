@@ -117,6 +117,12 @@ void foo()
 {
     printf_s("DROPPED ME!!\n");
 }
+void loo()
+{
+    printf_s("RIGHT CLICK!!\n");
+}
+
+// TODO: Optimize code by removing some loops over Links list (by for example keeping a second list of the selected ones so I dont have to search the full list every frame
 
 int main()
 {
@@ -138,6 +144,7 @@ int main()
     INF.addNode<StrPri>("String Printer", ImVec2(500, 300));
 
     INF.setDroppedLinkCallback(foo);
+    INF.setRightClickCallback(loo);
 
     bool done = false;
     while (!done)

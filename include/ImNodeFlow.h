@@ -7,6 +7,7 @@
 #include <vector>
 #include <cmath>
 #include <memory>
+#include <algorithm>
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
 
@@ -48,16 +49,19 @@ namespace ImFlow
     public:
         explicit Link(uintptr_t left, uintptr_t right) :m_left(left), m_right(right) {}
 
-        void draw();
+        void update();
 
         [[nodiscard]] uintptr_t left() const { return m_left; }
         [[nodiscard]] uintptr_t right() const { return m_right; }
+
+        [[nodiscard]] bool hovered() const { return m_hovered; }
         [[nodiscard]] bool selected() const { return m_selected; }
 
         void selected(bool state) { m_selected = state; }
     private:
         uintptr_t m_left;
         uintptr_t m_right;
+        bool m_hovered = false;
         bool m_selected = false;
     };
 
@@ -66,12 +70,14 @@ namespace ImFlow
 
     class ImNodeFlow
     {
+    private:
+        static int m_instances;
     public:
-        //ImNodeFlow() { m_infInterface = new InfInterface(*this); }
-        explicit ImNodeFlow(std::string name) :m_name(std::move(name)) {}
+        ImNodeFlow() { m_name = "FlowGrid" + std::to_string(m_instances); m_instances++; }
+        explicit ImNodeFlow(std::string name) :m_name(std::move(name)) { m_instances++; }
+        explicit ImNodeFlow(const char* name) :m_name(name) { m_instances++; }
 
         void update();
-        void resolve();
 
         template<typename T>
         void addNode(const std::string& name, const ImVec2&& pos);
@@ -80,16 +86,26 @@ namespace ImFlow
         std::vector<std::shared_ptr<Link>>& links() { return m_links; }
 
         void setDroppedLinkCallback(VoidCallback callback) { m_droppedLinkCallback = callback; }
+        void setRightClickCallback(VoidCallback callback) { m_rightClickCallback = callback; }
+
+        [[nodiscard]] bool draggingNode() const { return m_draggingNode; }
 
         void draggingNode(bool state) { m_draggingNode = state; }
         void hovering(Pin* hovering) { m_hovering = hovering; }
+
+        ImVec2 canvas2screen(const ImVec2& p);
+    private:
+        bool on_selected_node();
+        bool on_free_space();
     private:
         std::string m_name;
         ImVec2 m_scroll = ImVec2(0, 0);
 
         std::vector<std::shared_ptr<BaseNode>> m_nodes;
         std::vector<std::shared_ptr<Link>> m_links;
-        VoidCallback m_droppedLinkCallback;
+
+        VoidCallback m_droppedLinkCallback = nullptr;
+        VoidCallback m_rightClickCallback = nullptr;
 
         bool m_draggingNode = false;
         Pin* m_hovering = nullptr;
@@ -123,16 +139,22 @@ namespace ImFlow
         template<typename T>
         OutPin<T>& outs(int i);
 
-        const std::string& name() { return m_name; }
-        ImVec2& padding() { return m_padding; }
+        bool hovered();
+        void selected(bool state) { m_selected = state; }
 
+        const std::string& name() { return m_name; }
+        const ImVec2& size() { return  m_size; }
+        const ImVec2& pos() { return  m_pos; }
+        [[nodiscard]] bool selected() const { return m_selected; }
+        const ImVec2& padding() { return m_padding; }
     private:
         void update(ImVec2& offset);
     private:
-        ImNodeFlow* m_inf;
+        std::string m_name;
         ImVec2 m_pos;
         ImVec2 m_size;
-        std::string m_name;
+        ImNodeFlow* m_inf;
+        bool m_selected = false;
         bool m_dragged = false;
         ImVec2 m_padding = ImVec2(5.f, 5.f);
 
@@ -151,7 +173,6 @@ namespace ImFlow
 
         virtual uintptr_t me() = 0;
         virtual void update() = 0;
-        virtual void draw() = 0;
         virtual void setLink(std::shared_ptr<Link>& link) {}
         virtual std::weak_ptr<Link> getLink() { return std::weak_ptr<Link>{}; }
 
@@ -160,7 +181,7 @@ namespace ImFlow
         const std::string& name() { return m_name; }
         BaseNode* parent() { return m_parent; }
         PinKind kind() { return m_kind; }
-        ConnectionFilter filter() { return m_filter; }
+        [[nodiscard]] ConnectionFilter filter() const { return m_filter; }
 
         void pos(ImVec2 pos) { m_pos = pos; }
     protected:
@@ -171,7 +192,6 @@ namespace ImFlow
         ConnectionFilter m_filter;
         BaseNode* m_parent = nullptr;
         ImNodeFlow* m_inf;
-        bool m_dragging = false;
     };
 
 
@@ -181,8 +201,14 @@ namespace ImFlow
         explicit InPin(const std::string& name, ConnectionFilter filter, PinKind kind, BaseNode* parent, T defReturn, ImNodeFlow* inf)
             :Pin(name, filter, kind, parent, inf), m_emptyVal(defReturn) {}
 
+        ~InPin()
+        {
+            if(!m_link.expired())
+                printf_s("Gotta destroy link");
+        }
+
         void update() override;
-        void draw() override;
+        void draw();
         uintptr_t me() override { return m_me; }
 
         const T& val();
@@ -203,7 +229,7 @@ namespace ImFlow
             :Pin(name, filter, kind, parent, inf) {}
 
         void update() override;
-        void draw() override;
+        void draw();
         uintptr_t me() override { return m_me; }
 
         const T& val();
