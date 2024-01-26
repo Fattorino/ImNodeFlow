@@ -51,15 +51,14 @@ namespace ImFlow
     }
 
     template<typename T>
-    void BaseNode::addOUT(const std::string name, ConnectionFilter filter)
+    OutPin<T>* BaseNode::addOUT(const std::string name, ConnectionFilter filter)
     {
         m_outs.emplace_back(std::make_shared<OutPin<T>>(name, filter, PinKind_Output, this, m_inf));
+        return static_cast<OutPin<T>*>(m_outs.back().get());
     }
 
     template<typename T>
-    InPin<T>& BaseNode::ins(int i) { return *std::dynamic_pointer_cast<InPin<T>>(m_ins[i]); }
-    template<typename T>
-    OutPin<T>& BaseNode::outs(int i) { return *std::dynamic_pointer_cast<OutPin<T>>(m_outs[i]); }
+    const T& BaseNode::ins(int i) { return static_cast<InPin<T>*>(m_ins[i].get())->val(); }
 
     // -----------------------------------------------------------------------------------------------------------------
     // IN PIN

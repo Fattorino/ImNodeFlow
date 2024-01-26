@@ -15,9 +15,8 @@ public:
     explicit AB(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
         addIN<int>("intouno", 0, ConnectionFilter_Int);
-        addOUT<int>("int", ConnectionFilter_Int);
-
-        outs<int>(0).behaviour([this](){ return ins<int>(0).val() + m_slider; });
+        addOUT<int>("int", ConnectionFilter_Int)
+                ->behaviour([this](){ return ins<int>(0) + m_slider; });
     }
 
     void draw() override
@@ -35,8 +34,8 @@ class CD : public BaseNode
 public:
     explicit CD(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
-        addOUT<std::string>("str_out", ConnectionFilter_String);
-        outs<std::string>(0).behaviour([this](){ return m_ss; });
+        addOUT<std::string>("str_out", ConnectionFilter_String)
+                ->behaviour([this](){ return m_ss; });
     }
 
     void draw() override
@@ -55,14 +54,11 @@ public:
     explicit Pri(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
         addIN<int>("INT", 0, ConnectionFilter_Int);
-        addIN<int>("FLOAT", 0, ConnectionFilter_Float);
-        addIN<int>("NUMBERS", 0, ConnectionFilter_Numbers);
-        addIN<int>("ANY", 0);
     }
 
     void draw() override
     {
-        ImGui::Text("%d", ins<int>(0).val());
+        ImGui::Text("%d", ins<int>(0));
     }
 private:
 };
@@ -77,7 +73,7 @@ public:
 
     void draw() override
     {
-        ImGui::Text("%s", ins<std::string>(0).val().c_str());
+        ImGui::Text("%s", ins<std::string>(0).c_str());
     }
 private:
 };

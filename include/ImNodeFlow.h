@@ -164,14 +164,10 @@ namespace ImFlow
         template<typename T>
         void addIN(std::string name, T defReturn, ConnectionFilter filter = ConnectionFilter_None);
         template<typename T>
-        void addOUT(std::string name, ConnectionFilter filter = ConnectionFilter_None);
+        [[nodiscard]] OutPin<T>* addOUT(std::string name, ConnectionFilter filter = ConnectionFilter_None);
 
-        Pin& ins(int i) { return *m_ins[i]; }
-        Pin& outs(int i) { return *m_outs[i]; }
         template<typename T>
-        InPin<T>& ins(int i);
-        template<typename T>
-        OutPin<T>& outs(int i);
+        const T& ins(int i);
 
         bool hovered();
         void selected(bool state) { m_selected = state; }
