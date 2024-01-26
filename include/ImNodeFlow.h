@@ -8,6 +8,7 @@
 #include <cmath>
 #include <memory>
 #include <algorithm>
+#include <functional>
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
 
@@ -48,12 +49,12 @@ namespace ImFlow
     class Link
     {
     public:
-        explicit Link(uintptr_t left, uintptr_t right, ImNodeFlow* inf) :m_left(left), m_right(right), m_inf(inf) {}
+        explicit Link(Pin* left, Pin* right, ImNodeFlow* inf) :m_left(left), m_right(right), m_inf(inf) {}
 
         void update();
 
-        [[nodiscard]] uintptr_t left() const { return m_left; }
-        [[nodiscard]] uintptr_t right() const { return m_right; }
+        [[nodiscard]] Pin* left() const { return m_left; }
+        [[nodiscard]] Pin* right() const { return m_right; }
 
         [[nodiscard]] bool hovered() const { return m_hovered; }
         [[nodiscard]] bool selected() const { return m_selected; }
@@ -61,8 +62,8 @@ namespace ImFlow
         void selected(bool state) { m_selected = state; }
     private:
         ImNodeFlow* m_inf;
-        uintptr_t m_left;
-        uintptr_t m_right;
+        Pin* m_left;
+        Pin* m_right;
         bool m_hovered = false;
         bool m_selected = false;
     };
@@ -116,18 +117,16 @@ namespace ImFlow
         template<typename T>
         void addNode(const std::string& name, const ImVec2&& pos);
 
-        void createLink(uintptr_t left, uintptr_t right);
-        std::vector<std::shared_ptr<Link>>& links() { return m_links; }
+        void createLink(Pin* left, Pin* right);
 
         void setDroppedLinkCallback(VoidCallback callback) { m_droppedLinkCallback = callback; }
         void setRightClickCallback(VoidCallback callback) { m_rightClickCallback = callback; }
 
         [[nodiscard]] bool draggingNode() const { return m_draggingNode; }
+        InfStyler& style() { return m_style; }
 
         void draggingNode(bool state) { m_draggingNode = state; }
         void hovering(Pin* hovering) { m_hovering = hovering; }
-
-        InfStyler* style() { return &m_style; }
 
         ImVec2 canvas2screen(const ImVec2& p);
     private:
@@ -138,7 +137,7 @@ namespace ImFlow
         ImVec2 m_scroll = ImVec2(0, 0);
 
         std::vector<std::shared_ptr<BaseNode>> m_nodes;
-        std::vector<std::shared_ptr<Link>> m_links;
+        std::vector<std::weak_ptr<Link>> m_links;
 
         VoidCallback m_droppedLinkCallback = nullptr;
         VoidCallback m_rightClickCallback = nullptr;
@@ -156,14 +155,11 @@ namespace ImFlow
     class BaseNode
     {
     public:
-        friend class ImNodeFlow;
-        friend class Link;
-
         explicit BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf)
             :m_name(std::move(name)), m_pos(pos), m_inf(inf) {}
 
+        void update(ImVec2& offset);
         virtual void draw() = 0;
-        virtual void resolve(uintptr_t me) {}
 
         template<typename T>
         void addIN(std::string name, T defReturn, ConnectionFilter filter = ConnectionFilter_None);
@@ -186,8 +182,6 @@ namespace ImFlow
         [[nodiscard]] bool selected() const { return m_selected; }
         const ImVec2& padding() { return m_padding; }
     private:
-        void update(ImVec2& offset);
-    private:
         std::string m_name;
         ImVec2 m_pos;
         ImVec2 m_size;
@@ -209,9 +203,11 @@ namespace ImFlow
         explicit Pin(std::string name, ConnectionFilter filter, PinKind kind, BaseNode* parent, ImNodeFlow* inf)
             :m_name(std::move(name)), m_filter(filter), m_kind(kind), m_parent(parent), m_inf(inf) {}
 
-        virtual uintptr_t me() = 0;
         virtual void update() = 0;
+
+        virtual void createLink(Pin* left) {}
         virtual void setLink(std::shared_ptr<Link>& link) {}
+        virtual void deleteLink() {}
         virtual std::weak_ptr<Link> getLink() { return std::weak_ptr<Link>{}; }
 
         [[nodiscard]] const ImVec2& pos() { return m_pos; }
@@ -239,23 +235,16 @@ namespace ImFlow
         explicit InPin(const std::string& name, ConnectionFilter filter, PinKind kind, BaseNode* parent, T defReturn, ImNodeFlow* inf)
             :Pin(name, filter, kind, parent, inf), m_emptyVal(defReturn) {}
 
-        ~InPin()
-        {
-            if(!m_link.expired())
-                printf_s("Gotta destroy link");
-        }
-
         void update() override;
         void draw();
-        uintptr_t me() override { return m_me; }
 
         const T& val();
 
-        void setLink(std::shared_ptr<Link>& link) override { m_link = link; }
+        void createLink(Pin* left) override;
+        void deleteLink() override { m_link.reset(); }
         std::weak_ptr<Link> getLink() override { return m_link; }
     private:
-        uintptr_t m_me = reinterpret_cast<uintptr_t>(this);
-        std::weak_ptr<Link> m_link;
+        std::shared_ptr<Link> m_link;
         T m_emptyVal;
     };
 
@@ -266,15 +255,18 @@ namespace ImFlow
         explicit OutPin(const std::string& name, ConnectionFilter filter, PinKind kind, BaseNode* parent, ImNodeFlow* inf)
             :Pin(name, filter, kind, parent, inf) {}
 
+        ~OutPin() { if (!m_link.expired()) m_link.lock()->right()->deleteLink(); }
+
         void update() override;
         void draw();
-        uintptr_t me() override { return m_me; }
+
+        void setLink(std::shared_ptr<Link>& link) override { m_link = link; }
 
         const T& val();
-
-        OutPin& operator<<(const T&& val) { m_val = val; return *this; }
+        void behaviour(std::function<T()> func) { m_behaviour = std::function(func); }
     private:
-        uintptr_t m_me = reinterpret_cast<uintptr_t>(this);
+        std::weak_ptr<Link> m_link;
+        std::function<T()> m_behaviour;
         T m_val;
     };
 }

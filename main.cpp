@@ -15,9 +15,9 @@ public:
     explicit AB(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
         addIN<int>("intouno", 0, ConnectionFilter_Int);
-        addIN<int>("intoduo", 0, ConnectionFilter_Int);
         addOUT<int>("int", ConnectionFilter_Int);
-        addOUT<int>("float", ConnectionFilter_Float);
+
+        outs<int>(0).behaviour([this](){ return ins<int>(0).val() + m_slider; });
     }
 
     void draw() override
@@ -25,18 +25,6 @@ public:
         ImGui::Text("ASDDJHGFDSA");
         ImGui::PushItemWidth(120.0f);
         ImGui::SliderInt("##SLSLSL", &m_slider, 0, 200);
-    }
-
-    void resolve(uintptr_t me) override
-    {
-        if (me == outs(0).me())
-        {
-            outs<int>(0) << ins<int>(0).val() + m_slider;
-        }
-        else if (me == outs(1).me())
-        {
-            outs<int>(1) << ins<int>(1).val() * m_slider;
-        }
     }
 private:
     int m_slider = 0;
@@ -48,6 +36,7 @@ public:
     explicit CD(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
         addOUT<std::string>("str_out", ConnectionFilter_String);
+        outs<std::string>(0).behaviour([this](){ return m_ss; });
     }
 
     void draw() override
@@ -55,14 +44,6 @@ public:
         ImGui::Text("String Spitter");
         ImGui::PushItemWidth(120.0f);
         ImGui::InputText("##ToSpit", &m_ss);
-    }
-
-    void resolve(uintptr_t me) override
-    {
-        if (me == outs(0).me())
-        {
-            outs<std::string>(0) << m_ss.c_str();
-        }
     }
 private:
     std::string m_ss;

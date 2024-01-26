@@ -67,10 +67,10 @@ namespace ImFlow
     template<class T>
     const T& InPin<T>::val()
     {
-        if(m_link.expired())
+        if(!m_link)
             return m_emptyVal;
 
-        return reinterpret_cast<OutPin<T>*>(m_link.lock()->left())->val();
+        return reinterpret_cast<OutPin<T>*>(m_link->left())->val();
     }
 
     template<class T>
@@ -79,7 +79,7 @@ namespace ImFlow
         draw();
 
         if (ImGui::IsItemHovered())
-            m_inf->hovering(reinterpret_cast<Pin*>(this));
+            m_inf->hovering(this);
     }
 
     template<class T>
@@ -93,11 +93,18 @@ namespace ImFlow
         draw_list->AddRect(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(255, 255, 255, 100));
     }
 
+    template<class T>
+    void InPin<T>::createLink(Pin *left)
+    {
+        m_link = std::make_shared<Link>(left, this, m_inf);
+        left->setLink(m_link);
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // OUT PIN
 
     template<class T>
-    const T &OutPin<T>::val() { m_parent->resolve(m_me); return m_val; } // TODO: Resolve ME somewhere else so it's not done every frame
+    const T &OutPin<T>::val() { m_val = m_behaviour(); return m_val; } // TODO: Resolve ME somewhere else so it's not done every frame
 
     template<class T>
     void OutPin<T>::update()
@@ -105,7 +112,7 @@ namespace ImFlow
         draw();
 
         if (ImGui::IsItemHovered())
-            m_inf->hovering(reinterpret_cast<Pin*>(this));
+            m_inf->hovering(this);
     }
 
     template<class T>
