@@ -29,6 +29,24 @@ private:
     int m_slider = 0;
 };
 
+class Somma : public BaseNode
+{
+public:
+    explicit Somma(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
+    {
+        addIN<int>("A", 0, ConnectionFilter_Int);
+        addIN<int>("B", 0, ConnectionFilter_Int);
+        addOUT<int>("C", ConnectionFilter_Int)
+                ->behaviour([this](){ return ins<int>(0) + ins<int>(1); });
+    }
+
+    void draw() override
+    {
+        ImGui::Text("A + B = C");
+    }
+private:
+};
+
 class CD : public BaseNode
 {
 public:
@@ -99,7 +117,6 @@ void loo()
     printf_s("RIGHT CLICK!!\n");
 }
 
-// FIXME: I can scroll down if nodes go under the bottom
 // TODO: Make it so you only select the thing on top and not also everything that might be underneath
 // TODO: Optimize code by removing some loops over Links list (by for example keeping a second list of the selected ones so I dont have to search the full list every frame
 
@@ -118,6 +135,8 @@ int main()
     INF.addNode<Pri>("Printer ONE", ImVec2(500, 0));
     INF.addNode<Pri>("Printer TWO", ImVec2(500, 100));
     INF.addNode<Pri>("Printer THREE", ImVec2(500, 200));
+
+    INF.addNode<Somma>("Sommatore", ImVec2(100, 100));
 
     INF.addNode<CD>("CC", ImVec2(0, 100));
     INF.addNode<StrPri>("String Printer", ImVec2(500, 300));
