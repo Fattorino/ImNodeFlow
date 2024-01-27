@@ -194,6 +194,7 @@ namespace ImFlow
             }
             if (!((m_dragOut->filter() & m_hovering->filter()) != 0 || m_dragOut->filter() == ConnectionFilter_None || m_hovering->filter() == ConnectionFilter_None)) // Check Filter
                 goto drop_off_end;
+
             if (m_dragOut->kind() == PinKind_Output && m_hovering->kind() == PinKind_Input) // OUT to IN
             {
                 if ((void *)m_dragOut->parent() == (void *)m_hovering->parent())
@@ -237,12 +238,12 @@ namespace ImFlow
                     {
                         if((void *)l.lock()->right() == (void *)m_dragOut && (void *)l.lock()->left() == (void *)m_hovering) // Same link --> Deletion
                         {
-                            m_links.erase(m_links.begin() + i);
+                            l.lock()->right()->deleteLink();
                             break;
                         }
                         if((void *)l.lock()->right() == (void *)m_dragOut) // New link for same IN --> Swap
                         {
-                            m_links.erase(m_links.begin() + i);
+                            l.lock()->right()->deleteLink();
                             createLink(m_hovering, m_dragOut);
                             break;
                         }
