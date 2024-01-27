@@ -110,17 +110,33 @@ public:
     }
 };
 
-void foo()
-{
-    printf_s("DROPPED ME!!\n");
-}
-void loo()
-{
-    printf_s("RIGHT CLICK!!\n");
-}
-
 // TODO: Make it so you only select the thing on top and not also everything that might be underneath
 // TODO: Optimize code by removing some loops over Links list (by for example keeping a second list of the selected ones so I dont have to search the full list every frame
+
+void foo(Pin* dragged)
+{
+    if (dragged->kind() == PinKind_Output)
+    {
+        if (ImGui::Selectable("Sommatore"))
+        {
+            auto n = INF.dropNode<Somma>("Sommatore", ImGui::GetWindowPos());
+            INF.createLink(dragged, n->ins(0));
+        }
+    }
+    else
+    {
+        if (ImGui::Selectable("Sommatore"))
+        {
+            auto n = INF.dropNode<Somma>("Sommatore", ImGui::GetWindowPos());
+            INF.createLink(n->outs(0), dragged);
+        }
+        if (ImGui::Selectable("AB thingy"))
+        {
+            auto n = INF.dropNode<AB>("AB", ImGui::GetWindowPos());
+            INF.createLink(n->outs(0), dragged);
+        }
+    }
+}
 
 int main()
 {
@@ -143,8 +159,31 @@ int main()
     INF.addNode<CD>("CC", ImVec2(0, 100));
     INF.addNode<StrPri>("String Printer", ImVec2(500, 300));
 
-    INF.setDroppedLinkCallback(foo);
-    INF.setRightClickCallback(loo);
+    INF.rightClickPopUpContent([]() {
+        if (ImGui::Selectable("AB"))
+        {
+            printf_s("AOOOO!\n");
+        }
+    });
+    /*INF.droppedLinkPopUpContent([](Pin* dragged) {
+        if (dragged->kind() == PinKind_Output)
+        {
+            if (ImGui::Selectable("Sommatore"))
+            {
+                auto n = INF.dropNode<Somma>("Sommatore", ImGui::GetWindowPos());
+                INF.createLink(dragged, n->ins(0));
+            }
+        }
+        else
+        {
+            if (ImGui::Selectable("Sommatore"))
+            {
+                auto n = INF.dropNode<Somma>("Sommatore", ImGui::GetWindowPos());
+                INF.createLink(n->outs(0), dragged);
+            }
+        }
+    }, ImGuiKey_LeftShift);*/
+    INF.droppedLinkPopUpContent(foo, ImGuiKey_LeftShift);
 
     bool done = false;
     while (!done)

@@ -149,6 +149,11 @@ namespace ImFlow
         return p + m_scroll + ImGui::GetWindowPos();
     }
 
+    ImVec2 ImNodeFlow::screen2canvas(const ImVec2 &p)
+    {
+        return p - m_pos - m_scroll;
+    }
+
     void ImNodeFlow::createLink(Pin* left, Pin* right)
     {
         right->createLink(left);
@@ -168,6 +173,7 @@ namespace ImFlow
         ImGui::BeginChild(m_name.c_str(), ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse);
         ImGui::PopStyleVar(2);
         ImGui::PopStyleColor();
+        m_pos = ImGui::GetWindowPos();
 
         ImVec2 offset = ImGui::GetCursorScreenPos() + m_scroll;
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -203,68 +209,34 @@ namespace ImFlow
         {
             if(!m_hovering)
             {
-                if(on_free_space())
-                    m_droppedLinkCallback();
+                if(on_free_space() && m_droppedLinkPopUp)
+                {
+                    if (m_droppedLinkPupUpComboKey == ImGuiKey_None || ImGui::IsKeyDown(m_droppedLinkPupUpComboKey))
+                    {
+                        m_droppedLinkLeft = m_dragOut;
+                        ImGui::OpenPopup("DroppedLinkPopUp");
+                    }
+                }
                 goto drop_off_end;
             }
+            if (m_dragOut->parent() == m_hovering->parent())
+                goto drop_off_end;
             if (!((m_dragOut->filter() & m_hovering->filter()) != 0 || m_dragOut->filter() == ConnectionFilter_None || m_hovering->filter() == ConnectionFilter_None)) // Check Filter
                 goto drop_off_end;
 
             if (m_dragOut->kind() == PinKind_Output && m_hovering->kind() == PinKind_Input) // OUT to IN
             {
-                if ((void *)m_dragOut->parent() == (void *)m_hovering->parent())
-                    goto drop_off_end;
-                if (m_hovering->getLink().expired())
-                {
+                if (m_hovering->getLink().expired() || m_hovering->getLink().lock()->left() != m_dragOut)
                     createLink(m_dragOut, m_hovering);
-                }
                 else
-                {
-                    int i = 0;
-                    for (auto& l : m_links)
-                    {
-                        if((void *)l.lock()->right() == (void *)m_hovering && (void *)l.lock()->left() == (void *)m_dragOut) // Same link --> Deletion
-                        {
-                            l.lock()->right()->deleteLink();
-                            break;
-                        }
-                        if((void *)l.lock()->right() == (void *)m_hovering) // New link for same IN --> Swap
-                        {
-                            l.lock()->right()->deleteLink();
-                            createLink(m_dragOut, m_hovering);
-                            break;
-                        }
-                        i++;
-                    }
-                }
+                    m_hovering->deleteLink();
             }
-            if (m_dragOut->kind() == PinKind_Input && m_hovering->kind() == PinKind_Output) // IN to OUT
+            if (m_dragOut->kind() == PinKind_Input && m_hovering->kind() == PinKind_Output) // OUT to IN
             {
-                if ((void *)m_dragOut->parent() == (void *)m_hovering->parent())
-                    goto drop_off_end;
-                if (m_dragOut->getLink().expired())
-                {
+                if (m_dragOut->getLink().expired() || m_dragOut->getLink().lock()->left() != m_hovering)
                     createLink(m_hovering, m_dragOut);
-                }
                 else
-                {
-                    int i = 0;
-                    for (auto& l : m_links)
-                    {
-                        if((void *)l.lock()->right() == (void *)m_dragOut && (void *)l.lock()->left() == (void *)m_hovering) // Same link --> Deletion
-                        {
-                            l.lock()->right()->deleteLink();
-                            break;
-                        }
-                        if((void *)l.lock()->right() == (void *)m_dragOut) // New link for same IN --> Swap
-                        {
-                            l.lock()->right()->deleteLink();
-                            createLink(m_hovering, m_dragOut);
-                            break;
-                        }
-                        i++;
-                    }
-                }
+                    m_dragOut->deleteLink();
             }
         }
         drop_off_end:
@@ -299,9 +271,24 @@ namespace ImFlow
         m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
                        [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
 
-        // Right-click callback
+        // Right-click PopUp
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && on_free_space())
-            m_rightClickCallback();
+        {
+            if (m_rightClickPopUp)
+                ImGui::OpenPopup("RightClickPopUp");
+        }
+        if (ImGui::BeginPopup("RightClickPopUp"))
+        {
+            m_rightClickPopUp();
+            ImGui::EndPopup();
+        }
+
+        // Dropped Link PopUp
+        if (ImGui::BeginPopup("DroppedLinkPopUp"))
+        {
+            m_droppedLinkPopUp(m_droppedLinkLeft);
+            ImGui::EndPopup();
+        }
 
         // Scrolling
         if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.0f))

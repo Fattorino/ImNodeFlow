@@ -128,12 +128,15 @@ namespace ImFlow
         void update();
 
         template<typename T>
-        void addNode(const std::string& name, const ImVec2&& pos);
+        void addNode(const std::string& name, const ImVec2& pos);
+        template<typename T>
+        T* dropNode(const std::string& name, const ImVec2& pos);
+        int nodesCount() { return m_nodes.size(); }
 
         void createLink(Pin* left, Pin* right);
 
-        void setDroppedLinkCallback(VoidCallback callback) { m_droppedLinkCallback = callback; }
-        void setRightClickCallback(VoidCallback callback) { m_rightClickCallback = callback; }
+        void droppedLinkPopUpContent(std::function<void(Pin* dragged)> content, ImGuiKey key = ImGuiKey_None) { m_droppedLinkPopUp = std::move(content); m_droppedLinkPupUpComboKey = key; }
+        void rightClickPopUpContent(std::function<void()> content) { m_rightClickPopUp = std::move(content); }
 
         [[nodiscard]] bool draggingNode() const { return m_draggingNode; }
         InfStyler& style() { return m_style; }
@@ -142,18 +145,22 @@ namespace ImFlow
         void hovering(Pin* hovering) { m_hovering = hovering; }
 
         ImVec2 canvas2screen(const ImVec2& p);
+        ImVec2 screen2canvas(const ImVec2& p);
     private:
         bool on_selected_node();
         bool on_free_space();
     private:
         std::string m_name;
+        ImVec2 m_pos;
         ImVec2 m_scroll = ImVec2(0, 0);
 
         std::vector<std::shared_ptr<BaseNode>> m_nodes;
         std::vector<std::weak_ptr<Link>> m_links;
 
-        VoidCallback m_droppedLinkCallback = nullptr;
-        VoidCallback m_rightClickCallback = nullptr;
+        std::function<void()> m_rightClickPopUp;
+        std::function<void(Pin* dragged)> m_droppedLinkPopUp;
+        ImGuiKey m_droppedLinkPupUpComboKey;
+        Pin* m_droppedLinkLeft = nullptr;
 
         bool m_draggingNode = false, m_draggingNodeNext = false;
         Pin* m_hovering = nullptr;
@@ -185,6 +192,8 @@ namespace ImFlow
 
         template<typename T>
         const T& ins(int i);
+        Pin* ins(int i) { return m_ins[i].get(); }
+        Pin* outs(int i) { return m_outs[i].get(); }
 
         bool hovered();
         void selected(bool state) { m_selected = state; }
@@ -278,7 +287,7 @@ namespace ImFlow
         void setLink(std::shared_ptr<Link>& link) override { m_link = link; }
 
         const T& val();
-        void behaviour(std::function<T()> func) { m_behaviour = func; }
+        void behaviour(std::function<T()> func) { m_behaviour = std::move(func); }
 
         ImVec2 pinPoint() override { return m_pos + ImVec2(m_size.x + m_inf->style().node_padding.z, m_size.y / 2); }
     private:
