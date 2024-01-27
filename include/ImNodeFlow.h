@@ -14,9 +14,6 @@
 
 namespace ImFlow
 {
-
-    typedef void (*VoidCallback)();
-
     inline void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness);
     inline bool smart_bezier_collider(const ImVec2& p, const ImVec2& p1, const ImVec2& p2, float radius);
 
@@ -128,10 +125,10 @@ namespace ImFlow
         void update();
 
         template<typename T>
-        void addNode(const std::string& name, const ImVec2& pos);
+        T* addNode(const std::string& name, const ImVec2& pos);
         template<typename T>
         T* dropNode(const std::string& name, const ImVec2& pos);
-        int nodesCount() { return m_nodes.size(); }
+        int nodesCount() { return (int)m_nodes.size(); }
 
         void createLink(Pin* left, Pin* right);
 
@@ -144,9 +141,11 @@ namespace ImFlow
         void draggingNode(bool state) { m_draggingNodeNext = state; }
         void hovering(Pin* hovering) { m_hovering = hovering; }
 
+        bool getSingleUseClick() const { return m_singleUseClick; }
+        void consumeSingleUseClick() { m_singleUseClick = false; }
+
         ImVec2 canvas2screen(const ImVec2& p);
         ImVec2 screen2canvas(const ImVec2& p);
-    private:
         bool on_selected_node();
         bool on_free_space();
     private:
@@ -154,12 +153,14 @@ namespace ImFlow
         ImVec2 m_pos;
         ImVec2 m_scroll = ImVec2(0, 0);
 
+        bool m_singleUseClick = false;
+
         std::vector<std::shared_ptr<BaseNode>> m_nodes;
         std::vector<std::weak_ptr<Link>> m_links;
 
         std::function<void()> m_rightClickPopUp;
         std::function<void(Pin* dragged)> m_droppedLinkPopUp;
-        ImGuiKey m_droppedLinkPupUpComboKey;
+        ImGuiKey m_droppedLinkPupUpComboKey = ImGuiKey_None;
         Pin* m_droppedLinkLeft = nullptr;
 
         bool m_draggingNode = false, m_draggingNodeNext = false;
@@ -196,7 +197,9 @@ namespace ImFlow
         Pin* outs(int i) { return m_outs[i].get(); }
 
         bool hovered();
-        void selected(bool state) { m_selected = state; }
+        void selected(bool state) { m_selectedNext = state; }
+
+        void updatePublicStatus() { m_selected = m_selectedNext; }
 
         const std::string& name() { return m_name; }
         const ImVec2& size() { return  m_size; }
@@ -207,7 +210,7 @@ namespace ImFlow
         ImVec2 m_pos, m_posOld = m_pos;
         ImVec2 m_size;
         ImNodeFlow* m_inf;
-        bool m_selected = false;
+        bool m_selected = false, m_selectedNext = false;
         bool m_dragged = false;
         ImVec2 m_paddingTL;
         ImVec2 m_paddingBR;
@@ -244,8 +247,8 @@ namespace ImFlow
         void pos(ImVec2 pos) { m_pos = pos; }
     protected:
         std::string m_name;
-        ImVec2 m_pos = ImVec2(0, 0);
-        ImVec2 m_size = ImVec2(10, 10);
+        ImVec2 m_pos = ImVec2(0.f, 0.f);
+        ImVec2 m_size = ImVec2(0.f, 0.f);
         PinKind m_kind;
         ConnectionFilter m_filter;
         BaseNode* m_parent = nullptr;

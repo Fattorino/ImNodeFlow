@@ -10,19 +10,29 @@ namespace ImFlow
         ImVec2 start = m_left->pinPoint();
         ImVec2 end  = m_right->pinPoint();
         float thickness = m_inf->style().link_thickness;
+        bool mouseClickState = m_inf->getSingleUseClick();
+
+        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            m_selected = false;
 
         if (smart_bezier_collider(ImGui::GetMousePos(), start, end, 2.5))
         {
             m_hovered = true;
             thickness = m_inf->style().link_hovered_thickness;
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            if (mouseClickState)
+            {
+                m_inf->consumeSingleUseClick();
                 m_selected = true;
+            }
         }
         else { m_hovered = false; }
 
         if (m_selected)
             smart_bezier(start, end, m_inf->style().colors.link_selected_outline, thickness + m_inf->style().link_selected_outline_thickness);
         smart_bezier(start, end, m_inf->style().colors.link, thickness);
+
+        if (m_selected && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+            m_right->deleteLink();
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -37,6 +47,7 @@ namespace ImFlow
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImGui::PushID(this);
+        bool mouseClickState = m_inf->getSingleUseClick();
 
         draw_list->ChannelsSetCurrent(1); // Foreground
         ImGui::SetCursorScreenPos(offset + m_pos);
@@ -97,12 +108,19 @@ namespace ImFlow
             draw_list->AddRect(offset + m_pos - m_paddingTL, offset + m_pos + m_size + m_paddingBR, m_inf->style().colors.node_border, m_inf->style().node_radius, 0, m_inf->style().node_border_thickness);
 
 
-        if (hovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-            m_selected = true;
+        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !m_inf->on_selected_node())
+            selected(false);
+
+        if (hovered() && mouseClickState)
+        {
+            selected(true);
+            m_inf->consumeSingleUseClick();
+        }
 
         bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - m_paddingTL, offset + m_pos + headerSize);
-        if (onHeader && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        if (onHeader && mouseClickState)
         {
+            m_inf->consumeSingleUseClick();
             m_dragged = true;
             m_inf->draggingNode(true);
             m_posOld = m_pos;
@@ -165,6 +183,7 @@ namespace ImFlow
         // Updating looping stuff
         m_hovering = nullptr;
         m_draggingNode = m_draggingNodeNext;
+        m_singleUseClick = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
 
         // Create child canvas
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
@@ -190,16 +209,11 @@ namespace ImFlow
         for (float y = fmodf(m_scroll.y, m_style.grid_size / m_style.grid_subdivisions); y < canvas_sz.y; y += m_style.grid_size / m_style.grid_subdivisions)
             draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, m_style.colors.subGrid);
 
-        //  Deselection (must be done before Nodes and Links update)
-        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-            for (auto &l: m_links) { l.lock()->selected(false); }
-        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !on_selected_node())
-            for (auto& n : m_nodes) { n->selected(false); }
-
         // Update and draw nodes
         draw_list->ChannelsSplit(2);
         for (auto& node : m_nodes) { node->update(offset); }
         draw_list->ChannelsMerge();
+        for (auto& node : m_nodes) { node->updatePublicStatus(); }
 
         // Update and draw links
         for (auto& l : m_links) { l.lock()->update(); }
@@ -259,15 +273,11 @@ namespace ImFlow
         // Deletion of selected stuff
         if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
         {
-            for (auto &l: m_links)
-                if (l.lock()->selected())
-                    l.lock()->right()->deleteLink();
-            
             m_nodes.erase(std::remove_if(m_nodes.begin(), m_nodes.end(),
                            [](const std::shared_ptr<BaseNode>& n) { return n->selected(); }), m_nodes.end());
         }
 
-        // Removing dead references
+        // Removing dead Links
         m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
                        [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
 

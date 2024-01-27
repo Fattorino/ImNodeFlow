@@ -110,8 +110,7 @@ public:
     }
 };
 
-// TODO: Make it so you only select the thing on top and not also everything that might be underneath
-// TODO: Optimize code by removing some loops over Links list (by for example keeping a second list of the selected ones so I dont have to search the full list every frame
+// TODO: Collision solver to bring first node on foreground to avoid clipping
 
 void foo(Pin* dragged)
 {
@@ -165,24 +164,6 @@ int main()
             printf_s("AOOOO!\n");
         }
     });
-    /*INF.droppedLinkPopUpContent([](Pin* dragged) {
-        if (dragged->kind() == PinKind_Output)
-        {
-            if (ImGui::Selectable("Sommatore"))
-            {
-                auto n = INF.dropNode<Somma>("Sommatore", ImGui::GetWindowPos());
-                INF.createLink(dragged, n->ins(0));
-            }
-        }
-        else
-        {
-            if (ImGui::Selectable("Sommatore"))
-            {
-                auto n = INF.dropNode<Somma>("Sommatore", ImGui::GetWindowPos());
-                INF.createLink(n->outs(0), dragged);
-            }
-        }
-    }, ImGuiKey_LeftShift);*/
     INF.droppedLinkPopUpContent(foo, ImGuiKey_LeftShift);
 
     bool done = false;

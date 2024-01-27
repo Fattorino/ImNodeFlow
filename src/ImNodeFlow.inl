@@ -35,10 +35,11 @@ namespace ImFlow
     // HANDLER
 
     template<typename T>
-    void ImNodeFlow::addNode(const std::string& name, const ImVec2& pos)
+    T* ImNodeFlow::addNode(const std::string& name, const ImVec2& pos)
     {
         static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not subclass of BaseNode!");
         m_nodes.emplace_back(std::make_shared<T>(name, pos, this));
+        return static_cast<T*>(m_nodes.back().get());
     }
 
     template<typename T>
