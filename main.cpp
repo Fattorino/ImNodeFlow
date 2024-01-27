@@ -17,12 +17,14 @@ public:
         addIN<int>("intouno", 0, ConnectionFilter_Int);
         addOUT<int>("int", ConnectionFilter_Int)
                 ->behaviour([this](){ return ins<int>(0) + m_slider; });
+        addOUT<int>("dummy", ConnectionFilter_Int)
+                ->behaviour([this](){ return ins<int>(0) + m_slider * 2; });
     }
 
     void draw() override
     {
         ImGui::Text("ASDDJHGFDSA");
-        ImGui::PushItemWidth(120.0f);
+        ImGui::SetNextItemWidth(120.0f);
         ImGui::SliderInt("##SLSLSL", &m_slider, 0, 200);
     }
 private:

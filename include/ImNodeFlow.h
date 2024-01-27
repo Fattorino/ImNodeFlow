@@ -73,32 +73,45 @@ namespace ImFlow
 
     struct InfColors
     {
-        ImU32 link = IM_COL32(200, 200, 100, 255);
-        ImU32 drag_out_link = IM_COL32(200, 200, 100, 255);
-        ImU32 link_selected_outline = IM_COL32(80, 20, 255, 255);
+        ImU32 pin_bg = IM_COL32(23, 16, 16, 0);
+        ImU32 pin_hovered = IM_COL32(100, 100, 255, 70);
+        ImU32 pin_border = IM_COL32(255, 255, 255, 0);
+        ImU32 pin_point = IM_COL32(255, 255, 240, 230);
 
-        ImU32 node_bg = IM_COL32(60, 60, 60, 255);
-        ImU32 node_header = IM_COL32(40, 40, 40, 255);
+        ImU32 link = IM_COL32(230, 230, 200, 230);
+        ImU32 drag_out_link = IM_COL32(230, 230, 200, 230);
+        ImU32 link_selected_outline = IM_COL32(80, 20, 255, 200);
+
+        ImU32 node_bg = IM_COL32(97, 103, 122, 100);
+        ImU32 node_header = IM_COL32(23, 16, 16, 150);
+        ImColor node_header_title = ImColor(255, 246, 240, 255);
         ImU32 node_border = IM_COL32(100, 100, 100, 255);
-        ImU32 node_selected_border = IM_COL32(100, 50, 200, 255);
+        ImU32 node_selected_border = IM_COL32(170, 190, 205, 230);
 
-        ImU32 background = IM_COL32(60, 60, 70, 200);
+        ImU32 background = IM_COL32(44, 51, 51, 255);
         ImU32 grid = IM_COL32(200, 200, 200, 40);
+        ImU32 subGrid = IM_COL32(200, 200, 200, 10);
     };
 
     struct InfStyler
     {
-        float link_thickness = 2.8f;
+        ImVec2 pin_padding = ImVec2(3.f, 1.f);
+        float pin_radius = 8.f;
+        float pin_border_thickness = 1.f;
+        float pin_point_radius = 3.5f;
+
+        float link_thickness = 2.6f;
         float link_hovered_thickness = 3.5f;
         float link_selected_outline_thickness = 0.5f;
         float drag_out_link_thickness = 2.f;
 
-        float node_radius = 6.f;
+        ImVec4 node_padding = ImVec4(9.f, 6.f, 9.f, 2.f); // Left Top Right Bottom
+        float node_radius = 8.f;
         float node_border_thickness = 1.f;
-        float node_border_selected_thickness = 3.f;
+        float node_border_selected_thickness = 2.f;
 
         float grid_size = 50.f;
-        float grid_subdivisions = 5.0f;
+        float grid_subdivisions = 5.f;
 
         InfColors colors;
     };
@@ -156,7 +169,11 @@ namespace ImFlow
     {
     public:
         explicit BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf)
-            :m_name(std::move(name)), m_pos(pos), m_inf(inf) {}
+            :m_name(std::move(name)), m_pos(pos), m_inf(inf)
+        {
+            m_paddingTL = {m_inf->style().node_padding.x, m_inf->style().node_padding.y};
+            m_paddingBR = {m_inf->style().node_padding.z, m_inf->style().node_padding.w};
+        }
 
         void update(ImVec2& offset);
         virtual void draw() = 0;
@@ -176,7 +193,6 @@ namespace ImFlow
         const ImVec2& size() { return  m_size; }
         const ImVec2& pos() { return  m_pos; }
         [[nodiscard]] bool selected() const { return m_selected; }
-        const ImVec2& padding() { return m_padding; }
     private:
         std::string m_name;
         ImVec2 m_pos, m_posOld = m_pos;
@@ -184,7 +200,8 @@ namespace ImFlow
         ImNodeFlow* m_inf;
         bool m_selected = false;
         bool m_dragged = false;
-        ImVec2 m_padding = ImVec2(5.f, 5.f);
+        ImVec2 m_paddingTL;
+        ImVec2 m_paddingBR;
 
         std::vector<std::shared_ptr<Pin>> m_ins;
         std::vector<std::shared_ptr<Pin>> m_outs;
@@ -206,9 +223,11 @@ namespace ImFlow
         virtual void deleteLink() {}
         virtual std::weak_ptr<Link> getLink() { return std::weak_ptr<Link>{}; }
 
+        const std::string& name() { return m_name; }
         [[nodiscard]] const ImVec2& pos() { return m_pos; }
         [[nodiscard]] const ImVec2& size() { return m_size; }
-        const std::string& name() { return m_name; }
+        virtual ImVec2 pinPoint() = 0;
+        float calcWidth() { return ImGui::CalcTextSize(m_name.c_str()).x; }
         BaseNode* parent() { return m_parent; }
         PinKind kind() { return m_kind; }
         [[nodiscard]] ConnectionFilter filter() const { return m_filter; }
@@ -232,13 +251,14 @@ namespace ImFlow
             :Pin(name, filter, kind, parent, inf), m_emptyVal(defReturn) {}
 
         void update() override;
-        void draw();
 
         const T& val();
 
         void createLink(Pin* left) override;
         void deleteLink() override { m_link.reset(); }
         std::weak_ptr<Link> getLink() override { return m_link; }
+
+        ImVec2 pinPoint() override { return m_pos + ImVec2(-m_inf->style().node_padding.z, m_size.y / 2); }
     private:
         std::shared_ptr<Link> m_link;
         T m_emptyVal;
@@ -254,12 +274,13 @@ namespace ImFlow
         ~OutPin() { if (!m_link.expired()) m_link.lock()->right()->deleteLink(); }
 
         void update() override;
-        void draw();
 
         void setLink(std::shared_ptr<Link>& link) override { m_link = link; }
 
         const T& val();
-        void behaviour(std::function<T()> func) { m_behaviour = std::function(func); }
+        void behaviour(std::function<T()> func) { m_behaviour = func; }
+
+        ImVec2 pinPoint() override { return m_pos + ImVec2(m_size.x + m_inf->style().node_padding.z, m_size.y / 2); }
     private:
         std::weak_ptr<Link> m_link;
         std::function<T()> m_behaviour;

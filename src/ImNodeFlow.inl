@@ -75,21 +75,18 @@ namespace ImFlow
     template<class T>
     void InPin<T>::update()
     {
-        draw();
-
-        if (ImGui::IsItemHovered())
-            m_inf->hovering(this);
-    }
-
-    template<class T>
-    void InPin<T>::draw()
-    {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImGui::Text(m_name.c_str());
         m_size = ImGui::GetItemRectSize();
         if (ImGui::IsItemHovered())
-            draw_list->AddRectFilled(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(100, 100, 255, 70));
-        draw_list->AddRect(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(255, 255, 255, 100));
+            draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_hovered, m_inf->style().pin_radius);
+        else
+            draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_bg, m_inf->style().pin_radius);
+        draw_list->AddRect(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_border, m_inf->style().pin_radius, 0, m_inf->style().pin_border_thickness);
+        draw_list->AddCircleFilled(pinPoint(), m_inf->style().pin_point_radius, m_inf->style().colors.pin_point);
+
+        if (ImGui::IsItemHovered())
+            m_inf->hovering(this);
     }
 
     template<class T>
@@ -108,20 +105,20 @@ namespace ImFlow
     template<class T>
     void OutPin<T>::update()
     {
-        draw();
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        ImGui::SetCursorScreenPos(m_pos);
+        ImGui::Text(m_name.c_str());
+
+        m_size = ImGui::GetItemRectSize();
+        if (ImGui::IsItemHovered())
+            draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_hovered, m_inf->style().pin_radius);
+        else
+            draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_bg, m_inf->style().pin_radius);
+        draw_list->AddRect(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_border, m_inf->style().pin_radius, 0, m_inf->style().pin_border_thickness);
+        draw_list->AddCircleFilled(pinPoint(), m_inf->style().pin_point_radius, m_inf->style().colors.pin_point);
 
         if (ImGui::IsItemHovered())
             m_inf->hovering(this);
-    }
-
-    template<class T>
-    void OutPin<T>::draw()
-    {
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImGui::Text(m_name.c_str());
-        m_size = ImGui::GetItemRectSize();
-        if (ImGui::IsItemHovered())
-            draw_list->AddRectFilled(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(100, 100, 255, 70));
-        draw_list->AddRect(m_pos - ImVec2(3,1), m_pos + m_size + ImVec2(3,2), IM_COL32(255, 255, 255, 100));
     }
 }

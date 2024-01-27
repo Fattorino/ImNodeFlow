@@ -7,8 +7,8 @@ namespace ImFlow
 
     void Link::update()
     {
-        ImVec2 start = m_left->pos() + ImVec2(m_left->size().x, m_left->size().y / 2);
-        ImVec2 end = m_right->pos() + ImVec2(0, m_left->size().y / 2);
+        ImVec2 start = m_left->pinPoint();
+        ImVec2 end  = m_right->pinPoint();
         float thickness = m_inf->style().link_thickness;
 
         if (smart_bezier_collider(ImGui::GetMousePos(), start, end, 2.5))
@@ -30,7 +30,7 @@ namespace ImFlow
 
     bool BaseNode::hovered()
     {
-        return ImGui::IsMouseHoveringRect(m_inf->canvas2screen(m_pos - m_padding), m_inf->canvas2screen(m_pos + m_size + m_padding));
+        return ImGui::IsMouseHoveringRect(m_inf->canvas2screen(m_pos - m_paddingTL), m_inf->canvas2screen(m_pos + m_size + m_paddingBR));
     }
 
     void BaseNode::update(ImVec2& offset)
@@ -43,12 +43,14 @@ namespace ImFlow
 
         ImGui::BeginGroup();
 
+        // Header
         ImGui::BeginGroup();
-        ImGui::Text(m_name.c_str());
+        ImGui::TextColored(m_inf->style().colors.node_header_title, m_name.c_str());
         ImGui::Spacing();
         ImGui::EndGroup();
         float headerH = ImGui::GetItemRectSize().y;
 
+        // Inputs
         ImGui::BeginGroup();
         for(auto& p : m_ins)
         {
@@ -58,37 +60,47 @@ namespace ImFlow
         ImGui::EndGroup();
         ImGui::SameLine();
 
+        // Content
         ImGui::BeginGroup();
         draw();
+        ImGui::Dummy(ImVec2(0.f, 0.f));
         ImGui::EndGroup();
         ImGui::SameLine();
 
+        // Outputs
+        float maxW = 0.0f;
+        for (auto& p : m_outs)
+        {
+            float w = p->calcWidth();
+            if (w > maxW)
+                maxW = w;
+        }
         ImGui::BeginGroup();
         for (auto& p : m_outs)
         {
-            p->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos());
+            p->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p->calcWidth(), 0.f));
             p->update();
         }
         ImGui::EndGroup();
-        ImGui::SameLine();
 
         ImGui::EndGroup();
 
+        // Background
         m_size = ImGui::GetItemRectSize();
-        ImVec2 headerSize = ImVec2(m_size.x + m_padding.x, headerH);
-        draw_list->ChannelsSetCurrent(0); // Background
-        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, m_inf->style().colors.node_bg, m_inf->style().node_radius);
-        draw_list->AddRectFilled(offset + m_pos - m_padding, offset + m_pos + headerSize, m_inf->style().colors.node_header, m_inf->style().node_radius, ImDrawFlags_RoundCornersTop);
+        ImVec2 headerSize = ImVec2(m_size.x + m_paddingTL.x, headerH);
+        draw_list->ChannelsSetCurrent(0);
+        draw_list->AddRectFilled(offset + m_pos - m_paddingTL, offset + m_pos + m_size + m_paddingBR, m_inf->style().colors.node_bg, m_inf->style().node_radius);
+        draw_list->AddRectFilled(offset + m_pos - m_paddingTL, offset + m_pos + headerSize, m_inf->style().colors.node_header, m_inf->style().node_radius, ImDrawFlags_RoundCornersTop);
         if(m_selected)
-            draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, m_inf->style().colors.node_selected_border, m_inf->style().node_radius, 0, m_inf->style().node_border_selected_thickness);
+            draw_list->AddRect(offset + m_pos - m_paddingTL, offset + m_pos + m_size + m_paddingBR, m_inf->style().colors.node_selected_border, m_inf->style().node_radius, 0, m_inf->style().node_border_selected_thickness);
         else
-            draw_list->AddRect(offset + m_pos - m_padding, offset + m_pos + m_size + m_padding, m_inf->style().colors.node_border, m_inf->style().node_radius, 0, m_inf->style().node_border_thickness);
+            draw_list->AddRect(offset + m_pos - m_paddingTL, offset + m_pos + m_size + m_paddingBR, m_inf->style().colors.node_border, m_inf->style().node_radius, 0, m_inf->style().node_border_thickness);
 
 
         if (hovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
             m_selected = true;
 
-        bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - m_padding, offset + m_pos + headerSize);
+        bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - m_paddingTL, offset + m_pos + headerSize);
         if (onHeader && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
         {
             m_dragged = true;
@@ -150,8 +162,7 @@ namespace ImFlow
         m_draggingNode = m_draggingNodeNext;
 
         // Create child canvas
-        ImGui::Text("Hold middle mouse button to scroll (%.2f,%.2f)", m_scroll.x, m_scroll.y);
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::PushStyleColor(ImGuiCol_ChildBg, m_style.colors.background);
         ImGui::BeginChild(m_name.c_str(), ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse);
@@ -168,6 +179,10 @@ namespace ImFlow
             draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, m_style.colors.grid);
         for (float y = fmodf(m_scroll.y, m_style.grid_size); y < canvas_sz.y; y += m_style.grid_size)
             draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, m_style.colors.grid);
+        for (float x = fmodf(m_scroll.x, m_style.grid_size / m_style.grid_subdivisions); x < canvas_sz.x; x += m_style.grid_size / m_style.grid_subdivisions)
+            draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, m_style.colors.subGrid);
+        for (float y = fmodf(m_scroll.y, m_style.grid_size / m_style.grid_subdivisions); y < canvas_sz.y; y += m_style.grid_size / m_style.grid_subdivisions)
+            draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, m_style.colors.subGrid);
 
         //  Deselection (must be done before Nodes and Links update)
         if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -261,15 +276,10 @@ namespace ImFlow
         {
             ImVec2 pinDot;
             if (m_dragOut->kind() == PinKind_Output)
-            {
-                pinDot = m_dragOut->pos() + ImVec2(m_dragOut->size().x, m_dragOut->size().y / 2);
-                smart_bezier(pinDot, ImGui::GetMousePos(), m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
-            }
+                smart_bezier(m_dragOut->pinPoint(), ImGui::GetMousePos(), m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
             else
-            {
-                pinDot = m_dragOut->pos() + ImVec2(0, m_dragOut->size().y / 2);
-                smart_bezier(ImGui::GetMousePos(), pinDot, m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
-            }
+                smart_bezier(ImGui::GetMousePos(), m_dragOut->pinPoint(), m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
+
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                 m_dragOut = nullptr;
         }
