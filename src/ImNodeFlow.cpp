@@ -93,17 +93,23 @@ namespace ImFlow
         {
             m_dragged = true;
             m_inf->draggingNode(true);
+            m_posOld = m_pos;
         }
         if(m_dragged || (m_selected && m_inf->draggingNode()))
         {
+            float step = m_inf->style().grid_size / m_inf->style().grid_subdivisions;
+            ImVec2 wantedPos = m_posOld + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.f);
+            // "Slam" The position
+            m_pos.x = step * (int)(wantedPos.x / step);
+            m_pos.y = step * (int)(wantedPos.y / step);
+
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
             {
                 m_dragged = false;
                 m_inf->draggingNode(false);
+                m_posOld = m_pos;
             }
-            m_pos += ImGui::GetIO().MouseDelta;
         }
-
         ImGui::PopID();
     }
 
@@ -139,8 +145,9 @@ namespace ImFlow
 
     void ImNodeFlow::update()
     {
-        // Clearing looping stuff
+        // Updating looping stuff
         m_hovering = nullptr;
+        m_draggingNode = m_draggingNodeNext;
 
         // Create child canvas
         ImGui::Text("Hold middle mouse button to scroll (%.2f,%.2f)", m_scroll.x, m_scroll.y);

@@ -97,8 +97,8 @@ namespace ImFlow
         float node_border_thickness = 1.f;
         float node_border_selected_thickness = 3.f;
 
-        float grid_size = 64.f;
-        float grid_subdivisions = 4.0f;
+        float grid_size = 50.f;
+        float grid_subdivisions = 5.0f;
 
         InfColors colors;
     };
@@ -125,7 +125,7 @@ namespace ImFlow
         [[nodiscard]] bool draggingNode() const { return m_draggingNode; }
         InfStyler& style() { return m_style; }
 
-        void draggingNode(bool state) { m_draggingNode = state; }
+        void draggingNode(bool state) { m_draggingNodeNext = state; }
         void hovering(Pin* hovering) { m_hovering = hovering; }
 
         ImVec2 canvas2screen(const ImVec2& p);
@@ -142,7 +142,7 @@ namespace ImFlow
         VoidCallback m_droppedLinkCallback = nullptr;
         VoidCallback m_rightClickCallback = nullptr;
 
-        bool m_draggingNode = false;
+        bool m_draggingNode = false, m_draggingNodeNext = false;
         Pin* m_hovering = nullptr;
         Pin* m_dragOut = nullptr;
 
@@ -179,7 +179,7 @@ namespace ImFlow
         const ImVec2& padding() { return m_padding; }
     private:
         std::string m_name;
-        ImVec2 m_pos;
+        ImVec2 m_pos, m_posOld = m_pos;
         ImVec2 m_size;
         ImNodeFlow* m_inf;
         bool m_selected = false;
