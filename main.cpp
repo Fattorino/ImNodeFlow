@@ -7,7 +7,7 @@
 
 using namespace ImFlow;
 
-ImNodeFlow INF("f");
+ImNodeFlow INF;
 
 class AB : public BaseNode
 {
@@ -110,7 +110,8 @@ public:
     }
 };
 
-// TODO: Collision solver to bring first node on foreground to avoid clipping
+// TODO: [POLISH] Collision solver to bring first node on foreground to avoid clipping
+// TODO: [EXTRA]  Custom renderers for Pins (with lambdas I think)
 
 void foo(Pin* dragged)
 {

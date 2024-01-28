@@ -95,10 +95,10 @@ namespace ImFlow
         ImGui::EndGroup();
 
         ImGui::EndGroup();
-
-        // Background
         m_size = ImGui::GetItemRectSize();
         ImVec2 headerSize = ImVec2(m_size.x + m_paddingTL.x, headerH);
+
+        // Background
         draw_list->ChannelsSetCurrent(0);
         draw_list->AddRectFilled(offset + m_pos - m_paddingTL, offset + m_pos + m_size + m_paddingBR, m_inf->style().colors.node_bg, m_inf->style().node_radius);
         draw_list->AddRectFilled(offset + m_pos - m_paddingTL, offset + m_pos + headerSize, m_inf->style().colors.node_header, m_inf->style().node_radius, ImDrawFlags_RoundCornersTop);
