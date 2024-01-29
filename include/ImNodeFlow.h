@@ -217,7 +217,7 @@ namespace ImFlow
          * @param pos Position of the Node in canvas coordinates
          * @return Pointer of the pushed type to the newly added Node
          *
-         * Inheritance is checked at compile time, <T> MUST be derived fromBaseNode.
+         * Inheritance is checked at compile time, <T> MUST be derived from BaseNode.
          */
         template<typename T>
         T* addNode(const std::string& name, const ImVec2& pos);
@@ -229,7 +229,7 @@ namespace ImFlow
          * @param pos Position of the Node in screen coordinates
          * @return Pointer of the pushed type to the newly added Node
          *
-         * Inheritance is checked at compile time, <T> MUST be derived fromBaseNode.
+         * Inheritance is checked at compile time, <T> MUST be derived from BaseNode.
          */
         template<typename T>
         T* dropNode(const std::string& name, const ImVec2& pos);
@@ -242,11 +242,12 @@ namespace ImFlow
 
         /**
          * @brief Creates a link between two pins
-         * @details Creates a link. The link will be owned by the right (input) pin, and a reference is added to the Handler links list.
-         * @param left Pointer to the left pin to be connected
-         * @param right Pointer to the right pin to be connected
+         * @details Creates a link. Will check for same node connections, IN to IN or OUT to OUT connections and evaluate the filters.
+         *          Then the link will be created and the input pin of the two will own the link.
+         * @param start Pointer to the start pin to be connected
+         * @param end Pointer to the end pin to be connected
          */
-        void createLink(Pin* left, Pin* right);
+        void createLink(Pin* start, Pin* end);
 
         /**
          * @brief Pop-up when link is "dropped"
@@ -265,16 +266,52 @@ namespace ImFlow
         void rightClickPopUpContent(std::function<void()> content) { m_rightClickPopUp = std::move(content); }
 
         /**
+         * @brief Get mouse clicking status
+         * @return [TRUE] if mouse is clicked and click hasn't been consumed
+         */
+        [[nodiscard]] bool getSingleUseClick() const { return m_singleUseClick; }
+
+        /**
+         * @brief Consume the click for the given frame
+         */
+        void consumeSingleUseClick() { m_singleUseClick = false; }
+
+        /**
+         * @brief Get editor's name
+         * @return Const reference to editor's name
+         */
+        const std::string& name() { return m_name; }
+
+        /**
+         * @brief Get editor's position
+         * @return Const reference to editor's position in screen coordinates
+         */
+        const ImVec2& pos() { return m_pos; }
+
+        /**
+         * @brief Get editor's grid scroll
+         * @details Scroll is the offset from the origin of the grid, changes while navigating the grid with the middle mouse.
+         * @return Const reference to editor's grid scroll
+         */
+        const ImVec2& scroll() { return m_scroll; }
+
+        /**
+         * @brief Get editor's list of nodes
+         * @return Const reference to editor's internal nodes list
+         */
+        const std::vector<std::shared_ptr<BaseNode>>& nodes() { return m_nodes; }
+
+        /**
+         * @brief Get editor's list of links
+         * @return Const reference to editor's internal links list
+         */
+        const std::vector<std::weak_ptr<Link>>& links() { return m_links; }
+
+        /**
          * @brief Get dragging status
          * @return [TRUE] if a Node is being dragged around the grid
          */
         [[nodiscard]] bool draggingNode() const { return m_draggingNode; }
-
-        /**
-         * @brief Get current style
-         * @return Reference to style variables
-         */
-        InfStyler& style() { return m_style; }
 
         /**
          * @brief Set dragging status
@@ -289,17 +326,6 @@ namespace ImFlow
          * @param hovering Pointer to the hovered pin
          */
         void hovering(Pin* hovering) { m_hovering = hovering; }
-
-        /**
-         * @brief Get mouse clicking status
-         * @return [TRUE] if mouse is clicked and click hasn't been consumed
-         */
-        [[nodiscard]] bool getSingleUseClick() const { return m_singleUseClick; }
-
-        /**
-         * @brief Consume the click for the given frame
-         */
-        void consumeSingleUseClick() { m_singleUseClick = false; }
 
         /**
          * @brief Convert coordinates from canvas to screen
@@ -326,6 +352,12 @@ namespace ImFlow
          * @return [TRUE] if the mouse is not hovering a node or a link
          */
         bool on_free_space();
+
+        /**
+         * @brief Get current style
+         * @return Reference to style variables
+         */
+        InfStyler& style() { return m_style; }
     private:
         std::string m_name;
         ImVec2 m_pos;
@@ -402,6 +434,7 @@ namespace ImFlow
          * @tparam T Type of the data the pin will handle
          * @param name Name of the pin
          * @param filter Connection filter
+         * @return Pointer to the newly added pin. Must be used to set behaviour
          */
         template<typename T>
         [[nodiscard]] OutPin<T>* addOUT(std::string name, ConnectionFilter filter = ConnectionFilter_None);
@@ -437,19 +470,6 @@ namespace ImFlow
         bool hovered();
 
         /**
-         * @brief Set selected status
-         * @param state New selected state
-         *
-         * Status only updates when updatePublicStatus() is called
-         */
-        void selected(bool state) { m_selectedNext = state; }
-
-        /**
-         * @brief Updates the selected status of the node
-         */
-        void updatePublicStatus() { m_selected = m_selectedNext; }
-
-        /**
          * @brief Get node name
          * @return Const reference to the node's name
          */
@@ -472,6 +492,25 @@ namespace ImFlow
          * @return [TRUE] if the node is selected
          */
         [[nodiscard]] bool selected() const { return m_selected; }
+
+        /**
+         * @brief Get dragged status
+         * @return [TRUE] if the node is being dragged
+         */
+        [[nodiscard]] bool dragged() const { return m_dragged; }
+
+        /**
+         * @brief Set selected status
+         * @param state New selected state
+         *
+         * Status only updates when updatePublicStatus() is called
+         */
+        void selected(bool state) { m_selectedNext = state; }
+
+        /**
+         * @brief Updates the selected status of the node
+         */
+        void updatePublicStatus() { m_selected = m_selectedNext; }
     private:
         std::string m_name;
         ImVec2 m_pos, m_posOld = m_pos;
@@ -563,18 +602,6 @@ namespace ImFlow
         [[nodiscard]] const ImVec2& size() { return m_size; }
 
         /**
-         * @brief Get pin's link attachment point
-         * @return Canvas coordinates to the attachment point between the link and the pin
-         */
-        virtual ImVec2 pinPoint() = 0;
-
-        /**
-         * @brief Calculate pin's width pre-rendering
-         * @return The with of the pin once it will be rendered
-         */
-        float calcWidth() { return ImGui::CalcTextSize(m_name.c_str()).x; }
-
-        /**
          * @brief Get pin's parent node
          * @return Const reference to pin's parent node. Node that contains it
          */
@@ -591,6 +618,18 @@ namespace ImFlow
          * @return Pin's connection filter configuration
          */
         [[nodiscard]] ConnectionFilter filter() const { return m_filter; }
+
+        /**
+         * @brief Get pin's link attachment point
+         * @return Canvas coordinates to the attachment point between the link and the pin
+         */
+        virtual ImVec2 pinPoint() = 0;
+
+        /**
+         * @brief Calculate pin's width pre-rendering
+         * @return The with of the pin once it will be rendered
+         */
+        float calcWidth() { return ImGui::CalcTextSize(m_name.c_str()).x; }
 
         /**
          * @brief Set pin's position
@@ -633,12 +672,6 @@ namespace ImFlow
         void update() override;
 
         /**
-         * @brief Get value carried by the link
-         * @return Reference to the value of the connected OutPin. Or the default value if not connected
-         */
-        const T& val();
-
-        /**
          * @brief Create link between pins
          * @param left Pointer to the other pin
          */
@@ -660,6 +693,12 @@ namespace ImFlow
          * @return Canvas coordinates to the attachment point between the link and the pin
          */
         ImVec2 pinPoint() override { return m_pos + ImVec2(-m_inf->style().node_padding.z, m_size.y / 2); }
+
+        /**
+         * @brief Get value carried by the link
+         * @return Reference to the value of the connected OutPin. Or the default value if not connected
+         */
+        const T& val();
     private:
         std::shared_ptr<Link> m_link;
         T m_emptyVal;
@@ -701,6 +740,12 @@ namespace ImFlow
         void setLink(std::shared_ptr<Link>& link) override { m_link = link; }
 
         /**
+         * @brief Get pin's link attachment point
+         * @return Canvas coordinates to the attachment point between the link and the pin
+         */
+        ImVec2 pinPoint() override { return m_pos + ImVec2(m_size.x + m_inf->style().node_padding.z, m_size.y / 2); }
+
+        /**
          * @brief Calculate and get pin's value
          * @return Reference to the internal value of the pin
          */
@@ -712,12 +757,6 @@ namespace ImFlow
          * @param func Function or Lambda to be called by val()
          */
         void behaviour(std::function<T()> func) { m_behaviour = std::move(func); }
-
-        /**
-         * @brief Get pin's link attachment point
-         * @return Canvas coordinates to the attachment point between the link and the pin
-         */
-        ImVec2 pinPoint() override { return m_pos + ImVec2(m_size.x + m_inf->style().node_padding.z, m_size.y / 2); }
     private:
         std::weak_ptr<Link> m_link;
         std::function<T()> m_behaviour;

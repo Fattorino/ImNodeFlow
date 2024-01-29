@@ -172,10 +172,33 @@ namespace ImFlow
         return p - m_pos - m_scroll;
     }
 
-    void ImNodeFlow::createLink(Pin* left, Pin* right)
+    void ImNodeFlow::createLink(Pin* start, Pin* end)
     {
-        right->createLink(left);
-        m_links.emplace_back(right->getLink());
+        if (start->parent() == end->parent())
+            return;
+        if (!((start->filter() & end->filter()) != 0 || start->filter() == ConnectionFilter_None || end->filter() == ConnectionFilter_None)) // Check Filter
+            return;
+
+        if (start->kind() == PinKind_Output && end->kind() == PinKind_Input) // OUT to IN
+        {
+            if (end->getLink().expired() || end->getLink().lock()->left() != start)
+            {
+                end->createLink(start);
+                m_links.emplace_back(end->getLink());
+            }
+            else
+                end->deleteLink();
+        }
+        if (start->kind() == PinKind_Input && end->kind() == PinKind_Output) // IN to OUT
+        {
+            if (start->getLink().expired() || start->getLink().lock()->left() != end)
+            {
+                start->createLink(end);
+                m_links.emplace_back(start->getLink());
+            }
+            else
+                start->deleteLink();
+        }
     }
 
     void ImNodeFlow::update()
@@ -231,29 +254,10 @@ namespace ImFlow
                         ImGui::OpenPopup("DroppedLinkPopUp");
                     }
                 }
-                goto drop_off_end;
             }
-            if (m_dragOut->parent() == m_hovering->parent())
-                goto drop_off_end;
-            if (!((m_dragOut->filter() & m_hovering->filter()) != 0 || m_dragOut->filter() == ConnectionFilter_None || m_hovering->filter() == ConnectionFilter_None)) // Check Filter
-                goto drop_off_end;
-
-            if (m_dragOut->kind() == PinKind_Output && m_hovering->kind() == PinKind_Input) // OUT to IN
-            {
-                if (m_hovering->getLink().expired() || m_hovering->getLink().lock()->left() != m_dragOut)
-                    createLink(m_dragOut, m_hovering);
-                else
-                    m_hovering->deleteLink();
-            }
-            if (m_dragOut->kind() == PinKind_Input && m_hovering->kind() == PinKind_Output) // OUT to IN
-            {
-                if (m_dragOut->getLink().expired() || m_dragOut->getLink().lock()->left() != m_hovering)
-                    createLink(m_hovering, m_dragOut);
-                else
-                    m_dragOut->deleteLink();
-            }
+            else
+                createLink(m_dragOut, m_hovering);
         }
-        drop_off_end:
 
         // Links drag-out
         if (!m_draggingNode && m_hovering && !m_dragOut && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
