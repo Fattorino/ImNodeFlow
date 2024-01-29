@@ -244,7 +244,7 @@ namespace ImFlow
         for (auto& node : m_nodes) { node->updatePublicStatus(); }
 
         // Update and draw links
-        for (auto& l : m_links) { l.lock()->update(); }
+        for (auto& l : m_links) { if(!l.expired()) l.lock()->update(); }
 
         // Links drop-off
         if(m_dragOut && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
@@ -286,10 +286,6 @@ namespace ImFlow
                            [](const std::shared_ptr<BaseNode>& n) { return n->selected(); }), m_nodes.end());
         }
 
-        // Removing dead Links
-        m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
-                       [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
-
         // Right-click PopUp
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && on_free_space())
         {
@@ -308,6 +304,10 @@ namespace ImFlow
             m_droppedLinkPopUp(m_droppedLinkLeft);
             ImGui::EndPopup();
         }
+
+        // Removing dead Links
+        m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
+                                     [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
 
         // Scrolling
         if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.0f))
