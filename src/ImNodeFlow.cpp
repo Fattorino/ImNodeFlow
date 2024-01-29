@@ -60,6 +60,7 @@ namespace ImFlow
         ImGui::Spacing();
         ImGui::EndGroup();
         float headerH = ImGui::GetItemRectSize().y;
+        float titleW = ImGui::GetItemRectSize().x;
 
         // Inputs
         ImGui::BeginGroup();
@@ -89,7 +90,11 @@ namespace ImFlow
         ImGui::BeginGroup();
         for (auto& p : m_outs)
         {
-            p->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p->calcWidth(), 0.f));
+            // FIXME: This looks horrible
+            if (m_inf->canvas2screen(m_pos + ImVec2(titleW, 0)).x < ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
+                p->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p->calcWidth(), 0.f));
+            else
+                p->pos(ImVec2(m_inf->canvas2screen(m_pos + ImVec2(titleW - p->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
             p->update();
         }
         ImGui::EndGroup();

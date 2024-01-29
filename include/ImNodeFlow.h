@@ -633,7 +633,7 @@ namespace ImFlow
 
         /**
          * @brief Set pin's position
-         * @param pos Position in canvas coordinates
+         * @param pos Position in screen coordinates
          */
         void pos(ImVec2 pos) { m_pos = pos; }
     protected:
