@@ -29,7 +29,7 @@ Download the latest ImNodeFlow.zip containing only the necessary files and add t
 class SimpleSum : public BaseNode
 {
 public:
-    explicit Somma(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
+    explicit SimpleSum(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
     {
         addIN<int>("IN_VAL", 0, ConnectionFilter_Int);
         addOUT<int>("OUT_VAL", ConnectionFilter_Int)
