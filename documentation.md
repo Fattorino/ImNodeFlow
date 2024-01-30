@@ -7,7 +7,7 @@
   - [Inputs](#adding-input-pins)
   - [Outputs](#adding-output-pins)
   - [Body](#nodes-body)
-  - [Example](#all-together)
+  - [Example](#what-have-we-learned)
   - [Adding it](#adding-nodes-to-the-grid)
 - [Connection filters 101](#custom-filters)
   - [Basic filters](#basic-filters)
