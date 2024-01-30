@@ -32,7 +32,7 @@ INF.update(); // Update logic and render
 ```
 
 ## Creating a custom node
-Custom nodes must be derived from the class BaseNode.
+Custom nodes **must** be derived from the class BaseNode.
 ```c++
 class CustomNode : public BaseNode
 {
@@ -59,9 +59,9 @@ explicit CustomNode(. . .)
 `addIN<T>` will add an input pin to the node. Usually called in the node's constructor.
 #### Getting the value
 ```c++
-int value = ins<int>(0);
+int value = ins<int>(n);
 ```
-Returns a read only reference to the value connected to the first input pin.
+Returns a read only reference to the value connected to the nth input pin.
 
 ### Adding output pins
 ```c++
@@ -73,17 +73,17 @@ explicit CustomNode(. . .)
 `addOUT<T>` will add an output pin to the node. Usually called in the node's constructor.
 #### Defining logic
 ```c++
-behaviour([this](){ return 0; });
+behaviour([this](){ return . . .; });
 ```
 Node's logic for a specific pin.
-<BR> Takes either a Lambda of a function. The return value is the output of the pin. In this case, the pin will always output 0.
+<BR> Takes either a function or lambda expression. The return value is the output of the pin.
 #### All together
 ```c++
 addOUT<int>("Pin name", Connection filter)
                 ->behaviour([this](){ return 0; });
 ```
-Creates a pin with given name and filter and sets its logic. This pin will be rather useless since it always returns 0 (also known as the author's IQ).
-
+Creates a pin with given name and filter and sets its logic.
+<BR> This pin will be rather useless since it always returns 0 (also known as the author's IQ).
 
 ### Node's body
 ```c++
@@ -93,7 +93,7 @@ Called each frame to draw ImGui widgets inside the node's body.
 <BR> Can be left empty if the nodes only needs inputs and outputs.
 
 ### What have we learned?
-To create a custom node, all it's needed is to define input pins, output pins + custom logic, and an optional body
+To create a custom node, all it's needed is to define input pins, output pins + custom logic, and an optional body.
 <BR> Everything else will be handled internally.
 ```c++
 class SimpleSum : public BaseNode
@@ -116,13 +116,13 @@ private:
 };
 ```
 The example presented in the readme.
-<BR> SimpleDum had one input pin of type int called `IN_VAL` and one output pin called `OUT_VAL`.
+<BR> SimpleSum has one input pin of type int called `IN_VAL` and one output pin called `OUT_VAL`.
 Both have their filter set to `int`.
 <BR> The output pin returns the input + the slider's value.
 <BR> In the body the slider is rendered.
 
 ### Adding nodes to the grid
-It's now time to add our beautifully useless note to the grid.
+It's now time to add our beautifully useless node to the grid.
 ```c++
 INF.addNode<CustomNode>("Node's name", ImVec2(0, 0)); // Add node at canvas coordinates
 INF.dropNode<CustomNode>("Node's name", ImVec2(0, 0)); // Add node at screen coordinates
@@ -159,7 +159,7 @@ Demonstrates different approaches to creating filters.
 
 ## Custom pop-ups
 ImNodeFlow supports two pop-up events.
-<BR> The pop-up is handled internally, so we only need to handle the content and out custom logic.
+<BR> The pop-up state is handled internally, so we only need to handle the content and out custom logic.
 
 ### Right-click pop-up
 Triggered when right-clicking on an empty point on the grid.
@@ -167,7 +167,7 @@ Triggered when right-clicking on an empty point on the grid.
 INF.rightClickPopUpContent([]() {
     if (ImGui::Selectable("Dummy example"))
     {
-        // My very smart logic
+        // Very smart logic
     }
     // . . .
 });
@@ -182,7 +182,7 @@ Triggered when a link id _dropped_ in an empty point on the grid. And, if specif
 INF.droppedLinkPopUpContent([](Pin* dragged) {
     if (ImGui::Selectable("Dummy example"))
     {
-        // My very smart logic
+        // Very smart logic
     }
     // . . .
 }, ImGuiKey_LeftShift);
@@ -193,6 +193,6 @@ INF.droppedLinkPopUpContent([](Pin* dragged) {
 
 ***
 
-_Please refer to the doxygen documentation for a list of public methods and their details_
+_Please refer to the doxygen documentation for a list of public methods and their details._
 
 _In case of problems or questions, consider opening an issue._
