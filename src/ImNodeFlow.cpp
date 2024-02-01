@@ -177,33 +177,9 @@ namespace ImFlow
         return p - m_pos - m_scroll;
     }
 
-    void ImNodeFlow::createLink(Pin* start, Pin* end)
+    void ImNodeFlow::addLink(std::shared_ptr<Link>& link)
     {
-        if (start->parent() == end->parent())
-            return;
-        if (!((start->filter() & end->filter()) != 0 || start->filter() == ConnectionFilter_None || end->filter() == ConnectionFilter_None)) // Check Filter
-            return;
-
-        if (start->kind() == PinKind_Output && end->kind() == PinKind_Input) // OUT to IN
-        {
-            if (end->getLink().expired() || end->getLink().lock()->left() != start)
-            {
-                end->createLink(start);
-                m_links.emplace_back(end->getLink());
-            }
-            else
-                end->deleteLink();
-        }
-        if (start->kind() == PinKind_Input && end->kind() == PinKind_Output) // IN to OUT
-        {
-            if (start->getLink().expired() || start->getLink().lock()->left() != end)
-            {
-                start->createLink(end);
-                m_links.emplace_back(start->getLink());
-            }
-            else
-                start->deleteLink();
-        }
+        m_links.push_back(link);
     }
 
     void ImNodeFlow::update()
@@ -261,7 +237,7 @@ namespace ImFlow
                 }
             }
             else
-                createLink(m_dragOut, m_hovering);
+                m_dragOut->createLink(m_hovering);
         }
 
         // Links drag-out

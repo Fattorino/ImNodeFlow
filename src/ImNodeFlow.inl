@@ -99,10 +99,26 @@ namespace ImFlow
     }
 
     template<class T>
-    void InPin<T>::createLink(Pin *left)
+    void InPin<T>::createLink(Pin *other)
     {
-        m_link = std::make_shared<Link>(left, this, m_inf);
-        left->setLink(m_link);
+        if (other == this || m_parent == other->parent())
+            return;
+
+        if (!((m_filter & other->filter()) != 0 || m_filter == ConnectionFilter_None || other->filter() == ConnectionFilter_None)) // Check Filter
+            return;
+
+        if (other->kind() == PinKind_Input)
+            return;
+
+        if (m_link && m_link->left() == other)
+        {
+            m_link.reset();
+            return;
+        }
+
+        m_link = std::make_shared<Link>(other, this, m_inf);
+        other->setLink(m_link);
+        m_inf->addLink(m_link);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -129,5 +145,14 @@ namespace ImFlow
 
         if (ImGui::IsItemHovered())
             m_inf->hovering(this);
+    }
+
+    template<class T>
+    void OutPin<T>::createLink(ImFlow::Pin *other)
+    {
+        if (other == this)
+            return;
+
+        other->createLink(this);
     }
 }
