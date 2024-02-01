@@ -73,4 +73,5 @@ private:
 For a more detailed explanation please refer to the [full documentation](documentation.md)
 ***
 ### Special credits
-- [thedmd](https://github.com/thedmd) for imgui_bezier_math.h
+- [ocornut](https://github.com/ocornut) for Dear ImGui
+- [thedmd](https://github.com/thedmd) for _imgui_bezier_math.h_
