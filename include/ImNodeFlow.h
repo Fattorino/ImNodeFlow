@@ -243,7 +243,10 @@ namespace ImFlow
          */
         int nodesCount() { return (int)m_nodes.size(); }
 
-
+        /**
+         * @brief Add link to the handler internal list
+         * @param link Reference to the link
+         */
         void addLink(std::shared_ptr<Link>& link);
 
         /**
