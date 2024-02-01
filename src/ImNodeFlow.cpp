@@ -245,7 +245,6 @@ namespace ImFlow
             m_dragOut = m_hovering;
         if (m_dragOut)
         {
-            ImVec2 pinDot;
             if (m_dragOut->kind() == PinKind_Output)
                 smart_bezier(m_dragOut->pinPoint(), ImGui::GetMousePos(), m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
             else

@@ -101,13 +101,10 @@ namespace ImFlow
     template<class T>
     void InPin<T>::createLink(Pin *other)
     {
-        if (other == this || m_parent == other->parent())
+        if (other == this || other->kind() == PinKind_Input || m_parent == other->parent())
             return;
 
         if (!((m_filter & other->filter()) != 0 || m_filter == ConnectionFilter_None || other->filter() == ConnectionFilter_None)) // Check Filter
-            return;
-
-        if (other->kind() == PinKind_Input)
             return;
 
         if (m_link && m_link->left() == other)
@@ -150,7 +147,7 @@ namespace ImFlow
     template<class T>
     void OutPin<T>::createLink(ImFlow::Pin *other)
     {
-        if (other == this)
+        if (other == this || other->kind() == PinKind_Output)
             return;
 
         other->createLink(this);
