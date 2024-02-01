@@ -14,15 +14,35 @@ https://github.com/Fattorino/ImNodeFlow/assets/90210751/c2c1e7a6-8f83-42df-8a26-
 - Appearance 100% customizable
 
 ## Implementation (CMake project)
-1. Download and copy, or clone the repo inside your project
+### CMake `FetchContent`
+1. Add the following lines to your CMakeLists.txt:
+   ```
+   include(FetchContent)
+   FetchContent_Declare(ImNodeFlow
+        GIT_REPOSITORY "https://github.com/Fattorino/ImNodeFlow.git"
+        GIT_TAG "origin/master"
+        SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/includes/ImNodeFlow"
+   )
+   FetchContent_MakeAvailable(ImNodeFlow)
+   ```
+   ```
+   add_compile_definitions(IMGUI_DEFINE_MATH_OPERATORS)
+   target_link_libraries(YourProject ImNodeFlow)
+   ```
+2. Make sure you have the following dependencies available for `find_package()`:
+   - [Dear ImGui](https://github.com/ocornut/imgui)
+
+### Manually
+1. Download and copy, or clone the repo (or the latest release) inside your project
 2. Add the following lines to your CMakeLists.txt:
    ```
    add_subdirectory(path/to/ImNodeFlow)
+   . . .
+   add_compile_definitions(IMGUI_DEFINE_MATH_OPERATORS)
    target_link_libraries(YourProject ImNodeFlow)
    ```
-   
-### Alternative
-Download the latest ImNodeFlow.zip containing only the necessary files and add them manually.
+3. Make sure you have the following dependencies available for `find_package()`:
+   - [Dear ImGui](https://github.com/ocornut/imgui)
 
 ## Simple Node example
 ```c++

@@ -12,6 +12,9 @@
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
 
+// TODO: [POLISH] Collision solver to bring first node on foreground to avoid clipping
+// TODO: [EXTRA]  Custom renderers for Pins (with lambdas I think)
+
 namespace ImFlow
 {
     // -----------------------------------------------------------------------------------------------------------------
@@ -240,14 +243,8 @@ namespace ImFlow
          */
         int nodesCount() { return (int)m_nodes.size(); }
 
-        /**
-         * @brief Creates a link between two pins
-         * @details Creates a link. Will check for same node connections, IN to IN or OUT to OUT connections and evaluate the filters.
-         *          Then the link will be created and the input pin of the two will own the link.
-         * @param start Pointer to the start pin to be connected
-         * @param end Pointer to the end pin to be connected
-         */
-        void createLink(Pin* start, Pin* end);
+
+        void addLink(std::shared_ptr<Link>& link);
 
         /**
          * @brief Pop-up when link is "dropped"
@@ -562,9 +559,9 @@ namespace ImFlow
 
         /**
          * @brief Create link between pins
-         * @param left Pointer to the other pin
+         * @param other Pointer to the other pin
          */
-        virtual void createLink(Pin* left) {}
+        virtual void createLink(Pin* other) = 0;
 
         /**
          * @brief Sets the reference to a link
@@ -673,9 +670,9 @@ namespace ImFlow
 
         /**
          * @brief Create link between pins
-         * @param left Pointer to the other pin
+         * @param other Pointer to the other pin
          */
-        void createLink(Pin* left) override;
+        void createLink(Pin* other) override;
 
         /**
         * @brief Deletes the link from pin
@@ -732,6 +729,12 @@ namespace ImFlow
          * @details Updates position, hovering and dragging status, and renders the pin. Must be called each frame.
          */
         void update() override;
+
+        /**
+         * @brief Create link between pins
+         * @param other Pointer to the other pin
+         */
+        void createLink(Pin* other) override;
 
         /**
          * @brief Sets the reference to a link

@@ -20,6 +20,7 @@
 After having included the necessary files into the project. A few simple steps are necessary.
 ```c++
 #include <ImNodeFLow.h> // Include dependencies
+using namespace ImFlow;
 ```
 ```c++
 ImNodeFlow INF; // Create an editor with default name
