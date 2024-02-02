@@ -11,6 +11,7 @@
 #include <functional>
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
+#include "../src/canvas_wrapper.h"
 
 // TODO: [POLISH] Collision solver to bring first node on foreground to avoid clipping
 // TODO: [EXTRA]  Custom renderers for Pins (with lambdas I think)
@@ -307,6 +308,8 @@ namespace ImFlow
          */
         const std::vector<std::weak_ptr<Link>>& links() { return m_links; }
 
+        const Canvas& canvas() { return m_canvas; }
+
         /**
          * @brief Get dragging status
          * @return [TRUE] if a Node is being dragged around the grid
@@ -362,6 +365,7 @@ namespace ImFlow
         std::string m_name;
         ImVec2 m_pos;
         ImVec2 m_scroll = ImVec2(0, 0);
+        Canvas m_canvas;
 
         bool m_singleUseClick = false;
 
