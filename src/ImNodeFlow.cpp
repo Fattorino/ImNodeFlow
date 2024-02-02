@@ -1,3 +1,4 @@
+#include <iostream>
 #include "ImNodeFlow.h"
 
 namespace ImFlow
@@ -188,15 +189,10 @@ namespace ImFlow
         m_hovering = nullptr;
         m_draggingNode = m_draggingNodeNext;
         m_singleUseClick = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+        m_pos = ImGui::GetWindowPos();
 
         // Create child canvas
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, m_style.colors.background);
-        ImGui::BeginChild(m_name.c_str(), ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse);
-        ImGui::PopStyleVar(2);
-        ImGui::PopStyleColor();
-        m_pos = ImGui::GetWindowPos();
+        m_canvas.begin(m_style.colors.background);
 
         ImVec2 offset = ImGui::GetCursorScreenPos() + m_scroll;
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -288,6 +284,6 @@ namespace ImFlow
         if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.f))
             m_scroll = m_scroll + ImGui::GetIO().MouseDelta;
 
-        ImGui::EndChild();
+        m_canvas.end();
     }
 }
