@@ -262,7 +262,7 @@ namespace ImFlow
         }
 
         // Right-click PopUp
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && on_free_space())
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered() && on_free_space())
         {
             if (m_rightClickPopUp)
                 ImGui::OpenPopup("RightClickPopUp");
@@ -285,7 +285,7 @@ namespace ImFlow
                                      [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
 
         // Scrolling
-        if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.0f))
+        if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.f))
             m_scroll = m_scroll + ImGui::GetIO().MouseDelta;
 
         ImGui::EndChild();
