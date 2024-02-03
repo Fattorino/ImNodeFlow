@@ -46,7 +46,7 @@ namespace ImFlow
     T* ImNodeFlow::dropNode(const std::string& name, const ImVec2& pos)
     {
         static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not subclass of BaseNode!");
-        m_nodes.emplace_back(std::make_shared<T>(name, screen2canvas(pos), this));
+        m_nodes.emplace_back(std::make_shared<T>(name, screen2content(pos), this));
         return static_cast<T*>(m_nodes.back().get());
     }
 

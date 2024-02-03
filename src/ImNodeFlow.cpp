@@ -41,7 +41,7 @@ namespace ImFlow
 
     bool BaseNode::hovered()
     {
-        return ImGui::IsMouseHoveringRect(m_inf->canvas2screen(m_pos - m_paddingTL), m_inf->canvas2screen(m_pos + m_size + m_paddingBR));
+        return ImGui::IsMouseHoveringRect(m_inf->content2canvas(m_pos - m_paddingTL), m_inf->content2canvas(m_pos + m_size + m_paddingBR));
     }
 
     void BaseNode::update(ImVec2& offset)
@@ -92,10 +92,10 @@ namespace ImFlow
         for (auto& p : m_outs)
         {
             // FIXME: This looks horrible
-            if (m_inf->canvas2screen(m_pos + ImVec2(titleW, 0)).x < ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
+            if (m_inf->content2canvas(m_pos + ImVec2(titleW, 0)).x < ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
                 p->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p->calcWidth(), 0.f));
             else
-                p->pos(ImVec2(m_inf->canvas2screen(m_pos + ImVec2(titleW - p->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
+                p->pos(ImVec2(m_inf->content2canvas(m_pos + ImVec2(titleW - p->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
             p->update();
         }
         ImGui::EndGroup();
@@ -168,9 +168,19 @@ namespace ImFlow
                     [](auto& l) {return !l.lock()->hovered();});
     }
 
-    ImVec2 ImNodeFlow::canvas2screen(const ImVec2 &p)
+    ImVec2 ImNodeFlow::content2canvas(const ImVec2& p)
     {
         return p + m_scroll + ImGui::GetWindowPos();
+    }
+
+    ImVec2 ImNodeFlow::canvas2screen(const ImVec2 &p)
+    {
+        return (p + m_scroll) * m_canvas.scale() + m_canvas.origin();
+    }
+
+    ImVec2 ImNodeFlow::screen2content(const ImVec2 &p)
+    {
+        return p - m_scroll;
     }
 
     ImVec2 ImNodeFlow::screen2canvas(const ImVec2 &p)
