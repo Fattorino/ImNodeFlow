@@ -308,6 +308,10 @@ namespace ImFlow
          */
         const std::vector<std::weak_ptr<Link>>& links() { return m_links; }
 
+        /**
+         * @brief Get zooming viewport
+         * @return Const reference to editor's internal viewport for zoom support
+         */
         const Canvas& canvas() { return m_canvas; }
 
         /**
@@ -331,6 +335,13 @@ namespace ImFlow
         void hovering(Pin* hovering) { m_hovering = hovering; }
 
         /**
+         * @brief Convert coordinates from grid to zooming viewport
+         * @param p Point in canvas coordinates to be converted
+         * @return Point in screen coordinates
+         */
+        ImVec2 content2canvas(const ImVec2& p);
+
+        /**
          * @brief Convert coordinates from canvas to screen
          * @param p Point in canvas coordinates to be converted
          * @return Point in screen coordinates
@@ -339,6 +350,13 @@ namespace ImFlow
 
         /**
          * @brief Convert coordinates from screen to canvas
+         * @param p Point in screen coordinates to be converted
+         * @return Point in canvas coordinates
+         */
+        ImVec2 screen2content(const ImVec2 &p);
+
+        /**
+         * @brief Convert coordinates from screen to zooming viewport
          * @param p Point in screen coordinates to be converted
          * @return Point in canvas coordinates
          */

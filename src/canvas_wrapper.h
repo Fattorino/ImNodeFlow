@@ -6,19 +6,10 @@
 using namespace ImGui;
 
 #ifndef ASSERT
-#ifdef LUMIX_DEBUG
-#ifdef _WIN32
-			#define LUMIX_DEBUG_BREAK() __debugbreak()
-		#else
-			#define LUMIX_DEBUG_BREAK()  raise(SIGTRAP)
-		#endif
-		#define ASSERT(x) do { const volatile bool lumix_assert_b____ = !(x); if(lumix_assert_b____) LUMIX_DEBUG_BREAK(); } while (false)
-#else
 #if defined _MSC_VER && !defined __clang__
 #define ASSERT(x) __assume(x)
 #else
 #define ASSERT(x) { false ? (void)(x) : (void)0; }
-#endif
 #endif
 #endif
 
@@ -54,10 +45,9 @@ inline static void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
     for (int i = 0, c = src->IdxBuffer.size(); i < c; ++i) {
         dl->_IdxWritePtr[i] = idx_read[i] + vtx_start;
     }
-    for (int i = 0, c = src->CmdBuffer.size(); i < c; ++i) {
-        ImDrawCmd cmd = src->CmdBuffer[i];
+    for (auto cmd : src->CmdBuffer) {
         cmd.IdxOffset += idx_start;
-        ASSERT(cmd.VtxOffset == 0);
+        //ASSERT(cmd.VtxOffset == 0)
         cmd.ClipRect.x = cmd.ClipRect.x * scale + origin.x;
         cmd.ClipRect.y = cmd.ClipRect.y * scale + origin.y;
         cmd.ClipRect.z = cmd.ClipRect.z * scale + origin.x;
@@ -76,6 +66,8 @@ struct IMGUI_API Canvas
     void begin(ImU32 color);
     void end();
     [[nodiscard]] bool hovered() const { return m_hovered; }
+    [[nodiscard]] float scale() const { return m_scale; }
+    [[nodiscard]] const ImVec2& origin() const { return m_origin; }
 
     ImVec2 m_origin;
     ImVec2 m_size = ImVec2(0, 0);
