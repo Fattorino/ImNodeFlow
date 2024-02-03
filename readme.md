@@ -7,6 +7,7 @@ ImNodeFLow will handle connections, editor logic and rendering.
 https://github.com/Fattorino/ImNodeFlow/assets/90210751/c2c1e7a6-8f83-42df-8a26-037de8835f9d
 
 ## Features
+- Support for Zoom
 - Backed-in Input and Output logic
 - Backed-in links handling
 - Customizable filters for different connections
