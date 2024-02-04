@@ -65,7 +65,7 @@ class ViewPort
 {
 public:
     ~ViewPort();
-    void begin(ImU32 color);
+    void begin();
     void end();
     [[nodiscard]] float scale() const { return m_scale; }
     [[nodiscard]] const ImVec2& origin() const { return m_origin; }
@@ -82,7 +82,7 @@ private:
     bool m_anyItemActive = false;
     bool m_hovered = false;
 
-    float m_scale = 2.f;
+    float m_scale = m_config.default_zoom;
     ImVec2 m_scroll = {0.f, 0.f};
 };
 
@@ -91,10 +91,10 @@ inline ViewPort::~ViewPort()
     if (m_ctx) ImGui::DestroyContext(m_ctx);
 }
 
-inline void ViewPort::begin(ImU32 color)
+inline void ViewPort::begin()
 {
     ImGui::PushID(this);
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, color);
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, m_config.color);
     ImGui::BeginChild("view_port", m_config.size, 0, ImGuiWindowFlags_NoMove);
     ImGui::PopStyleColor();
 
@@ -132,15 +132,19 @@ inline void ViewPort::end()
     m_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && !m_anyWindowHovered;
 
     // Zooming
-    if (m_hovered && ImGui::GetIO().MouseWheel != 0.f)
+    if (m_config.zoom_enabled && m_hovered && ImGui::GetIO().MouseWheel != 0.f)
     {
         m_scale += ImGui::GetIO().MouseWheel / 16;
         m_scale = m_scale < 0.3f ? 0.3f : m_scale;
         m_scale = m_scale > 2.f ? 2.f : m_scale;
     }
 
+    // Zoom reset
+    if (ImGui::IsKeyPressed(m_config.reset_zoom_key, false))
+        m_scale = m_config.default_zoom;
+
     // Scrolling
-    if (m_hovered && !m_anyItemActive && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.f))
+    if (m_hovered && !m_anyItemActive && ImGui::IsMouseDragging(m_config.scroll_button, 0.f))
         m_scroll = m_scroll + ImGui::GetIO().MouseDelta;
 
 
