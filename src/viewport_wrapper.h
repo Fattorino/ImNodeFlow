@@ -3,16 +3,6 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
-using namespace ImGui;
-
-#ifndef ASSERT
-#if defined _MSC_VER && !defined __clang__
-#define ASSERT(x) __assume(x)
-#else
-#define ASSERT(x) { false ? (void)(x) : (void)0; }
-#endif
-#endif
-
 inline static void CopyIOEvents(ImGuiContext* src, ImGuiContext* dst, ImVec2 origin, float scale)
 {
     dst->InputEventsQueue = src->InputEventsTrail;
@@ -27,7 +17,7 @@ inline static void CopyIOEvents(ImGuiContext* src, ImGuiContext* dst, ImVec2 ori
 inline static void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
 {
     // TODO optimize if vtx_start == 0 || if idx_start == 0
-    ImDrawList* dl = GetWindowDrawList();
+    ImDrawList* dl = ImGui::GetWindowDrawList();
     const int vtx_start = dl->VtxBuffer.size();
     const int idx_start = dl->IdxBuffer.size();
     dl->VtxBuffer.resize(dl->VtxBuffer.size() + src->VtxBuffer.size());
@@ -60,73 +50,101 @@ inline static void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
     dl->_IdxWritePtr = dl->IdxBuffer.Data + dl->IdxBuffer.size();
 }
 
-struct IMGUI_API Canvas
+struct ViewPortConfig
 {
-    ~Canvas();
-    void begin(ImU32 color);
-    void end();
-    [[nodiscard]] bool hovered() const { return m_hovered; }
-    [[nodiscard]] float scale() const { return m_scale; }
-    [[nodiscard]] const ImVec2& origin() const { return m_origin; }
-
-    ImVec2 m_origin;
-    ImVec2 m_size = ImVec2(0, 0);
-    float m_scale = 1.f;
-    ImGuiContext* m_ctx = nullptr;
-    ImGuiContext* m_original_ctx = nullptr;
-    bool m_hovered = false;
+    ImVec2 size = {0.f, 0.f};
+    ImU32 color = IM_COL32_WHITE;
+    bool zoom_enabled = true;
+    float zoom_smoothness = 0.f;
+    float default_zoom = 1.f;
+    ImGuiKey reset_zoom_key = ImGuiKey_R;
+    ImGuiMouseButton scroll_button = ImGuiMouseButton_Middle;
 };
 
-inline Canvas::~Canvas()
+class ViewPort
 {
-    if (m_ctx) DestroyContext(m_ctx);
+public:
+    ~ViewPort();
+    void begin(ImU32 color);
+    void end();
+    [[nodiscard]] float scale() const { return m_scale; }
+    [[nodiscard]] const ImVec2& origin() const { return m_origin; }
+    [[nodiscard]] bool hovered() const { return m_hovered; }
+    [[nodiscard]] const ImVec2& scroll() const { return m_scroll; }
+private:
+    ViewPortConfig m_config;
+
+    ImVec2 m_origin;
+    ImGuiContext* m_ctx = nullptr;
+    ImGuiContext* m_original_ctx = nullptr;
+
+    bool m_anyWindowHovered = false;
+    bool m_anyItemActive = false;
+    bool m_hovered = false;
+
+    float m_scale = 2.f;
+    ImVec2 m_scroll = {0.f, 0.f};
+};
+
+inline ViewPort::~ViewPort()
+{
+    if (m_ctx) ImGui::DestroyContext(m_ctx);
 }
 
-inline void Canvas::begin(ImU32 color)
+inline void ViewPort::begin(ImU32 color)
 {
-    m_size = GetContentRegionAvail();
-    m_origin = GetCursorScreenPos();
-    m_original_ctx = GetCurrentContext();
-    const ImGuiStyle& orig_style = GetStyle();
-    if (!m_ctx) m_ctx = CreateContext(GetIO().Fonts);
-    SetCurrentContext(m_ctx);
-    ImGuiStyle& new_style = GetStyle();
+    ImGui::PushID(this);
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, color);
+    ImGui::BeginChild("view_port", m_config.size, 0, ImGuiWindowFlags_NoMove);
+    ImGui::PopStyleColor();
+
+    ImVec2 size = ImGui::GetContentRegionAvail();
+    m_origin = ImGui::GetCursorScreenPos();
+    m_original_ctx = ImGui::GetCurrentContext();
+    const ImGuiStyle& orig_style = ImGui::GetStyle();
+    if (!m_ctx) m_ctx = ImGui::CreateContext(ImGui::GetIO().Fonts);
+    ImGui::SetCurrentContext(m_ctx);
+    ImGuiStyle& new_style = ImGui::GetStyle();
     new_style = orig_style;
 
     CopyIOEvents(m_original_ctx, m_ctx, m_origin, m_scale);
 
-    GetIO().DisplaySize = m_size / m_scale;
-    GetIO().ConfigInputTrickleEventQueue = false;
-    NewFrame();
-
-    SetNextWindowPos(ImVec2(0, 0));
-    SetNextWindowSize(m_size / m_scale);
-    PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
-    Begin("canvas_wrapper", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollWithMouse);
-    PopStyleVar(2);
-    PopStyleColor();
+    ImGui::GetIO().DisplaySize = size / m_scale;
+    ImGui::GetIO().ConfigInputTrickleEventQueue = false;
+    ImGui::NewFrame();
 }
 
-inline void Canvas::end()
+inline void ViewPort::end()
 {
-    m_hovered = IsWindowHovered();
-    End();
-    Render();
+    m_anyWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+    m_anyItemActive = ImGui::IsAnyItemActive();
 
-    ImDrawData* draw_data = GetDrawData();
+    ImGui::Render();
 
-    SetCurrentContext(m_original_ctx);
+    ImDrawData* draw_data = ImGui::GetDrawData();
+
+    ImGui::SetCurrentContext(m_original_ctx);
     m_original_ctx = nullptr;
 
     for (int i = 0; i < draw_data->CmdListsCount; ++i)
         AppendDrawData(draw_data->CmdLists[i], m_origin, m_scale);
 
-    if (m_hovered && GetIO().MouseWheel != 0.f)
+    m_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && !m_anyWindowHovered;
+
+    // Zooming
+    if (m_hovered && ImGui::GetIO().MouseWheel != 0.f)
     {
-        m_scale += GetIO().MouseWheel / 16;
+        m_scale += ImGui::GetIO().MouseWheel / 16;
         m_scale = m_scale < 0.3f ? 0.3f : m_scale;
-        m_scale = m_scale > 1.5f ? 1.5f : m_scale;
+        m_scale = m_scale > 2.f ? 2.f : m_scale;
     }
+
+    // Scrolling
+    if (m_hovered && !m_anyItemActive && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.f))
+        m_scroll = m_scroll + ImGui::GetIO().MouseDelta;
+
+
+
+    ImGui::EndChild();
+    ImGui::PopID();
 }
