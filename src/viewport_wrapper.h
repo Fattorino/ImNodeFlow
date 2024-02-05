@@ -52,10 +52,11 @@ inline static void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
 
 struct ViewPortConfig
 {
+    bool extra_window_wrapper = false;
     ImVec2 size = {0.f, 0.f};
     ImU32 color = IM_COL32_WHITE;
     bool zoom_enabled = true;
-    float zoom_smoothness = 0.f;
+    float zoom_smoothness = 5.f;
     float default_zoom = 1.f;
     ImGuiKey reset_zoom_key = ImGuiKey_R;
     ImGuiMouseButton scroll_button = ImGuiMouseButton_Middle;
@@ -65,6 +66,7 @@ class ViewPort
 {
 public:
     ~ViewPort();
+    ViewPortConfig& config() { return m_config; }
     void begin();
     void end();
     [[nodiscard]] float scale() const { return m_scale; }
@@ -82,7 +84,7 @@ private:
     bool m_anyItemActive = false;
     bool m_hovered = false;
 
-    float m_scale = m_config.default_zoom;
+    float m_scale = m_config.default_zoom, m_scaleTarget = m_config.default_zoom;
     ImVec2 m_scroll = {0.f, 0.f};
 };
 
@@ -112,12 +114,27 @@ inline void ViewPort::begin()
     ImGui::GetIO().DisplaySize = size / m_scale;
     ImGui::GetIO().ConfigInputTrickleEventQueue = false;
     ImGui::NewFrame();
+
+    if (!m_config.extra_window_wrapper)
+        return;
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImGui::GetMainViewport()->WorkSize);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove
+                                                | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::PopStyleVar();
 }
 
 inline void ViewPort::end()
 {
     m_anyWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+    if (m_config.extra_window_wrapper && ImGui::IsWindowHovered())
+        m_anyWindowHovered = false;
+
     m_anyItemActive = ImGui::IsAnyItemActive();
+
+    if (m_config.extra_window_wrapper)
+        ImGui::End();
 
     ImGui::Render();
 
@@ -134,9 +151,19 @@ inline void ViewPort::end()
     // Zooming
     if (m_config.zoom_enabled && m_hovered && ImGui::GetIO().MouseWheel != 0.f)
     {
-        m_scale += ImGui::GetIO().MouseWheel / 16;
-        m_scale = m_scale < 0.3f ? 0.3f : m_scale;
-        m_scale = m_scale > 2.f ? 2.f : m_scale;
+        m_scaleTarget += ImGui::GetIO().MouseWheel / 16;
+        m_scaleTarget = m_scaleTarget < 0.3f ? 0.3f : m_scaleTarget;
+        m_scaleTarget = m_scaleTarget > 2.f ? 2.f : m_scaleTarget;
+        if (m_config.zoom_smoothness == 0.f)
+        {
+            m_scale = m_scaleTarget;
+        }
+    }
+    if (abs(m_scaleTarget - m_scale) >= 0.015f / m_config.zoom_smoothness)
+    {
+        m_scale += (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
+        if (abs(m_scaleTarget - m_scale) < 0.02f)
+            m_scale = m_scaleTarget;
     }
 
     // Zoom reset
