@@ -761,7 +761,7 @@ namespace ImFlow
             :Pin(name, filter, PinKind_Output, parent, inf) {}
 
         /**
-         * @brief When parent gets deleted, remove the link
+         * @brief When parent gets deleted, remove the links
          */
         ~OutPin() { for (auto &l: m_links) if (!l.expired()) l.lock()->right()->deleteLink(); }
 
