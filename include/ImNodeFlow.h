@@ -11,6 +11,7 @@
 #include <functional>
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
+#include "../src/viewport_wrapper.h"
 
 // TODO: [POLISH] Collision solver to bring first node on foreground to avoid clipping
 // TODO: [EXTRA]  Custom renderers for Pins (with lambdas I think)
@@ -160,7 +161,8 @@ namespace ImFlow
         ImVec2 pin_padding = ImVec2(3.f, 1.f); // Padding between Pin border and content
         float pin_radius = 8.f; // Pin's edges rounding
         float pin_border_thickness = 1.f; // Thickness of the border drawn around the Pin
-        float pin_point_radius = 3.5f; // Radius of the circle in front of the Pin
+        float pin_point_radius = 3.5f; // Radius of the circle in front of the Pin when connected
+        float pin_point_empty_radius = 4.f; // Radius of the circle in front of the Pin when not connected
 
         float link_thickness = 2.6f; // Thickness of the drawn link
         float link_hovered_thickness = 3.5f; // Thickness of the drawn link when hovered
@@ -191,21 +193,37 @@ namespace ImFlow
          * @brief Instantiate a new editor
          * @details Empty constructor, creates a new Node Editor. Editor name will be "FlowGrid + the number of editors".
          */
-        ImNodeFlow() { m_name = "FlowGrid" + std::to_string(m_instances); m_instances++; }
+        ImNodeFlow()
+        {
+            m_name = "FlowGrid" + std::to_string(m_instances);
+            m_instances++;
+            m_viewport.config().extra_window_wrapper = true;
+            m_viewport.config().color = m_style.colors.background;
+        }
 
         /**
          * @brief Instantiate a new editor
          * @details Creates a new Node Editor with the given name.
          * @param name Name of the editor
          */
-        explicit ImNodeFlow(std::string name) :m_name(std::move(name)) { m_instances++; }
+        explicit ImNodeFlow(std::string name) :m_name(std::move(name))
+        {
+            m_instances++;
+            m_viewport.config().extra_window_wrapper = true;
+            m_viewport.config().color = m_style.colors.background;
+        }
 
         /**
          * @brief Instantiate a new editor
          * @details Creates a new Node Editor with the given name.
          * @param name Name of the editor
          */
-        explicit ImNodeFlow(const char* name) :m_name(name) { m_instances++; }
+        explicit ImNodeFlow(const char* name) :m_name(name)
+        {
+            m_instances++;
+            m_viewport.config().extra_window_wrapper = true;
+            m_viewport.config().color = m_style.colors.background;
+        }
 
         /**
          * @brief Handler loop
@@ -286,14 +304,14 @@ namespace ImFlow
          * @brief Get editor's position
          * @return Const reference to editor's position in screen coordinates
          */
-        const ImVec2& pos() { return m_pos; }
+        const ImVec2& pos() { return m_viewport.origin(); }
 
         /**
          * @brief Get editor's grid scroll
          * @details Scroll is the offset from the origin of the grid, changes while navigating the grid with the middle mouse.
          * @return Const reference to editor's grid scroll
          */
-        const ImVec2& scroll() { return m_scroll; }
+        const ImVec2& scroll() { return m_viewport.scroll(); }
 
         /**
          * @brief Get editor's list of nodes
@@ -306,6 +324,12 @@ namespace ImFlow
          * @return Const reference to editor's internal links list
          */
         const std::vector<std::weak_ptr<Link>>& links() { return m_links; }
+
+        /**
+         * @brief Get zooming viewport
+         * @return Const reference to editor's internal viewport for zoom support
+         */
+        const ViewPort& viewport() { return m_viewport; }
 
         /**
          * @brief Get dragging status
@@ -328,6 +352,13 @@ namespace ImFlow
         void hovering(Pin* hovering) { m_hovering = hovering; }
 
         /**
+         * @brief Convert coordinates from grid to zooming viewport
+         * @param p Point in canvas coordinates to be converted
+         * @return Point in screen coordinates
+         */
+        ImVec2 content2canvas(const ImVec2& p);
+
+        /**
          * @brief Convert coordinates from canvas to screen
          * @param p Point in canvas coordinates to be converted
          * @return Point in screen coordinates
@@ -336,6 +367,13 @@ namespace ImFlow
 
         /**
          * @brief Convert coordinates from screen to canvas
+         * @param p Point in screen coordinates to be converted
+         * @return Point in canvas coordinates
+         */
+        ImVec2 screen2content(const ImVec2 &p);
+
+        /**
+         * @brief Convert coordinates from screen to zooming viewport
          * @param p Point in screen coordinates to be converted
          * @return Point in canvas coordinates
          */
@@ -360,8 +398,8 @@ namespace ImFlow
         InfStyler& style() { return m_style; }
     private:
         std::string m_name;
-        ImVec2 m_pos;
-        ImVec2 m_scroll = ImVec2(0, 0);
+//        ImVec2 m_pos;
+        ViewPort m_viewport;
 
         bool m_singleUseClick = false;
 
@@ -723,9 +761,9 @@ namespace ImFlow
             :Pin(name, filter, PinKind_Output, parent, inf) {}
 
         /**
-         * @brief When parent gets deleted, remove the link
+         * @brief When parent gets deleted, remove the links
          */
-        ~OutPin() { if (!m_link.expired()) m_link.lock()->right()->deleteLink(); }
+        ~OutPin() { for (auto &l: m_links) if (!l.expired()) l.lock()->right()->deleteLink(); }
 
         /**
          * @brief Main loop of the pin
@@ -743,7 +781,7 @@ namespace ImFlow
          * @brief Sets the reference to a link
          * @param link Pointer to the link
          */
-        void setLink(std::shared_ptr<Link>& link) override { m_link = link; }
+        void setLink(std::shared_ptr<Link>& link) override;
 
         /**
          * @brief Get pin's link attachment point
@@ -764,7 +802,7 @@ namespace ImFlow
          */
         void behaviour(std::function<T()> func) { m_behaviour = std::move(func); }
     private:
-        std::weak_ptr<Link> m_link;
+        std::vector<std::weak_ptr<Link>> m_links;
         std::function<T()> m_behaviour;
         T m_val;
     };

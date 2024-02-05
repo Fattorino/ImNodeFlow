@@ -46,7 +46,7 @@ namespace ImFlow
     T* ImNodeFlow::dropNode(const std::string& name, const ImVec2& pos)
     {
         static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not subclass of BaseNode!");
-        m_nodes.emplace_back(std::make_shared<T>(name, screen2canvas(pos), this));
+        m_nodes.emplace_back(std::make_shared<T>(name, screen2content(pos), this));
         return static_cast<T*>(m_nodes.back().get());
     }
 
@@ -92,7 +92,10 @@ namespace ImFlow
         else
             draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_bg, m_inf->style().pin_radius);
         draw_list->AddRect(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_border, m_inf->style().pin_radius, 0, m_inf->style().pin_border_thickness);
-        draw_list->AddCircleFilled(pinPoint(), m_inf->style().pin_point_radius, m_inf->style().colors.pin_point);
+        if (m_link)
+            draw_list->AddCircleFilled(pinPoint(), m_inf->style().pin_point_radius, m_inf->style().colors.pin_point);
+        else
+            draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_radius, m_inf->style().colors.pin_point);
 
         if (ImGui::IsItemHovered())
             m_inf->hovering(this);
@@ -122,7 +125,7 @@ namespace ImFlow
     // OUT PIN
 
     template<class T>
-    const T &OutPin<T>::val() { m_val = m_behaviour(); return m_val; } // TODO: Resolve ME somewhere else so it's not done every frame
+    const T &OutPin<T>::val() { m_val = m_behaviour(); return m_val; }
 
     template<class T>
     void OutPin<T>::update()
@@ -138,7 +141,10 @@ namespace ImFlow
         else
             draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_bg, m_inf->style().pin_radius);
         draw_list->AddRect(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_border, m_inf->style().pin_radius, 0, m_inf->style().pin_border_thickness);
-        draw_list->AddCircleFilled(pinPoint(), m_inf->style().pin_point_radius, m_inf->style().colors.pin_point);
+        if (m_links.empty())
+            draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_radius, m_inf->style().colors.pin_point);
+        else
+            draw_list->AddCircleFilled(pinPoint(), m_inf->style().pin_point_radius, m_inf->style().colors.pin_point);
 
         if (ImGui::IsItemHovered())
             m_inf->hovering(this);
@@ -151,5 +157,11 @@ namespace ImFlow
             return;
 
         other->createLink(this);
+    }
+
+    template<class T>
+    void OutPin<T>::setLink(std::shared_ptr<Link>& link)
+    {
+        m_links.emplace_back(link);
     }
 }
