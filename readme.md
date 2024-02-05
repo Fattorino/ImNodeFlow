@@ -76,3 +76,4 @@ For a more detailed explanation please refer to the [full documentation](documen
 ### Special credits
 - [ocornut](https://github.com/ocornut) for Dear ImGui
 - [thedmd](https://github.com/thedmd) for _imgui_bezier_math.h_
+- [nem0](https://github.com/nem0) for helping with Zoom support
