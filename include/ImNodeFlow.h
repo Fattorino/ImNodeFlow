@@ -192,21 +192,37 @@ namespace ImFlow
          * @brief Instantiate a new editor
          * @details Empty constructor, creates a new Node Editor. Editor name will be "FlowGrid + the number of editors".
          */
-        ImNodeFlow() { m_name = "FlowGrid" + std::to_string(m_instances); m_instances++; }
+        ImNodeFlow()
+        {
+            m_name = "FlowGrid" + std::to_string(m_instances);
+            m_instances++;
+            m_viewport.config().extra_window_wrapper = true;
+            m_viewport.config().color = m_style.colors.background;
+        }
 
         /**
          * @brief Instantiate a new editor
          * @details Creates a new Node Editor with the given name.
          * @param name Name of the editor
          */
-        explicit ImNodeFlow(std::string name) :m_name(std::move(name)) { m_instances++; }
+        explicit ImNodeFlow(std::string name) :m_name(std::move(name))
+        {
+            m_instances++;
+            m_viewport.config().extra_window_wrapper = true;
+            m_viewport.config().color = m_style.colors.background;
+        }
 
         /**
          * @brief Instantiate a new editor
          * @details Creates a new Node Editor with the given name.
          * @param name Name of the editor
          */
-        explicit ImNodeFlow(const char* name) :m_name(name) { m_instances++; }
+        explicit ImNodeFlow(const char* name) :m_name(name)
+        {
+            m_instances++;
+            m_viewport.config().extra_window_wrapper = true;
+            m_viewport.config().color = m_style.colors.background;
+        }
 
         /**
          * @brief Handler loop
@@ -287,14 +303,14 @@ namespace ImFlow
          * @brief Get editor's position
          * @return Const reference to editor's position in screen coordinates
          */
-        const ImVec2& pos() { return m_pos; }
+        const ImVec2& pos() { return m_viewport.origin(); }
 
         /**
          * @brief Get editor's grid scroll
          * @details Scroll is the offset from the origin of the grid, changes while navigating the grid with the middle mouse.
          * @return Const reference to editor's grid scroll
          */
-        const ImVec2& scroll() { return m_scroll; }
+        const ImVec2& scroll() { return m_viewport.scroll(); }
 
         /**
          * @brief Get editor's list of nodes
@@ -312,7 +328,7 @@ namespace ImFlow
          * @brief Get zooming viewport
          * @return Const reference to editor's internal viewport for zoom support
          */
-        const ViewPort& canvas() { return m_canvas; }
+        const ViewPort& viewport() { return m_viewport; }
 
         /**
          * @brief Get dragging status
@@ -381,9 +397,8 @@ namespace ImFlow
         InfStyler& style() { return m_style; }
     private:
         std::string m_name;
-        ImVec2 m_pos;
-        ImVec2 m_scroll = ImVec2(0, 0);
-        ViewPort m_canvas;
+//        ImVec2 m_pos;
+        ViewPort m_viewport;
 
         bool m_singleUseClick = false;
 
