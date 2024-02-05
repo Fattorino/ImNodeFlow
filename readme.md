@@ -2,11 +2,12 @@
 **Node based editor/blueprints for ImGui**
 
 Create your custom nodes, and their logic.
-ImNodeFLow will handle connections, editor logic and rendering.
+ImNodeFlow will handle connections, editor logic and rendering.
 
 https://github.com/Fattorino/ImNodeFlow/assets/90210751/c2c1e7a6-8f83-42df-8a26-037de8835f9d
 
 ## Features
+- Support for Zoom
 - Backed-in Input and Output logic
 - Backed-in links handling
 - Customizable filters for different connections
@@ -75,3 +76,4 @@ For a more detailed explanation please refer to the [full documentation](documen
 ### Special credits
 - [ocornut](https://github.com/ocornut) for Dear ImGui
 - [thedmd](https://github.com/thedmd) for _imgui_bezier_math.h_
+- [nem0](https://github.com/nem0) for helping with Zoom support
