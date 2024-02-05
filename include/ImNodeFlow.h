@@ -161,7 +161,8 @@ namespace ImFlow
         ImVec2 pin_padding = ImVec2(3.f, 1.f); // Padding between Pin border and content
         float pin_radius = 8.f; // Pin's edges rounding
         float pin_border_thickness = 1.f; // Thickness of the border drawn around the Pin
-        float pin_point_radius = 3.5f; // Radius of the circle in front of the Pin
+        float pin_point_radius = 3.5f; // Radius of the circle in front of the Pin when connected
+        float pin_point_empty_radius = 4.f; // Radius of the circle in front of the Pin when not connected
 
         float link_thickness = 2.6f; // Thickness of the drawn link
         float link_hovered_thickness = 3.5f; // Thickness of the drawn link when hovered
@@ -762,7 +763,7 @@ namespace ImFlow
         /**
          * @brief When parent gets deleted, remove the link
          */
-        ~OutPin() { if (!m_link.expired()) m_link.lock()->right()->deleteLink(); }
+        ~OutPin() { for (auto &l: m_links) if (!l.expired()) l.lock()->right()->deleteLink(); }
 
         /**
          * @brief Main loop of the pin
@@ -780,7 +781,7 @@ namespace ImFlow
          * @brief Sets the reference to a link
          * @param link Pointer to the link
          */
-        void setLink(std::shared_ptr<Link>& link) override { m_link = link; }
+        void setLink(std::shared_ptr<Link>& link) override;
 
         /**
          * @brief Get pin's link attachment point
@@ -801,7 +802,7 @@ namespace ImFlow
          */
         void behaviour(std::function<T()> func) { m_behaviour = std::move(func); }
     private:
-        std::weak_ptr<Link> m_link;
+        std::vector<std::weak_ptr<Link>> m_links;
         std::function<T()> m_behaviour;
         T m_val;
     };
