@@ -11,7 +11,7 @@
 #include <functional>
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
-#include "../src/viewport_wrapper.h"
+#include "../src/context_wrapper.h"
 
 // TODO: [POLISH] Collision solver to bring first node on foreground to avoid clipping
 // TODO: [EXTRA]  Custom renderers for Pins (with lambdas I think)
@@ -197,8 +197,8 @@ namespace ImFlow
         {
             m_name = "FlowGrid" + std::to_string(m_instances);
             m_instances++;
-            m_viewport.config().extra_window_wrapper = true;
-            m_viewport.config().color = m_style.colors.background;
+            m_context.config().extra_window_wrapper = true;
+            m_context.config().color = m_style.colors.background;
         }
 
         /**
@@ -209,8 +209,8 @@ namespace ImFlow
         explicit ImNodeFlow(std::string name) :m_name(std::move(name))
         {
             m_instances++;
-            m_viewport.config().extra_window_wrapper = true;
-            m_viewport.config().color = m_style.colors.background;
+            m_context.config().extra_window_wrapper = true;
+            m_context.config().color = m_style.colors.background;
         }
 
         /**
@@ -221,8 +221,8 @@ namespace ImFlow
         explicit ImNodeFlow(const char* name) :m_name(name)
         {
             m_instances++;
-            m_viewport.config().extra_window_wrapper = true;
-            m_viewport.config().color = m_style.colors.background;
+            m_context.config().extra_window_wrapper = true;
+            m_context.config().color = m_style.colors.background;
         }
 
         /**
@@ -304,14 +304,14 @@ namespace ImFlow
          * @brief Get editor's position
          * @return Const reference to editor's position in screen coordinates
          */
-        const ImVec2& pos() { return m_viewport.origin(); }
+        const ImVec2& pos() { return m_context.origin(); }
 
         /**
          * @brief Get editor's grid scroll
          * @details Scroll is the offset from the origin of the grid, changes while navigating the grid with the middle mouse.
          * @return Const reference to editor's grid scroll
          */
-        const ImVec2& scroll() { return m_viewport.scroll(); }
+        const ImVec2& scroll() { return m_context.scroll(); }
 
         /**
          * @brief Get editor's list of nodes
@@ -329,7 +329,7 @@ namespace ImFlow
          * @brief Get zooming viewport
          * @return Const reference to editor's internal viewport for zoom support
          */
-        const ViewPort& viewport() { return m_viewport; }
+        const ContainedContext& viewport() { return m_context; }
 
         /**
          * @brief Get dragging status
@@ -398,8 +398,7 @@ namespace ImFlow
         InfStyler& style() { return m_style; }
     private:
         std::string m_name;
-//        ImVec2 m_pos;
-        ViewPort m_viewport;
+        ContainedContext m_context;
 
         bool m_singleUseClick = false;
 
@@ -439,6 +438,7 @@ namespace ImFlow
         {
             m_paddingTL = {m_inf->style().node_padding.x, m_inf->style().node_padding.y};
             m_paddingBR = {m_inf->style().node_padding.z, m_inf->style().node_padding.w};
+            m_posTarget = m_pos;
         }
 
         /**
@@ -551,7 +551,7 @@ namespace ImFlow
         void updatePublicStatus() { m_selected = m_selectedNext; }
     private:
         std::string m_name;
-        ImVec2 m_pos, m_posOld = m_pos;
+        ImVec2 m_pos, m_posTarget;
         ImVec2 m_size;
         ImNodeFlow* m_inf;
         bool m_selected = false, m_selectedNext = false;
