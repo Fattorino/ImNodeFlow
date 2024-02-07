@@ -67,7 +67,7 @@ namespace ImFlow
         ImGui::BeginGroup();
         for(auto& p : m_ins)
         {
-            p->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos());
+            p->pos(ImGui::GetCursorPos());
             p->update();
         }
         ImGui::EndGroup();
@@ -129,21 +129,20 @@ namespace ImFlow
             m_inf->consumeSingleUseClick();
             m_dragged = true;
             m_inf->draggingNode(true);
-            m_posOld = m_pos;
         }
         if(m_dragged || (m_selected && m_inf->draggingNode()))
         {
             float step = m_inf->style().grid_size / m_inf->style().grid_subdivisions;
-            ImVec2 wantedPos = m_posOld + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.f);
+            m_posTarget += ImGui::GetIO().MouseDelta;
             // "Slam" The position
-            m_pos.x = step * (int)(wantedPos.x / step);
-            m_pos.y = step * (int)(wantedPos.y / step);
+            m_pos.x = round(m_posTarget.x / step) * step;
+            m_pos.y = round(m_posTarget.y / step) * step;
 
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
             {
                 m_dragged = false;
                 m_inf->draggingNode(false);
-                m_posOld = m_pos;
+                m_posTarget = m_pos;
             }
         }
         ImGui::PopID();
@@ -170,22 +169,22 @@ namespace ImFlow
 
     ImVec2 ImNodeFlow::content2canvas(const ImVec2& p)
     {
-        return p + m_viewport.scroll() + ImGui::GetWindowPos();
+        return p + m_context.scroll() + ImGui::GetWindowPos();
     }
 
     ImVec2 ImNodeFlow::canvas2screen(const ImVec2 &p)
     {
-        return (p + m_viewport.scroll()) * m_viewport.scale() + m_viewport.origin();
+        return (p + m_context.scroll()) * m_context.scale() + m_context.origin();
     }
 
     ImVec2 ImNodeFlow::screen2content(const ImVec2 &p)
     {
-        return p - m_viewport.scroll();
+        return p - m_context.scroll();
     }
 
     ImVec2 ImNodeFlow::screen2canvas(const ImVec2 &p)
     {
-        return p - pos() - m_viewport.scroll();
+        return p - pos() - m_context.scroll();
     }
 
     void ImNodeFlow::addLink(std::shared_ptr<Link>& link)
@@ -201,21 +200,23 @@ namespace ImFlow
         m_singleUseClick = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
 
         // Create child canvas
-        m_viewport.begin();
+        m_context.begin();
 
-        ImVec2 offset = ImGui::GetCursorScreenPos() + m_viewport.scroll();
+        ImVec2 offset = ImGui::GetCursorScreenPos() + m_context.scroll();
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        draw_list->AddCircleFilled(ImVec2(0,0) + m_context.scroll(), 5.f, IM_COL32_WHITE);
 
         // Display grid
         ImVec2 win_pos = ImGui::GetCursorScreenPos();
         ImVec2 canvas_sz = ImGui::GetWindowSize();
-        for (float x = fmodf(m_viewport.scroll().x, m_style.grid_size); x < canvas_sz.x; x += m_style.grid_size)
+        for (float x = fmodf(m_context.scroll().x, m_style.grid_size); x < canvas_sz.x; x += m_style.grid_size)
             draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, m_style.colors.grid);
-        for (float y = fmodf(m_viewport.scroll().y, m_style.grid_size); y < canvas_sz.y; y += m_style.grid_size)
+        for (float y = fmodf(m_context.scroll().y, m_style.grid_size); y < canvas_sz.y; y += m_style.grid_size)
             draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, m_style.colors.grid);
-        for (float x = fmodf(m_viewport.scroll().x, m_style.grid_size / m_style.grid_subdivisions); x < canvas_sz.x; x += m_style.grid_size / m_style.grid_subdivisions)
+        for (float x = fmodf(m_context.scroll().x, m_style.grid_size / m_style.grid_subdivisions); x < canvas_sz.x; x += m_style.grid_size / m_style.grid_subdivisions)
             draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, m_style.colors.subGrid);
-        for (float y = fmodf(m_viewport.scroll().y, m_style.grid_size / m_style.grid_subdivisions); y < canvas_sz.y; y += m_style.grid_size / m_style.grid_subdivisions)
+        for (float y = fmodf(m_context.scroll().y, m_style.grid_size / m_style.grid_subdivisions); y < canvas_sz.y; y += m_style.grid_size / m_style.grid_subdivisions)
             draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, m_style.colors.subGrid);
 
         // Update and draw nodes
@@ -289,6 +290,6 @@ namespace ImFlow
         m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
                                      [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
 
-        m_viewport.end();
+        m_context.end();
     }
 }

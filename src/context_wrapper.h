@@ -37,7 +37,7 @@ inline static void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
     }
     for (auto cmd : src->CmdBuffer) {
         cmd.IdxOffset += idx_start;
-        //ASSERT(cmd.VtxOffset == 0)
+        IM_ASSERT(cmd.VtxOffset == 0);
         cmd.ClipRect.x = cmd.ClipRect.x * scale + origin.x;
         cmd.ClipRect.y = cmd.ClipRect.y * scale + origin.y;
         cmd.ClipRect.z = cmd.ClipRect.z * scale + origin.x;
@@ -62,10 +62,10 @@ struct ViewPortConfig
     ImGuiMouseButton scroll_button = ImGuiMouseButton_Middle;
 };
 
-class ViewPort
+class ContainedContext
 {
 public:
-    ~ViewPort();
+    ~ContainedContext();
     ViewPortConfig& config() { return m_config; }
     void begin();
     void end();
@@ -77,6 +77,7 @@ private:
     ViewPortConfig m_config;
 
     ImVec2 m_origin;
+    ImVec2 m_pos, m_size;
     ImGuiContext* m_ctx = nullptr;
     ImGuiContext* m_original_ctx = nullptr;
 
@@ -85,20 +86,22 @@ private:
     bool m_hovered = false;
 
     float m_scale = m_config.default_zoom, m_scaleTarget = m_config.default_zoom;
-    ImVec2 m_scroll = {0.f, 0.f};
+    ImVec2 m_scroll = {0.f, 0.f}, m_scrollTarget = {0.f, 0.f};
 };
 
-inline ViewPort::~ViewPort()
+inline ContainedContext::~ContainedContext()
 {
     if (m_ctx) ImGui::DestroyContext(m_ctx);
 }
 
-inline void ViewPort::begin()
+inline void ContainedContext::begin()
 {
     ImGui::PushID(this);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, m_config.color);
     ImGui::BeginChild("view_port", m_config.size, 0, ImGuiWindowFlags_NoMove);
     ImGui::PopStyleColor();
+    m_size = ImGui::GetWindowSize();
+    m_pos = ImGui::GetWindowPos();
 
     ImVec2 size = ImGui::GetContentRegionAvail();
     m_origin = ImGui::GetCursorScreenPos();
@@ -125,7 +128,7 @@ inline void ViewPort::begin()
     ImGui::PopStyleVar();
 }
 
-inline void ViewPort::end()
+inline void ContainedContext::end()
 {
     m_anyWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
     if (m_config.extra_window_wrapper && ImGui::IsWindowHovered())
@@ -154,16 +157,24 @@ inline void ViewPort::end()
         m_scaleTarget += ImGui::GetIO().MouseWheel / 16;
         m_scaleTarget = m_scaleTarget < 0.3f ? 0.3f : m_scaleTarget;
         m_scaleTarget = m_scaleTarget > 2.f ? 2.f : m_scaleTarget;
+
         if (m_config.zoom_smoothness == 0.f)
         {
+            m_scroll += (ImGui::GetMousePos() - m_pos) / m_scaleTarget - (ImGui::GetMousePos() - m_pos) / m_scale;
             m_scale = m_scaleTarget;
         }
     }
     if (abs(m_scaleTarget - m_scale) >= 0.015f / m_config.zoom_smoothness)
     {
+        float cs = (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
+        m_scroll += (ImGui::GetMousePos() - m_pos) / (m_scale + cs) - (ImGui::GetMousePos() - m_pos) / m_scale;
         m_scale += (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
-        if (abs(m_scaleTarget - m_scale) < 0.02f)
+
+        if (abs(m_scaleTarget - m_scale) < 0.015f)
+        {
+            m_scroll += (ImGui::GetMousePos() - m_pos) / m_scaleTarget - (ImGui::GetMousePos() - m_pos) / m_scale;
             m_scale = m_scaleTarget;
+        }
     }
 
     // Zoom reset
@@ -172,7 +183,10 @@ inline void ViewPort::end()
 
     // Scrolling
     if (m_hovered && !m_anyItemActive && ImGui::IsMouseDragging(m_config.scroll_button, 0.f))
-        m_scroll = m_scroll + ImGui::GetIO().MouseDelta / m_scale;
+    {
+        m_scroll += ImGui::GetIO().MouseDelta / m_scale;
+        m_scrollTarget = m_scroll;
+    }
 
     ImGui::EndChild();
     ImGui::PopID();
