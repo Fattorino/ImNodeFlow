@@ -460,7 +460,7 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
 
-    typedef long long int PinUID;
+    typedef unsigned long long int PinUID;
 
     /**
      * @brief Parent class for custom nodes
@@ -581,6 +581,13 @@ namespace ImFlow
         Pin* inPin(U uid) { return m_ins.at(std::hash<U>{}(uid)).get(); }
 
         /**
+         * @brief Get generic reference to input pin
+         * @param uid Unique identifier of the pin
+         * @return Generic pointer to the pin
+         */
+        Pin* inPin(const char* uid) { return m_ins.at(std::hash<std::string>{}(std::string(uid))).get(); }
+
+        /**
          * @brief Get generic reference to output pin
          * @tparam U Type of the UID
          * @param uid Unique identifier of the pin
@@ -588,6 +595,13 @@ namespace ImFlow
          */
         template<typename U>
         Pin* outPin(U uid) { return m_outs.at(std::hash<U>{}(uid)).get(); }
+
+        /**
+         * @brief Get generic reference to output pin
+         * @param uid Unique identifier of the pin
+         * @return Generic pointer to the pin
+         */
+        Pin* outPin(const char* uid) { return m_outs.at(std::hash<std::string>{}(std::string(uid))).get(); }
 
         /**
          * @brief Get hovered status
@@ -624,6 +638,12 @@ namespace ImFlow
          * @return [TRUE] if the node is being dragged
          */
         [[nodiscard]] bool dragged() const { return m_dragged; }
+
+        /**
+         * @brief Set node's name
+         * @param name New name
+         */
+        void name(const std::string& name) { m_name = name; }
 
         /**
          * @brief Set selected status
