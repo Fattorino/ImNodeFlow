@@ -62,24 +62,41 @@ The constructor is standard and must **not** be changed.
 ```c++
 explicit CustomNode(. . .)
 {
-    addIN<int>("Pin name", 0, Connection filter);
+    addIN<int>("Pin name", 0, Connection filter); // The name is also used as the UID
+    addIN<int>(uid, "Pin name", 0, Connection filter); // Custom UID of generic type
 }
 ```
 `addIN<T>` will add an input pin to the node. Usually called in the node's constructor.
+<BR> UIDs must be unique but only in the context of the inputs of the current node
+_(an output or an input of another node can have the same uid)_
+<BR> The UID can be any of type and of different types between pins.
 #### Getting the value
+BaseNode provides the following getter
 ```c++
-int value = ins<int>(n);
+int value = getInVal<int>(uid);
 ```
-Returns a read only reference to the value associated with the _nth_ input pin.
+Returns a read only reference to the value associated with the input pin identified with given uid.
+<BR> _Refer to the doxygen documentation for more details on the different use cases_
+#### Referencing the pin
+BaseNode provides the following getter
+```c++
+Pin* pin = inPin(uid);      // From inside the node
+Pin* pin = node.inPin(uid); // Elsewhere
+```
+Returns a generic pin type pointer to the input pin identified with given uid.
 
 ### Adding output pins
 ```c++
 explicit CustomNode(. . .)
 {
-    addOUT<int>("Pin name", Connection filter);
+    addOUT<int>("Pin name", Connection filter); // The name is also used as the UID
+    addOUT<int>(uid, "Pin name", Connection filter); // Custom UID of generic type
 }
 ```
 `addOUT<T>` will add an output pin to the node. Usually called in the node's constructor.
+<BR> UIDs must be unique but only in the context of the inputs of the current node
+_(an output or an input of another node can have the same uid)_
+<BR> The UID can be any of type and of different types between pins.
 #### Defining logic
 ```c++
 behaviour([this](){ return . . .; });
@@ -93,6 +110,13 @@ addOUT<int>("Pin name", Connection filter)
 ```
 Creates a pin with given name and filter and sets its logic.
 <BR> This pin will be rather useless since it always returns 0 (also known as the author's IQ).
+#### Referencing the pin
+BaseNode provides the following getter
+```c++
+Pin* pin = outPin(uid);      // From inside the node
+Pin* pin = node.outPin(uid); // Elsewhere
+```
+Returns a generic pin type pointer to the output pin identified with given uid.
 
 ### Node's body
 ```c++
@@ -112,7 +136,7 @@ public:
     {
         addIN<int>("IN_VAL", 0, ConnectionFilter_Int);
         addOUT<int>("OUT_VAL", ConnectionFilter_Int)
-                ->behaviour([this](){ return ins<int>(0) + m_valB; });
+                ->behaviour([this](){ return getInVal<int>("IN_VAL") + m_valB; });
     }
 
     void draw() override

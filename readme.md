@@ -54,7 +54,7 @@ public:
     {
         addIN<int>("IN_VAL", 0, ConnectionFilter_Int);
         addOUT<int>("OUT_VAL", ConnectionFilter_Int)
-                ->behaviour([this](){ return ins<int>(0) + m_valB; });
+                ->behaviour([this](){ return getInVal<int>("IN_VAL") + m_valB; });
     }
 
     void draw() override
