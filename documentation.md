@@ -15,6 +15,9 @@
 - [Pop-ups 101](#custom-pop-ups)
   - [Right click](#right-click-pop-up)
   - [Dropped link](#dropped-link-pop-up)
+- [Custom styles 101](#custom-styles)
+
+***
 
 ## Getting started
 After having included the necessary files into the project. A few simple steps are necessary.
@@ -25,12 +28,17 @@ using namespace ImFlow;
 ```c++
 ImNodeFlow INF; // Create an editor with default name
 ImNodeFlow INF("Name"); // Create an editor with given name
+ImNodeFlow INF = ImNodeFlow("Name"); // Create an editor with given name
 ```
 ```c++
 // Inside Dear ImGui loop
 INF.update(); // Update logic and render
 // . . .
 ```
+This will only render the node editor, so it must be called inside a Dear ImGui window. The editor will auto-fit the available space by default.
+<BR> A custom size can be specified using `.size(newSize)`.
+
+***
 
 ## Creating a custom node
 Custom nodes **must** be derived from the class BaseNode.
@@ -62,7 +70,7 @@ explicit CustomNode(. . .)
 ```c++
 int value = ins<int>(n);
 ```
-Returns a read only reference to the value connected to the nth input pin.
+Returns a read only reference to the value associated with the _nth_ input pin.
 
 ### Adding output pins
 ```c++
@@ -125,8 +133,9 @@ Both have their filter set to `int`.
 ### Adding nodes to the grid
 It's now time to add our beautifully useless node to the grid.
 ```c++
-INF.addNode<CustomNode>("Node's name", ImVec2(0, 0)); // Add node at canvas coordinates
-INF.dropNode<CustomNode>("Node's name", ImVec2(0, 0)); // Add node at screen coordinates
+INF.addNode<CustomNode>("Node's name", ImVec2(0, 0)); // Add node at given canvas coordinates
+INF.placeNode<CustomNode>("Node's name", ImVec2(0, 0)); // Add node at given screen coordinates
+INF.placeNode<CustomNode>("Node's name"); // Add node at Mouse position
 ```
 
 ***
@@ -191,6 +200,17 @@ INF.droppedLinkPopUpContent([](Pin* dragged) {
 `droppedLinkPopUpContent` takes either a function or lambda expression.
 <BR> Said function must contain pop-up contents to be displayed and the logic.
 <BR> An optional key to press can also be specified.
+
+***
+
+## Custom styles
+It is possible to change every color and size used by the editor.
+```c++
+INF.style()         // Get access to all the sizes
+INF.style().colors  // Get access to all the colors
+```
+Sizes and colors can be updated every frame. But it is not possible to change them mid-rendering.
+_<BR> It is not possible for example to have links of multiple colors or thickness._
 
 ***
 

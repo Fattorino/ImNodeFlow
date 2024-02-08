@@ -36,6 +36,11 @@ namespace ImFlow
             m_right->deleteLink();
     }
 
+    Link::~Link()
+    {
+        m_left->deleteLink();
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
 
@@ -67,8 +72,8 @@ namespace ImFlow
         ImGui::BeginGroup();
         for(auto& p : m_ins)
         {
-            p->pos(ImGui::GetCursorPos());
-            p->update();
+            p.second->pos(ImGui::GetCursorPos());
+            p.second->update();
         }
         ImGui::EndGroup();
         ImGui::SameLine();
@@ -84,7 +89,7 @@ namespace ImFlow
         float maxW = 0.0f;
         for (auto& p : m_outs)
         {
-            float w = p->calcWidth();
+            float w = p.second->calcWidth();
             if (w > maxW)
                 maxW = w;
         }
@@ -93,10 +98,10 @@ namespace ImFlow
         {
             // FIXME: This looks horrible
             if (m_inf->content2canvas(m_pos + ImVec2(titleW, 0)).x < ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
-                p->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p->calcWidth(), 0.f));
+                p.second->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p.second->calcWidth(), 0.f));
             else
-                p->pos(ImVec2(m_inf->content2canvas(m_pos + ImVec2(titleW - p->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
-            p->update();
+                p.second->pos(ImVec2(m_inf->content2canvas(m_pos + ImVec2(titleW - p.second->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
+            p.second->update();
         }
         ImGui::EndGroup();
 
@@ -251,7 +256,7 @@ namespace ImFlow
             m_dragOut = m_hovering;
         if (m_dragOut)
         {
-            if (m_dragOut->kind() == PinKind_Output)
+            if (m_dragOut->type() == PinType_Output)
                 smart_bezier(m_dragOut->pinPoint(), ImGui::GetMousePos(), m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
             else
                 smart_bezier(ImGui::GetMousePos(), m_dragOut->pinPoint(), m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
