@@ -37,15 +37,21 @@ namespace ImFlow
     template<typename T>
     T* ImNodeFlow::addNode(const std::string& name, const ImVec2& pos)
     {
-        static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not subclass of BaseNode!");
+        static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
         m_nodes.emplace_back(std::make_shared<T>(name, pos, this));
         return static_cast<T*>(m_nodes.back().get());
     }
 
     template<typename T>
-    T* ImNodeFlow::dropNode(const std::string& name, const ImVec2& pos)
+    T* ImNodeFlow::placeNode(const std::string& name)
     {
-        static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not subclass of BaseNode!");
+        return placeNode<T>(name, ImGui::GetMousePos());
+    }
+
+    template<typename T>
+    T* ImNodeFlow::placeNode(const std::string& name, const ImVec2& pos)
+    {
+        static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
         m_nodes.emplace_back(std::make_shared<T>(name, screen2content(pos), this));
         return static_cast<T*>(m_nodes.back().get());
     }
@@ -54,20 +60,43 @@ namespace ImFlow
     // BASE NODE
 
     template<typename T>
-    void BaseNode::addIN(const std::string name, T defReturn, ConnectionFilter filter)
+    void BaseNode::addIN(const std::string& name, T defReturn, ConnectionFilter filter)
     {
-        m_ins.emplace_back(std::make_shared<InPin<T>>(name, filter, this, defReturn, m_inf));
+        addIN_uid(name, name, defReturn, filter);
+    }
+
+    template<typename T, typename U>
+    void BaseNode::addIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter)
+    {
+        PinUID h = std::hash<U>{}(uid);
+        m_ins.emplace(std::make_pair(h, std::make_shared<InPin<T>>(name, filter, this, defReturn, m_inf)));
     }
 
     template<typename T>
-    OutPin<T>* BaseNode::addOUT(const std::string name, ConnectionFilter filter)
+    OutPin<T>* BaseNode::addOUT(const std::string& name, ConnectionFilter filter)
     {
-        m_outs.emplace_back(std::make_shared<OutPin<T>>(name, filter, this, m_inf));
-        return static_cast<OutPin<T>*>(m_outs.back().get());
+        return addOUT_uid<T>(name, name, filter);
+    }
+
+    template<typename T, typename U>
+    OutPin<T>* BaseNode::addOUT_uid(U uid, const std::string& name, ConnectionFilter filter)
+    {
+        PinUID h = std::hash<U>{}(uid);
+        m_outs.emplace(std::make_pair(h, std::make_shared<OutPin<T>>(name, filter, this, m_inf)));
+        return static_cast<OutPin<T>*>(m_outs.at(h).get());
+    }
+
+    template<typename T, typename U>
+    const T& BaseNode::getInVal(U uid)
+    {
+        return static_cast<InPin<T>*>(m_ins.at(std::hash<U>{}(uid)).get())->val();
     }
 
     template<typename T>
-    const T& BaseNode::ins(int i) { return static_cast<InPin<T>*>(m_ins[i].get())->val(); }
+    const T& BaseNode::getInVal(const char* uid)
+    {
+        return static_cast<InPin<T>*>(m_ins.at(std::hash<std::string>{}(std::string(uid))).get())->val();
+    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // IN PIN
@@ -85,6 +114,9 @@ namespace ImFlow
     void InPin<T>::update()
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImVec2 tl = pinPoint() - ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
+        ImVec2 br = pinPoint() + ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
+
         ImGui::Text(m_name.c_str());
         m_size = ImGui::GetItemRectSize();
         if (ImGui::IsItemHovered())
@@ -95,16 +127,21 @@ namespace ImFlow
         if (m_link)
             draw_list->AddCircleFilled(pinPoint(), m_inf->style().pin_point_radius, m_inf->style().colors.pin_point);
         else
-            draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_radius, m_inf->style().colors.pin_point);
+        {
+            if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
+                draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_hovered_radius, m_inf->style().colors.pin_point);
+            else
+                draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_radius, m_inf->style().colors.pin_point);
+        }
 
-        if (ImGui::IsItemHovered())
+        if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
             m_inf->hovering(this);
     }
 
     template<class T>
     void InPin<T>::createLink(Pin *other)
     {
-        if (other == this || other->kind() == PinKind_Input || m_parent == other->parent())
+        if (other == this || other->type() == PinType_Input || m_parent == other->parent())
             return;
 
         if (!((m_filter & other->filter()) != 0 || m_filter == ConnectionFilter_None || other->filter() == ConnectionFilter_None)) // Check Filter
@@ -131,6 +168,8 @@ namespace ImFlow
     void OutPin<T>::update()
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImVec2 tl = pinPoint() - ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
+        ImVec2 br = pinPoint() + ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
 
         ImGui::SetCursorScreenPos(m_pos);
         ImGui::Text(m_name.c_str());
@@ -142,18 +181,23 @@ namespace ImFlow
             draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_bg, m_inf->style().pin_radius);
         draw_list->AddRect(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_border, m_inf->style().pin_radius, 0, m_inf->style().pin_border_thickness);
         if (m_links.empty())
-            draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_radius, m_inf->style().colors.pin_point);
+        {
+            if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
+                draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_hovered_radius, m_inf->style().colors.pin_point);
+            else
+                draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_radius, m_inf->style().colors.pin_point);
+        }
         else
             draw_list->AddCircleFilled(pinPoint(), m_inf->style().pin_point_radius, m_inf->style().colors.pin_point);
 
-        if (ImGui::IsItemHovered())
+        if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
             m_inf->hovering(this);
     }
 
     template<class T>
     void OutPin<T>::createLink(ImFlow::Pin *other)
     {
-        if (other == this || other->kind() == PinKind_Output)
+        if (other == this || other->type() == PinType_Output)
             return;
 
         other->createLink(this);
@@ -163,5 +207,12 @@ namespace ImFlow
     void OutPin<T>::setLink(std::shared_ptr<Link>& link)
     {
         m_links.emplace_back(link);
+    }
+
+    template<class T>
+    void OutPin<T>::deleteLink()
+    {
+        m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
+                                     [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
     }
 }

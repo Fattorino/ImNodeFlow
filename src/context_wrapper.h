@@ -77,7 +77,7 @@ private:
     ViewPortConfig m_config;
 
     ImVec2 m_origin;
-    ImVec2 m_pos, m_size;
+    ImVec2 m_pos;
     ImGuiContext* m_ctx = nullptr;
     ImGuiContext* m_original_ctx = nullptr;
 
@@ -100,7 +100,7 @@ inline void ContainedContext::begin()
     ImGui::PushStyleColor(ImGuiCol_ChildBg, m_config.color);
     ImGui::BeginChild("view_port", m_config.size, 0, ImGuiWindowFlags_NoMove);
     ImGui::PopStyleColor();
-    m_size = ImGui::GetWindowSize();
+//    m_size = ImGui::GetWindowSize();
     m_pos = ImGui::GetWindowPos();
 
     ImVec2 size = ImGui::GetContentRegionAvail();

@@ -21,7 +21,7 @@ https://github.com/Fattorino/ImNodeFlow/assets/90210751/c2c1e7a6-8f83-42df-8a26-
    include(FetchContent)
    FetchContent_Declare(ImNodeFlow
         GIT_REPOSITORY "https://github.com/Fattorino/ImNodeFlow.git"
-        GIT_TAG "origin/master"
+        GIT_TAG "v1.1.1"
         SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/includes/ImNodeFlow"
    )
    FetchContent_MakeAvailable(ImNodeFlow)
