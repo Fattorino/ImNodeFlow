@@ -151,6 +151,10 @@ namespace ImFlow
             }
         }
         ImGui::PopID();
+
+        // Resolve output pins values
+        for (auto& p : m_outs)
+            p.second->resolve();
     }
 
     // -----------------------------------------------------------------------------------------------------------------

@@ -14,9 +14,6 @@
 #include "../src/imgui_bezier_math.h"
 #include "../src/context_wrapper.h"
 
-// TODO: [POLISH] Collision solver to bring first node on foreground to avoid clipping
-// TODO: [EXTRA]  Custom renderers for Pins (with lambdas I think)
-
 namespace ImFlow
 {
     // -----------------------------------------------------------------------------------------------------------------
@@ -62,12 +59,13 @@ namespace ImFlow
      */
     enum ConnectionFilter_
     {
-        ConnectionFilter_None   = 0,
-        ConnectionFilter_Int    = 1 << 1,
-        ConnectionFilter_Float  = 1 << 2,
-        ConnectionFilter_Double = 1 << 3,
-        ConnectionFilter_String = 1 << 4,
-        ConnectionFilter_MakeCustom = 1 << 5,
+        ConnectionFilter_None       = 0,
+        ConnectionFilter_SameNode   = 1 << 1,
+        ConnectionFilter_Int        = 1 << 2,
+        ConnectionFilter_Float      = 1 << 3,
+        ConnectionFilter_Double     = 1 << 4,
+        ConnectionFilter_String     = 1 << 5,
+        ConnectionFilter_MakeCustom = 1 << 6,
         ConnectionFilter_Numbers = ConnectionFilter_Int | ConnectionFilter_Float | ConnectionFilter_Double
     };
     typedef long ConnectionFilter;
@@ -706,6 +704,15 @@ namespace ImFlow
          */
         virtual void update() = 0;
 
+        /**
+         * @brief Used by output pins to calculate their values
+         */
+        virtual void resolve() {}
+
+        /**
+         * @brief Custom render function to override Pin appearance
+         * @param r Function or lambda expression with new ImGui rendering
+         */
         Pin* renderer(std::function<void(Pin* p)> r) { m_renderer = std::move(r); return this; }
 
         /**
@@ -881,6 +888,11 @@ namespace ImFlow
          * @details Updates position, hovering and dragging status, and renders the pin. Must be called each frame.
          */
         void update() override;
+
+        /**
+         * @brief Calculate value based on set behaviour
+         */
+        void resolve() override { m_val = m_behaviour(); }
 
         /**
          * @brief Create link between pins
