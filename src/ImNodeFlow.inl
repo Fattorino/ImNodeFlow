@@ -188,7 +188,7 @@ namespace ImFlow
     template<class T>
     void InPin<T>::createLink(Pin *other)
     {
-        if (other == this || other->type() == PinType_Input || m_parent == other->parent())
+        if (other == this || other->type() == PinType_Input || (m_parent == other->parent() && (m_filter & ConnectionFilter_SameNode) == 0))
             return;
 
         if (!((m_filter & other->filter()) != 0 || m_filter == ConnectionFilter_None || other->filter() == ConnectionFilter_None)) // Check Filter
@@ -209,7 +209,7 @@ namespace ImFlow
     // OUT PIN
 
     template<class T>
-    const T &OutPin<T>::val() { m_val = m_behaviour(); return m_val; }
+    const T &OutPin<T>::val() { return m_val; }
 
     template<class T>
     void OutPin<T>::update()
