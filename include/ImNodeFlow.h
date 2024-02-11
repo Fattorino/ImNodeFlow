@@ -578,14 +578,14 @@ namespace ImFlow
          * @return Generic pointer to the pin
          */
         template<typename U>
-        Pin* inPin(U uid) { return m_ins.at(std::hash<U>{}(uid)).get(); }
+        Pin* inPin(U uid);
 
         /**
          * @brief Get generic reference to input pin
          * @param uid Unique identifier of the pin
          * @return Generic pointer to the pin
          */
-        Pin* inPin(const char* uid) { return m_ins.at(std::hash<std::string>{}(std::string(uid))).get(); }
+        Pin* inPin(const char* uid);
 
         /**
          * @brief Get generic reference to output pin
@@ -594,14 +594,14 @@ namespace ImFlow
          * @return Generic pointer to the pin
          */
         template<typename U>
-        Pin* outPin(U uid) { return m_outs.at(std::hash<U>{}(uid)).get(); }
+        Pin* outPin(U uid);
 
         /**
          * @brief Get generic reference to output pin
          * @param uid Unique identifier of the pin
          * @return Generic pointer to the pin
          */
-        Pin* outPin(const char* uid) { return m_outs.at(std::hash<std::string>{}(std::string(uid))).get(); }
+        Pin* outPin(const char* uid);
 
         /**
          * @brief Get hovered status
@@ -667,8 +667,8 @@ namespace ImFlow
         ImVec2 m_paddingTL;
         ImVec2 m_paddingBR;
 
-        std::unordered_map<PinUID, std::shared_ptr<Pin>> m_ins;
-        std::unordered_map<PinUID, std::shared_ptr<Pin>> m_outs;
+        std::vector<std::pair<PinUID, std::shared_ptr<Pin>>> m_ins;
+        std::vector<std::pair<PinUID, std::shared_ptr<Pin>>> m_outs;
     };
 
     // -----------------------------------------------------------------------------------------------------------------

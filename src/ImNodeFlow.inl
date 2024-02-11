@@ -69,8 +69,8 @@ namespace ImFlow
     InPin<T>* BaseNode::addIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter)
     {
         PinUID h = std::hash<U>{}(uid);
-        m_ins.emplace(std::make_pair(h, std::make_shared<InPin<T>>(name, filter, this, defReturn, m_inf)));
-        return static_cast<InPin<T>*>(m_ins.at(h).get());
+        m_ins.emplace_back(std::make_pair(h, std::make_shared<InPin<T>>(name, filter, this, defReturn, m_inf)));
+        return static_cast<InPin<T>*>(m_ins.back().second.get());
     }
 
     template<typename T>
@@ -83,20 +83,54 @@ namespace ImFlow
     OutPin<T>* BaseNode::addOUT_uid(U uid, const std::string& name, ConnectionFilter filter)
     {
         PinUID h = std::hash<U>{}(uid);
-        m_outs.emplace(std::make_pair(h, std::make_shared<OutPin<T>>(name, filter, this, m_inf)));
-        return static_cast<OutPin<T>*>(m_outs.at(h).get());
+        m_outs.emplace_back(std::make_pair(h, std::make_shared<OutPin<T>>(name, filter, this, m_inf)));
+        return static_cast<OutPin<T>*>(m_outs.back().second.get());
     }
 
     template<typename T, typename U>
     const T& BaseNode::getInVal(U uid)
     {
-        return static_cast<InPin<T>*>(m_ins.at(std::hash<U>{}(uid)).get())->val();
+        auto it = std::find_if(m_ins.begin(), m_ins.end(), [&uid](std::pair<PinUID,std::shared_ptr<Pin>>& p)
+                            { return p.first == std::hash<U>{}(uid); });
+        return static_cast<InPin<T>*>(it->second.get())->val();
     }
 
     template<typename T>
     const T& BaseNode::getInVal(const char* uid)
     {
-        return static_cast<InPin<T>*>(m_ins.at(std::hash<std::string>{}(std::string(uid))).get())->val();
+        auto it = std::find_if(m_ins.begin(), m_ins.end(), [&uid](std::pair<PinUID,std::shared_ptr<Pin>>& p)
+                            { return p.first == std::hash<std::string>{}(std::string(uid)); });
+        return static_cast<InPin<T>*>(it->second.get())->val();
+    }
+
+    template<typename U>
+    Pin* BaseNode::inPin(U uid)
+    {
+        return std::find_if(m_ins.begin(), m_ins.end(), [&uid](std::pair<PinUID,std::shared_ptr<Pin>>& p)
+                            { return p.first == std::hash<U>{}(uid); })
+                                    ->second.get();
+    }
+
+    inline Pin* BaseNode::inPin(const char* uid)
+    {
+        return std::find_if(m_ins.begin(), m_ins.end(), [&uid](std::pair<PinUID,std::shared_ptr<Pin>>& p)
+                            { return p.first == std::hash<std::string>{}(std::string(uid)); })
+                                    ->second.get();
+    }
+
+    template<typename U>
+    Pin* BaseNode::outPin(U uid)
+    {
+        return std::find_if(m_outs.begin(), m_outs.end(), [&uid](std::pair<PinUID,std::shared_ptr<Pin>>& p)
+                            { return p.first == std::hash<U>{}(uid); })
+                                    ->second.get();
+    }
+
+    inline Pin* BaseNode::outPin(const char* uid)
+    {
+        return std::find_if(m_outs.begin(), m_outs.end(), [&uid](std::pair<PinUID,std::shared_ptr<Pin>>& p)
+                            { return p.first == std::hash<std::string>{}(std::string(uid)); })
+                                    ->second.get();
     }
 
     // -----------------------------------------------------------------------------------------------------------------
