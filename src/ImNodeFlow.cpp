@@ -44,6 +44,14 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
 
+    BaseNode::BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf)
+        :m_name(std::move(name)), m_pos(pos), m_inf(inf)
+    {
+        m_paddingTL = {m_inf->style().node_padding.x, m_inf->style().node_padding.y};
+        m_paddingBR = {m_inf->style().node_padding.z, m_inf->style().node_padding.w};
+        m_posTarget = m_pos;
+    }
+
     bool BaseNode::hovered()
     {
         return ImGui::IsMouseHoveringRect(m_inf->content2canvas(m_pos - m_paddingTL), m_inf->content2canvas(m_pos + m_size + m_paddingBR));
