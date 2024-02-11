@@ -60,16 +60,17 @@ namespace ImFlow
     // BASE NODE
 
     template<typename T>
-    void BaseNode::addIN(const std::string& name, T defReturn, ConnectionFilter filter)
+    InPin<T>* BaseNode::addIN(const std::string& name, T defReturn, ConnectionFilter filter)
     {
-        addIN_uid(name, name, defReturn, filter);
+        return addIN_uid(name, name, defReturn, filter);
     }
 
     template<typename T, typename U>
-    void BaseNode::addIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter)
+    InPin<T>* BaseNode::addIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter)
     {
         PinUID h = std::hash<U>{}(uid);
         m_ins.emplace(std::make_pair(h, std::make_shared<InPin<T>>(name, filter, this, defReturn, m_inf)));
+        return static_cast<InPin<T>*>(m_ins.at(h).get());
     }
 
     template<typename T>
@@ -113,6 +114,18 @@ namespace ImFlow
     template<class T>
     void InPin<T>::update()
     {
+        // Custom rendering
+        if (m_renderer)
+        {
+            ImGui::BeginGroup();
+            m_renderer(this);
+            ImGui::EndGroup();
+            m_size = ImGui::GetItemRectSize();
+            if (ImGui::IsItemHovered())
+                m_inf->hovering(this);
+            return;
+        }
+
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImVec2 tl = pinPoint() - ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
         ImVec2 br = pinPoint() + ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
@@ -167,6 +180,18 @@ namespace ImFlow
     template<class T>
     void OutPin<T>::update()
     {
+        // Custom rendering
+        if (m_renderer)
+        {
+            ImGui::BeginGroup();
+            m_renderer(this);
+            ImGui::EndGroup();
+            m_size = ImGui::GetItemRectSize();
+            if (ImGui::IsItemHovered())
+                m_inf->hovering(this);
+            return;
+        }
+
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImVec2 tl = pinPoint() - ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
         ImVec2 br = pinPoint() + ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
