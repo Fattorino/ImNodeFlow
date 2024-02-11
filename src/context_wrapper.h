@@ -56,6 +56,9 @@ struct ViewPortConfig
     ImVec2 size = {0.f, 0.f};
     ImU32 color = IM_COL32_WHITE;
     bool zoom_enabled = true;
+    float zoom_min = 0.3f;
+    float zoom_max = 2.f;
+    float zoom_divisions = 10.f;
     float zoom_smoothness = 5.f;
     float default_zoom = 1.f;
     ImGuiKey reset_zoom_key = ImGuiKey_R;
@@ -154,9 +157,9 @@ inline void ContainedContext::end()
     // Zooming
     if (m_config.zoom_enabled && m_hovered && ImGui::GetIO().MouseWheel != 0.f)
     {
-        m_scaleTarget += ImGui::GetIO().MouseWheel / 16;
-        m_scaleTarget = m_scaleTarget < 0.3f ? 0.3f : m_scaleTarget;
-        m_scaleTarget = m_scaleTarget > 2.f ? 2.f : m_scaleTarget;
+        m_scaleTarget += ImGui::GetIO().MouseWheel / m_config.zoom_divisions;
+        m_scaleTarget = m_scaleTarget < m_config.zoom_min ? m_config.zoom_min : m_scaleTarget;
+        m_scaleTarget = m_scaleTarget > m_config.zoom_max ? m_config.zoom_max : m_scaleTarget;
 
         if (m_config.zoom_smoothness == 0.f)
         {
@@ -170,7 +173,7 @@ inline void ContainedContext::end()
         m_scroll += (ImGui::GetMousePos() - m_pos) / (m_scale + cs) - (ImGui::GetMousePos() - m_pos) / m_scale;
         m_scale += (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
 
-        if (abs(m_scaleTarget - m_scale) < 0.015f)
+        if (abs(m_scaleTarget - m_scale) < 0.015f / m_config.zoom_smoothness)
         {
             m_scroll += (ImGui::GetMousePos() - m_pos) / m_scaleTarget - (ImGui::GetMousePos() - m_pos) / m_scale;
             m_scale = m_scaleTarget;
