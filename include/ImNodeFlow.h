@@ -507,7 +507,7 @@ namespace ImFlow
          * @param filter Connection filter
          */
         template<typename T>
-        void addIN(const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None);
+        InPin<T>* addIN(const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None);
 
         /**
          * @brief Add an Input to the node
@@ -521,7 +521,7 @@ namespace ImFlow
          * @param filter Connection filter
          */
         template<typename T, typename U>
-        void addIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None);
+        InPin<T>* addIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None);
 
         /**
          * @brief Add an Output to the node
@@ -706,6 +706,8 @@ namespace ImFlow
          */
         virtual void update() = 0;
 
+        Pin* renderer(std::function<void(Pin* p)> r) { m_renderer = std::move(r); return this; }
+
         /**
          * @brief Create link between pins
          * @param other Pointer to the other pin
@@ -790,6 +792,7 @@ namespace ImFlow
         ConnectionFilter m_filter;
         BaseNode* m_parent = nullptr;
         ImNodeFlow* m_inf;
+        std::function<void(Pin* p)> m_renderer;
     };
 
     /**
@@ -913,7 +916,7 @@ namespace ImFlow
          * @details Used to define the pin behaviour. This is what gets the data from the parent's inputs, and applies the needed logic.
          * @param func Function or Lambda to be called by val()
          */
-        void behaviour(std::function<T()> func) { m_behaviour = std::move(func); }
+        OutPin<T>* behaviour(std::function<T()> func) { m_behaviour = std::move(func); return this; }
     private:
         std::vector<std::weak_ptr<Link>> m_links;
         std::function<T()> m_behaviour;

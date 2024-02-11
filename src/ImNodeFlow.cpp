@@ -210,8 +210,6 @@ namespace ImFlow
         ImVec2 offset = ImGui::GetCursorScreenPos() + m_context.scroll();
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
-        draw_list->AddCircleFilled(ImVec2(0,0) + m_context.scroll(), 5.f, IM_COL32_WHITE);
-
         // Display grid
         ImVec2 win_pos = ImGui::GetCursorScreenPos();
         ImVec2 canvas_sz = ImGui::GetWindowSize();
