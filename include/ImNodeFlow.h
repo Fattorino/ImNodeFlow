@@ -475,13 +475,7 @@ namespace ImFlow
          * @param pos Position in grid coordinates
          * @param inf Pointer to the Grid Handler the node is in
          */
-        explicit BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf)
-            :m_name(std::move(name)), m_pos(pos), m_inf(inf)
-        {
-            m_paddingTL = {m_inf->style().node_padding.x, m_inf->style().node_padding.y};
-            m_paddingBR = {m_inf->style().node_padding.z, m_inf->style().node_padding.w};
-            m_posTarget = m_pos;
-        }
+        explicit BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf);
 
         /**
          * @brief Main loop of the node
