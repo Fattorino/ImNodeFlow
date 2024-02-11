@@ -263,8 +263,8 @@ namespace ImFlow
          *
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
          */
-        template<typename T>
-        T* addNode(const std::string& name, const ImVec2& pos);
+        template<typename T, typename... Params>
+        T* addNode(const std::string& name, const ImVec2& pos, Params&&... args);
 
         /**
          * @brief Adds a node to the editor using mouse position
