@@ -9,6 +9,10 @@
   - [Body](#nodes-body)
   - [Example](#what-have-we-learned)
   - [Adding it](#adding-nodes-to-the-grid)
+- [Pins 101](#pins)
+  - [Static vs Dynamic](#static-vs-dynamic)
+  - [Custom rendering](#custom-rendering)
+- [Editor Handling 101](#handling-the-editor)
 - [Connection filters 101](#custom-filters)
   - [Basic filters](#basic-filters)
   - [Creating filters](#creating-more-filters)
@@ -67,7 +71,7 @@ explicit InputAveragingNode(const std::string& name, ImVec2 pos, ImNodeFlow* inf
 explicit CustomNode(. . .)
 {
     addIN<int>("Pin name", 0, Connection filter); // The name is also used as the UID
-    addIN<int>(uid, "Pin name", 0, Connection filter); // Custom UID of generic type
+    addIN_uid<int>(uid, "Pin name", 0, Connection filter); // Custom UID of generic type
 }
 ```
 `addIN<T>` will add an input pin to the node. Usually called in the node's constructor.
@@ -94,7 +98,7 @@ Returns a generic pin type pointer to the input pin identified with given uid.
 explicit CustomNode(. . .)
 {
     addOUT<int>("Pin name", Connection filter); // The name is also used as the UID
-    addOUT<int>(uid, "Pin name", Connection filter); // Custom UID of generic type
+    addOUT_uid<int>(uid, "Pin name", Connection filter); // Custom UID of generic type
 }
 ```
 `addOUT<T>` will add an output pin to the node. Usually called in the node's constructor.
@@ -165,6 +169,17 @@ INF.addNode<CustomNode>("Node's name", ImVec2(0, 0)); // Add node at given canva
 INF.placeNode<CustomNode>("Node's name", ImVec2(0, 0)); // Add node at given screen coordinates
 INF.placeNode<CustomNode>("Node's name"); // Add node at Mouse position
 ```
+
+***
+
+## Pins
+### Static vs Dynamic
+
+### Custom rendering
+
+***
+
+## Handling the editor
 
 ***
 

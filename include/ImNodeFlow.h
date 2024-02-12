@@ -3,9 +3,7 @@
 #pragma once
 
 #include <string>
-#include <utility>
 #include <vector>
-#include <unordered_map>
 #include <cmath>
 #include <memory>
 #include <algorithm>
@@ -293,7 +291,7 @@ namespace ImFlow
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
          */
         template<typename T, typename... Params>
-        T* placeNode(const std::string& name, const ImVec2& pos, Params&&... args);
+        T* placeNodeAt(const std::string& name, const ImVec2& pos, Params&&... args);
 
         /**
          * @brief Add link to the handler internal list
@@ -523,6 +521,12 @@ namespace ImFlow
         template<typename T, typename U>
         InPin<T>* addIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None);
 
+        template<typename T>
+        const T& showIN(const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None);
+
+        template<typename T, typename U>
+        const T& showIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None);
+
         /**
          * @brief Add an Output to the node
          * @details Must be called in the node constructor. WIll add an Output pin to the node with the given name and data type.
@@ -667,8 +671,9 @@ namespace ImFlow
         ImVec2 m_paddingTL;
         ImVec2 m_paddingBR;
 
-        std::vector<std::pair<PinUID, std::shared_ptr<Pin>>> m_ins;
-        std::vector<std::pair<PinUID, std::shared_ptr<Pin>>> m_outs;
+        std::vector<std::shared_ptr<Pin>> m_ins;
+        std::vector<std::pair<int, std::shared_ptr<Pin>>> m_dynamicIns;
+        std::vector<std::shared_ptr<Pin>> m_outs;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -697,8 +702,8 @@ namespace ImFlow
          * @param parent Pointer to the Node containing the pin
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          */
-        explicit Pin(std::string name, ConnectionFilter filter, PinType kind, BaseNode* parent, ImNodeFlow* inf)
-            : m_name(std::move(name)), m_filter(filter), m_type(kind), m_parent(parent), m_inf(inf) {}
+        explicit Pin(PinUID uid, std::string name, ConnectionFilter filter, PinType kind, BaseNode* parent, ImNodeFlow* inf)
+            :m_uid(uid), m_name(std::move(name)), m_filter(filter), m_type(kind), m_parent(parent), m_inf(inf) {}
 
         /**
          * @brief Main loop of the pin
@@ -739,6 +744,8 @@ namespace ImFlow
          * @return Weak_ptr reference to the link connected to the pin
          */
         virtual std::weak_ptr<Link> getLink() { return std::weak_ptr<Link>{}; }
+
+        PinUID uid() { return m_uid; }
 
         /**
          * @brief Get pin's name
@@ -794,6 +801,7 @@ namespace ImFlow
          */
         void pos(ImVec2 pos) { m_pos = pos; }
     protected:
+        PinUID m_uid;
         std::string m_name;
         ImVec2 m_pos = ImVec2(0.f, 0.f);
         ImVec2 m_size = ImVec2(0.f, 0.f);
@@ -820,8 +828,8 @@ namespace ImFlow
          * @param defReturn Default return value when the pin is not connected
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          */
-        explicit InPin(const std::string& name, ConnectionFilter filter, BaseNode* parent, T defReturn, ImNodeFlow* inf)
-            : Pin(name, filter, PinType_Input, parent, inf), m_emptyVal(defReturn) {}
+        explicit InPin(PinUID uid, const std::string& name, ConnectionFilter filter, BaseNode* parent, T defReturn, ImNodeFlow* inf)
+            : Pin(uid, name, filter, PinType_Input, parent, inf), m_emptyVal(defReturn) {}
 
         /**
          * @brief Main loop of the pin
@@ -877,8 +885,8 @@ namespace ImFlow
          * @param parent Pointer to the Node containing the pin
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          */
-        explicit OutPin(const std::string& name, ConnectionFilter filter, BaseNode* parent, ImNodeFlow* inf)
-            :Pin(name, filter, PinType_Output, parent, inf) {}
+        explicit OutPin(PinUID uid, const std::string& name, ConnectionFilter filter, BaseNode* parent, ImNodeFlow* inf)
+            :Pin(uid, name, filter, PinType_Output, parent, inf) {}
 
         /**
          * @brief When parent gets deleted, remove the links
