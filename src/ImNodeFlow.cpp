@@ -78,10 +78,19 @@ namespace ImFlow
 
         // Inputs
         ImGui::BeginGroup();
-        for(auto& p : m_ins)
+        for (auto& p : m_ins)
         {
-            p.second->pos(ImGui::GetCursorPos());
-            p.second->update();
+            p->pos(ImGui::GetCursorPos());
+            p->update();
+        }
+        for (auto& p : m_dynamicIns)
+        {
+            if (p.first == 1)
+            {
+                p.second->pos(ImGui::GetCursorPos());
+                p.second->update();
+                p.first = 0;
+            }
         }
         ImGui::EndGroup();
         ImGui::SameLine();
@@ -97,7 +106,7 @@ namespace ImFlow
         float maxW = 0.0f;
         for (auto& p : m_outs)
         {
-            float w = p.second->calcWidth();
+            float w = p->calcWidth();
             if (w > maxW)
                 maxW = w;
         }
@@ -106,10 +115,10 @@ namespace ImFlow
         {
             // FIXME: This looks horrible
             if (m_inf->content2canvas(m_pos + ImVec2(titleW, 0)).x < ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
-                p.second->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p.second->calcWidth(), 0.f));
+                p->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p->calcWidth(), 0.f));
             else
-                p.second->pos(ImVec2(m_inf->content2canvas(m_pos + ImVec2(titleW - p.second->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
-            p.second->update();
+                p->pos(ImVec2(m_inf->content2canvas(m_pos + ImVec2(titleW - p->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
+            p->update();
         }
         ImGui::EndGroup();
 
@@ -162,7 +171,12 @@ namespace ImFlow
 
         // Resolve output pins values
         for (auto& p : m_outs)
-            p.second->resolve();
+            p->resolve();
+
+        // Deleting dead pins
+        m_dynamicIns.erase(std::remove_if(m_dynamicIns.begin(), m_dynamicIns.end(),
+                                          [](const std::pair<int, std::shared_ptr<Pin>>& p){ return p.first == 0; }),
+                           m_dynamicIns.end());
     }
 
     // -----------------------------------------------------------------------------------------------------------------
