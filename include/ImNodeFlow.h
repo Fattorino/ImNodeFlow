@@ -257,8 +257,11 @@ namespace ImFlow
         /**
          * @brief Adds a node to the editor
          * @tparam T Derived class of <BaseNode> to be added
+         * @tparam Params types of optional args to forward to derived class ctor
+         *
          * @param name Name to be given to the Node
          * @param pos Position of the Node in canvas coordinates
+         * @param args Optional arguments to be forwarded to derived class ctor
          * @return Pointer of the pushed type to the newly added Node
          *
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
@@ -269,25 +272,30 @@ namespace ImFlow
         /**
          * @brief Adds a node to the editor using mouse position
          * @tparam T Derived class of <BaseNode> to be added
+         * @tparam Params types of optional args to forward to derived class ctor
+         *
          * @param name Name to be given to the Node
+         * @param args Optional arguments to be forwarded to derived class ctor
          * @return Pointer of the pushed type to the newly added Node
          *
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
          */
-        template<typename T>
-        T* placeNode(const std::string& name);
+        template<typename T, typename... Params>
+        T* placeNode(const std::string& name, Params&&... args);
 
         /**
          * @brief Adds a node to the editor
          * @tparam T Derived class of <BaseNode> to be added
+         * @tparam Params types of optional args to forward to derived class ctor
          * @param name Name to be given to the Node
          * @param pos Position of the Node in screen coordinates
+         * @param args Optional arguments to be forwarded to derived class ctor
          * @return Pointer of the pushed type to the newly added Node
          *
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
          */
-        template<typename T>
-        T* placeNode(const std::string& name, const ImVec2& pos);
+        template<typename T, typename... Params>
+        T* placeNode(const std::string& name, const ImVec2& pos, Params&&... args);
 
         /**
          * @brief Add link to the handler internal list
