@@ -41,22 +41,26 @@ This will only render the node editor, so it must be called inside a Dear ImGui 
 ***
 
 ## Creating a custom node
-Custom nodes **must** be derived from the class BaseNode.
+Custom nodes **must** derive from the class BaseNode. This shows at a glance the requirements for the class and serves as a good starting point. Descriptions for this required structure are in the subsequent sections.
 ```c++
-class CustomNode : public BaseNode
+class CustomNode : public ImFlow::BaseNode
 {
-public:
-    . . .
-private:
-    . . .
+    explicit CustomNode(const std::string& name, ImVec2 pos, ImNodeFlow* inf)
+    : BaseNode(name, pos, inf) { /* omitted */}
+    void draw() override { /* omitted */ }
 };
 ```
 
 ### The constructor
 ```c++
-explicit CustomNode(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf);
+explicit CustomNode(const std::string& name, ImVec2 pos, ImNodeFlow* inf)
+: BaseNode(name, pos, inf) { /* omitted */ }
 ```
-The constructor is standard and must **not** be changed.
+The first 3 arguments to the constructor are standard and must **not** deviate. You are free to add additional arguments after the first 3 to support custom behavior. This is to ensure nodes construct correctly.
+```c++
+explicit InputAveragingNode(const std::string& name, ImVec2 pos, ImNodeFlow* inf, int numInputs)
+: BaseNode(name, pos, inf) { /* omitted */ }
+```
 
 ### Adding input pins
 ```c++
