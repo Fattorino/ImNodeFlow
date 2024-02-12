@@ -108,6 +108,29 @@ namespace ImFlow
         return static_cast<OutPin<T>*>(m_outs.back().get());
     }
 
+    template<typename T>
+    void BaseNode::showOUT(const std::string& name, std::function<T()> behaviour, ConnectionFilter filter)
+    {
+        showOUT_uid<T>(name, name, std::move(behaviour), filter);
+    }
+
+    template<typename T, typename U>
+    void BaseNode::showOUT_uid(U uid, const std::string& name, std::function<T()> behaviour, ConnectionFilter filter)
+    {
+        PinUID h = std::hash<U>{}(uid);
+        for (std::pair<int, std::shared_ptr<Pin>>& p : m_dynamicOuts)
+        {
+            if (p.second->uid() == h)
+            {
+                p.first = 2;
+                return;
+            }
+        }
+
+        m_dynamicOuts.emplace_back(std::make_pair(2, std::make_shared<OutPin<T>>(h, name, filter, this, m_inf)));
+        static_cast<OutPin<T>*>(m_dynamicOuts.back().second.get())->behaviour(std::move(behaviour));
+    }
+
     template<typename T, typename U>
     const T& BaseNode::getInVal(U uid)
     {

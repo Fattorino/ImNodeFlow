@@ -110,6 +110,12 @@ namespace ImFlow
             if (w > maxW)
                 maxW = w;
         }
+        for (auto& p :m_dynamicOuts)
+        {
+            float w = p.second->calcWidth();
+            if (w > maxW)
+                maxW = w;
+        }
         ImGui::BeginGroup();
         for (auto& p : m_outs)
         {
@@ -120,6 +126,17 @@ namespace ImFlow
                 p->pos(ImVec2(m_inf->content2canvas(m_pos + ImVec2(titleW - p->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
             p->update();
         }
+        for (auto& p :m_dynamicOuts)
+        {
+            // FIXME: This looks horrible
+            if (m_inf->content2canvas(m_pos + ImVec2(titleW, 0)).x < ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
+                p.second->pos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p.second->calcWidth(), 0.f));
+            else
+                p.second->pos(ImVec2(m_inf->content2canvas(m_pos + ImVec2(titleW - p.second->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
+            p.second->update();
+            p.first -= 1;
+        }
+
         ImGui::EndGroup();
 
         ImGui::EndGroup();
@@ -172,11 +189,16 @@ namespace ImFlow
         // Resolve output pins values
         for (auto& p : m_outs)
             p->resolve();
+        for (auto& p :m_dynamicOuts)
+            p.second->resolve();
 
         // Deleting dead pins
         m_dynamicIns.erase(std::remove_if(m_dynamicIns.begin(), m_dynamicIns.end(),
                                           [](const std::pair<int, std::shared_ptr<Pin>>& p){ return p.first == 0; }),
                            m_dynamicIns.end());
+        m_dynamicOuts.erase(std::remove_if(m_dynamicOuts.begin(), m_dynamicOuts.end(),
+                                          [](const std::pair<int, std::shared_ptr<Pin>>& p){ return p.first == 0; }),
+                            m_dynamicOuts.end());
     }
 
     // -----------------------------------------------------------------------------------------------------------------

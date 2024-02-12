@@ -554,6 +554,12 @@ namespace ImFlow
         template<typename T, typename U>
         [[nodiscard]] OutPin<T>* addOUT_uid(U uid, const std::string& name, ConnectionFilter filter = ConnectionFilter_None);
 
+        template<typename T>
+        void showOUT(const std::string& name, std::function<T()> behaviour, ConnectionFilter filter = ConnectionFilter_None);
+
+        template<typename T, typename U>
+        void showOUT_uid(U uid, const std::string& name, std::function<T()> behaviour, ConnectionFilter filter = ConnectionFilter_None);
+
         /**
          * @brief Get Input value from an InPin
          * @details Get a reference to the value of an input pin, the value is stored in the output pin at the other end of the link.
@@ -674,6 +680,7 @@ namespace ImFlow
         std::vector<std::shared_ptr<Pin>> m_ins;
         std::vector<std::pair<int, std::shared_ptr<Pin>>> m_dynamicIns;
         std::vector<std::shared_ptr<Pin>> m_outs;
+        std::vector<std::pair<int, std::shared_ptr<Pin>>> m_dynamicOuts;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
