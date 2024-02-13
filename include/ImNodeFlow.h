@@ -113,13 +113,13 @@ namespace ImFlow
          * @brief Get hovering status
          * @return [TRUE] If the link is hovered in the current frame
          */
-        [[nodiscard]] bool hovered() const { return m_hovered; }
+        [[nodiscard]] bool isHovered() const { return m_hovered; }
 
         /**
          * @brief Get selected status
          * @return [TRUE] If the link is selected in the current frame
          */
-        [[nodiscard]] bool selected() const { return m_selected; }
+        [[nodiscard]] bool isSelected() const { return m_selected; }
     private:
         ImNodeFlow* m_inf;
         Pin* m_left;
@@ -330,62 +330,62 @@ namespace ImFlow
          * @brief Get editor's name
          * @return Const reference to editor's name
          */
-        const std::string& name() { return m_name; }
+        const std::string& getName() { return m_name; }
 
         /**
          * @brief Get editor's position
          * @return Const reference to editor's position in screen coordinates
          */
-        const ImVec2& pos() { return m_context.origin(); }
+        const ImVec2& getPos() { return m_context.origin(); }
 
         /**
          * @brief Get editor's grid scroll
          * @details Scroll is the offset from the origin of the grid, changes while navigating the grid with the middle mouse.
          * @return Const reference to editor's grid scroll
          */
-        const ImVec2& scroll() { return m_context.scroll(); }
+        const ImVec2& getScroll() { return m_context.scroll(); }
 
         /**
          * @brief Get editor's list of nodes
          * @return Const reference to editor's internal nodes list
          */
-        const std::vector<std::shared_ptr<BaseNode>>& nodes() { return m_nodes; }
+        const std::vector<std::shared_ptr<BaseNode>>& getNodes() { return m_nodes; }
 
         /**
          * @brief Get nodes count
          * @return Number of nodes present in the editor
          */
-        uint32_t nodesCount() { return (uint32_t)m_nodes.size(); }
+        uint32_t getNodesCount() { return (uint32_t)m_nodes.size(); }
 
         /**
          * @brief Get editor's list of links
          * @return Const reference to editor's internal links list
          */
-        const std::vector<std::weak_ptr<Link>>& links() { return m_links; }
+        const std::vector<std::weak_ptr<Link>>& getLinks() { return m_links; }
 
         /**
          * @brief Get zooming viewport
          * @return Const reference to editor's internal viewport for zoom support
          */
-        const ContainedContext& context() { return m_context; }
+        const ContainedContext& getGrid() { return m_context; }
 
         /**
          * @brief Get dragging status
          * @return [TRUE] if a Node is being dragged around the grid
          */
-        [[nodiscard]] bool draggingNode() const { return m_draggingNode; }
+        [[nodiscard]] bool isNodeDragged() const { return m_draggingNode; }
 
         /**
          * @brief Get current style
          * @return Reference to style variables
          */
-        InfStyler& style() { return m_style; }
+        InfStyler& getStyle() { return m_style; }
 
         /**
          * @brief Set editor's size
          * @param size Editor's size. Set to (0, 0) to auto-fit.
          */
-        void size(const ImVec2& size) { m_context.config().size = size; }
+        void setSize(const ImVec2& size) { m_context.config().size = size; }
 
         /**
          * @brief Set dragging status
@@ -617,43 +617,43 @@ namespace ImFlow
          * @brief Get hovered status
          * @return [TRUE] if the mouse is hovering the node
          */
-        bool hovered();
+        bool isHovered();
 
         /**
          * @brief Get node name
          * @return Const reference to the node's name
          */
-        const std::string& name() { return m_name; }
+        const std::string& getName() { return m_name; }
 
         /**
          * @brief Get node size
          * @return Const reference to the node's size
          */
-        const ImVec2& size() { return  m_size; }
+        const ImVec2& getSize() { return  m_size; }
 
         /**
          * @brief Get node position
          * @return Const reference to the node's position
          */
-        const ImVec2& pos() { return  m_pos; }
+        const ImVec2& getPos() { return  m_pos; }
 
         /**
          * @brief Get selected status
          * @return [TRUE] if the node is selected
          */
-        [[nodiscard]] bool selected() const { return m_selected; }
+        [[nodiscard]] bool isSelected() const { return m_selected; }
 
         /**
          * @brief Get dragged status
          * @return [TRUE] if the node is being dragged
          */
-        [[nodiscard]] bool dragged() const { return m_dragged; }
+        [[nodiscard]] bool isDragged() const { return m_dragged; }
 
         /**
          * @brief Set node's name
          * @param name New name
          */
-        void name(const std::string& name) { m_name = name; }
+        void setName(const std::string& name) { m_name = name; }
 
         /**
          * @brief Set selected status
@@ -752,43 +752,43 @@ namespace ImFlow
          */
         virtual std::weak_ptr<Link> getLink() { return std::weak_ptr<Link>{}; }
 
-        PinUID uid() { return m_uid; }
+        [[nodiscard]] PinUID getUid() const { return m_uid; }
 
         /**
          * @brief Get pin's name
          * @return Const reference to pin's name
          */
-        const std::string& name() { return m_name; }
+        const std::string& getName() { return m_name; }
 
         /**
          * @brief Get pin's position
          * @return Const reference to pin's position in canvas coordinates
          */
-        [[nodiscard]] const ImVec2& pos() { return m_pos; }
+        [[nodiscard]] const ImVec2& getPos() { return m_pos; }
 
         /**
          * @brief Get pin's hit-box size
          * @return Const reference to pin's hit-box size
          */
-        [[nodiscard]] const ImVec2& size() { return m_size; }
+        [[nodiscard]] const ImVec2& getSize() { return m_size; }
 
         /**
          * @brief Get pin's parent node
          * @return Const reference to pin's parent node. Node that contains it
          */
-        BaseNode* parent() { return m_parent; }
+        BaseNode* getParent() { return m_parent; }
 
         /**
          * @brief Get pin's type
          * @return The pin type. Either Input or Output
          */
-        PinType type() { return m_type; }
+        PinType getType() { return m_type; }
 
         /**
          * @brief Get pin's connection filter
          * @return Pin's connection filter configuration
          */
-        [[nodiscard]] ConnectionFilter filter() const { return m_filter; }
+        [[nodiscard]] ConnectionFilter getFilter() const { return m_filter; }
 
         /**
          * @brief Get pin's link attachment point
@@ -806,7 +806,7 @@ namespace ImFlow
          * @brief Set pin's position
          * @param pos Position in screen coordinates
          */
-        void pos(ImVec2 pos) { m_pos = pos; }
+        void setPos(ImVec2 pos) { m_pos = pos; }
     protected:
         PinUID m_uid;
         std::string m_name;
@@ -865,7 +865,7 @@ namespace ImFlow
          * @brief Get pin's link attachment point
          * @return Canvas coordinates to the attachment point between the link and the pin
          */
-        ImVec2 pinPoint() override { return m_pos + ImVec2(-m_inf->style().node_padding.z, m_size.y / 2); }
+        ImVec2 pinPoint() override { return m_pos + ImVec2(-m_inf->getStyle().node_padding.z, m_size.y / 2); }
 
         /**
          * @brief Get value carried by the link
@@ -932,7 +932,7 @@ namespace ImFlow
          * @brief Get pin's link attachment point
          * @return Canvas coordinates to the attachment point between the link and the pin
          */
-        ImVec2 pinPoint() override { return m_pos + ImVec2(m_size.x + m_inf->style().node_padding.z, m_size.y / 2); }
+        ImVec2 pinPoint() override { return m_pos + ImVec2(m_size.x + m_inf->getStyle().node_padding.z, m_size.y / 2); }
 
         /**
          * @brief Calculate and get pin's value
