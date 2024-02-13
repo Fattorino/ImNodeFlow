@@ -83,7 +83,7 @@ namespace ImFlow
         PinUID h = std::hash<U>{}(uid);
         for (std::pair<int, std::shared_ptr<Pin>>& p : m_dynamicIns)
         {
-            if (p.second->uid() == h)
+            if (p.second->getUid() == h)
             {
                 p.first = 1;
                 return static_cast<InPin<T>*>(p.second.get())->val();
@@ -120,7 +120,7 @@ namespace ImFlow
         PinUID h = std::hash<U>{}(uid);
         for (std::pair<int, std::shared_ptr<Pin>>& p : m_dynamicOuts)
         {
-            if (p.second->uid() == h)
+            if (p.second->getUid() == h)
             {
                 p.first = 2;
                 return;
@@ -136,7 +136,7 @@ namespace ImFlow
     {
         PinUID h = std::hash<U>{}(uid);
         auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->uid() == h; });
+                            { return p->getUid() == h; });
         assert(it != m_ins.end() && "Pin UID not found!");
         return static_cast<InPin<T>*>(it->get())->val();
     }
@@ -146,7 +146,7 @@ namespace ImFlow
     {
         PinUID h = std::hash<std::string>{}(std::string(uid));
         auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->uid() == h; });
+                            { return p->getUid() == h; });
         assert(it != m_ins.end() && "Pin UID not found!");
         return static_cast<InPin<T>*>(it->get())->val();
     }
@@ -156,7 +156,7 @@ namespace ImFlow
     {
         PinUID h = std::hash<U>{}(uid);
         auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->uid() == h; });
+                            { return p->getUid() == h; });
         assert(it != m_ins.end() && "Pin UID not found!");
         return it->get();
     }
@@ -165,7 +165,7 @@ namespace ImFlow
     {
         PinUID h = std::hash<std::string>{}(std::string(uid));
         auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->uid() == h; });
+                            { return p->getUid() == h; });
         assert(it != m_ins.end() && "Pin UID not found!");
         return it->get();
     }
@@ -175,7 +175,7 @@ namespace ImFlow
     {
         PinUID h = std::hash<U>{}(uid);
         auto it = std::find_if(m_outs.begin(), m_outs.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->uid() == h; });
+                            { return p->getUid() == h; });
         assert(it != m_outs.end() && "Pin UID not found!");
         return it->get();
     }
@@ -184,7 +184,7 @@ namespace ImFlow
     {
         PinUID h = std::hash<std::string>{}(std::string(uid));
         auto it = std::find_if(m_outs.begin(), m_outs.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->uid() == h; });
+                            { return p->getUid() == h; });
         assert(it != m_outs.end() && "Pin UID not found!");
         return it->get();
     }
@@ -217,24 +217,24 @@ namespace ImFlow
         }
 
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImVec2 tl = pinPoint() - ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
-        ImVec2 br = pinPoint() + ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
+        ImVec2 tl = pinPoint() - ImVec2(m_inf->getStyle().pin_point_empty_hovered_radius, m_inf->getStyle().pin_point_empty_hovered_radius);
+        ImVec2 br = pinPoint() + ImVec2(m_inf->getStyle().pin_point_empty_hovered_radius, m_inf->getStyle().pin_point_empty_hovered_radius);
 
         ImGui::Text(m_name.c_str());
         m_size = ImGui::GetItemRectSize();
         if (ImGui::IsItemHovered())
-            draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_hovered, m_inf->style().pin_radius);
+            draw_list->AddRectFilled(m_pos - m_inf->getStyle().pin_padding, m_pos + m_size + m_inf->getStyle().pin_padding, m_inf->getStyle().colors.pin_hovered, m_inf->getStyle().pin_radius);
         else
-            draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_bg, m_inf->style().pin_radius);
-        draw_list->AddRect(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_border, m_inf->style().pin_radius, 0, m_inf->style().pin_border_thickness);
+            draw_list->AddRectFilled(m_pos - m_inf->getStyle().pin_padding, m_pos + m_size + m_inf->getStyle().pin_padding, m_inf->getStyle().colors.pin_bg, m_inf->getStyle().pin_radius);
+        draw_list->AddRect(m_pos - m_inf->getStyle().pin_padding, m_pos + m_size + m_inf->getStyle().pin_padding, m_inf->getStyle().colors.pin_border, m_inf->getStyle().pin_radius, 0, m_inf->getStyle().pin_border_thickness);
         if (m_link)
-            draw_list->AddCircleFilled(pinPoint(), m_inf->style().pin_point_radius, m_inf->style().colors.pin_point);
+            draw_list->AddCircleFilled(pinPoint(), m_inf->getStyle().pin_point_radius, m_inf->getStyle().colors.pin_point);
         else
         {
             if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
-                draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_hovered_radius, m_inf->style().colors.pin_point);
+                draw_list->AddCircle(pinPoint(), m_inf->getStyle().pin_point_empty_hovered_radius, m_inf->getStyle().colors.pin_point);
             else
-                draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_radius, m_inf->style().colors.pin_point);
+                draw_list->AddCircle(pinPoint(), m_inf->getStyle().pin_point_empty_radius, m_inf->getStyle().colors.pin_point);
         }
 
         if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
@@ -244,10 +244,10 @@ namespace ImFlow
     template<class T>
     void InPin<T>::createLink(Pin *other)
     {
-        if (other == this || other->type() == PinType_Input || (m_parent == other->parent() && (m_filter & ConnectionFilter_SameNode) == 0))
+        if (other == this || other->getType() == PinType_Input || (m_parent == other->getParent() && (m_filter & ConnectionFilter_SameNode) == 0))
             return;
 
-        if (!((m_filter & other->filter()) != 0 || m_filter == ConnectionFilter_None || other->filter() == ConnectionFilter_None)) // Check Filter
+        if (!((m_filter & other->getFilter()) != 0 || m_filter == ConnectionFilter_None || other->getFilter() == ConnectionFilter_None)) // Check Filter
             return;
 
         if (m_link && m_link->left() == other)
@@ -283,27 +283,27 @@ namespace ImFlow
         }
 
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImVec2 tl = pinPoint() - ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
-        ImVec2 br = pinPoint() + ImVec2(m_inf->style().pin_point_empty_hovered_radius, m_inf->style().pin_point_empty_hovered_radius);
+        ImVec2 tl = pinPoint() - ImVec2(m_inf->getStyle().pin_point_empty_hovered_radius, m_inf->getStyle().pin_point_empty_hovered_radius);
+        ImVec2 br = pinPoint() + ImVec2(m_inf->getStyle().pin_point_empty_hovered_radius, m_inf->getStyle().pin_point_empty_hovered_radius);
 
         ImGui::SetCursorScreenPos(m_pos);
         ImGui::Text(m_name.c_str());
 
         m_size = ImGui::GetItemRectSize();
         if (ImGui::IsItemHovered())
-            draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_hovered, m_inf->style().pin_radius);
+            draw_list->AddRectFilled(m_pos - m_inf->getStyle().pin_padding, m_pos + m_size + m_inf->getStyle().pin_padding, m_inf->getStyle().colors.pin_hovered, m_inf->getStyle().pin_radius);
         else
-            draw_list->AddRectFilled(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_bg, m_inf->style().pin_radius);
-        draw_list->AddRect(m_pos - m_inf->style().pin_padding, m_pos + m_size + m_inf->style().pin_padding, m_inf->style().colors.pin_border, m_inf->style().pin_radius, 0, m_inf->style().pin_border_thickness);
+            draw_list->AddRectFilled(m_pos - m_inf->getStyle().pin_padding, m_pos + m_size + m_inf->getStyle().pin_padding, m_inf->getStyle().colors.pin_bg, m_inf->getStyle().pin_radius);
+        draw_list->AddRect(m_pos - m_inf->getStyle().pin_padding, m_pos + m_size + m_inf->getStyle().pin_padding, m_inf->getStyle().colors.pin_border, m_inf->getStyle().pin_radius, 0, m_inf->getStyle().pin_border_thickness);
         if (m_links.empty())
         {
             if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
-                draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_hovered_radius, m_inf->style().colors.pin_point);
+                draw_list->AddCircle(pinPoint(), m_inf->getStyle().pin_point_empty_hovered_radius, m_inf->getStyle().colors.pin_point);
             else
-                draw_list->AddCircle(pinPoint(), m_inf->style().pin_point_empty_radius, m_inf->style().colors.pin_point);
+                draw_list->AddCircle(pinPoint(), m_inf->getStyle().pin_point_empty_radius, m_inf->getStyle().colors.pin_point);
         }
         else
-            draw_list->AddCircleFilled(pinPoint(), m_inf->style().pin_point_radius, m_inf->style().colors.pin_point);
+            draw_list->AddCircleFilled(pinPoint(), m_inf->getStyle().pin_point_radius, m_inf->getStyle().colors.pin_point);
 
         if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
             m_inf->hovering(this);
@@ -312,7 +312,7 @@ namespace ImFlow
     template<class T>
     void OutPin<T>::createLink(ImFlow::Pin *other)
     {
-        if (other == this || other->type() == PinType_Output)
+        if (other == this || other->getType() == PinType_Output)
             return;
 
         other->createLink(this);
