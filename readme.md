@@ -4,7 +4,7 @@
 Create your custom nodes, and their logic.
 ImNodeFlow will handle connections, editor logic and rendering.
 
-https://github.com/Fattorino/ImNodeFlow/assets/90210751/c2c1e7a6-8f83-42df-8a26-037de8835f9d
+![image](https://github.com/Fattorino/ImNodeFlow/assets/90210751/605f8cc5-794f-45bd-b4dd-2d6ffdb706e7)
 
 ## Features
 - Support for Zoom
