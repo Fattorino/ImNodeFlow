@@ -1,4 +1,5 @@
 #include <iostream>
+#include <utility>
 #include "ImNodeFlow.h"
 
 namespace ImFlow
@@ -10,7 +11,7 @@ namespace ImFlow
     {
         ImVec2 start = m_left->pinPoint();
         ImVec2 end  = m_right->pinPoint();
-        float thickness = m_inf->getStyle().link_thickness;
+        float thickness = m_left->getStyle()->extra.link_thickness;
         bool mouseClickState = m_inf->getSingleUseClick();
 
         if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
@@ -19,7 +20,7 @@ namespace ImFlow
         if (smart_bezier_collider(ImGui::GetMousePos(), start, end, 2.5))
         {
             m_hovered = true;
-            thickness = m_inf->getStyle().link_hovered_thickness;
+            thickness = m_left->getStyle()->extra.link_hovered_thickness;
             if (mouseClickState)
             {
                 m_inf->consumeSingleUseClick();
@@ -29,8 +30,8 @@ namespace ImFlow
         else { m_hovered = false; }
 
         if (m_selected)
-            smart_bezier(start, end, m_inf->getStyle().colors.link_selected_outline, thickness + m_inf->getStyle().link_selected_outline_thickness);
-        smart_bezier(start, end, m_inf->getStyle().colors.link, thickness);
+            smart_bezier(start, end, m_left->getStyle()->extra.outline_color, thickness + m_left->getStyle()->extra.link_selected_outline_thickness);
+        smart_bezier(start, end, m_left->getStyle()->color, thickness);
 
         if (m_selected && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
             m_right->deleteLink();
@@ -44,11 +45,13 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
 
-    BaseNode::BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf)
-        :m_name(std::move(name)), m_pos(pos), m_inf(inf)
+    BaseNode::BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf, std::shared_ptr<NodeStyle> style)
+        :m_name(std::move(name)), m_pos(pos), m_inf(inf), m_style(std::move(style))
     {
-        m_paddingTL = {m_inf->getStyle().node_padding.x, m_inf->getStyle().node_padding.y};
-        m_paddingBR = {m_inf->getStyle().node_padding.z, m_inf->getStyle().node_padding.w};
+        if (!m_style)
+            m_style = NodeStyle::cyan();
+        m_paddingTL = {m_style->padding.x, m_style->padding.y};
+        m_paddingBR = {m_style->padding.z, m_style->padding.w};
         m_posTarget = m_pos;
     }
 
@@ -70,7 +73,7 @@ namespace ImFlow
 
         // Header
         ImGui::BeginGroup();
-        ImGui::TextColored(m_inf->getStyle().colors.node_header_title, m_name.c_str());
+        ImGui::TextColored(m_style->header_title_color, m_name.c_str());
         ImGui::Spacing();
         ImGui::EndGroup();
         float headerH = ImGui::GetItemRectSize().y;
@@ -141,16 +144,29 @@ namespace ImFlow
 
         ImGui::EndGroup();
         m_size = ImGui::GetItemRectSize();
-        ImVec2 headerSize = ImVec2(m_size.x + m_paddingTL.x, headerH);
+        ImVec2 headerSize = ImVec2(m_size.x + m_paddingBR.x, headerH);
 
         // Background
         draw_list->ChannelsSetCurrent(0);
-        draw_list->AddRectFilled(offset + m_pos - m_paddingTL, offset + m_pos + m_size + m_paddingBR, m_inf->getStyle().colors.node_bg, m_inf->getStyle().node_radius);
-        draw_list->AddRectFilled(offset + m_pos - m_paddingTL, offset + m_pos + headerSize, m_inf->getStyle().colors.node_header, m_inf->getStyle().node_radius, ImDrawFlags_RoundCornersTop);
+        draw_list->AddRectFilled(offset + m_pos - m_paddingTL, offset + m_pos + m_size + m_paddingBR, m_style->bg, m_style->radius);
+        draw_list->AddRectFilled(offset + m_pos - m_paddingTL, offset + m_pos + headerSize, m_style->header_bg, m_style->radius, ImDrawFlags_RoundCornersTop);
+
+        ImU32 col = m_style->border_color;
+        float thickness = m_style->border_thickness;
+        ImVec2 ptl = m_paddingTL;
+        ImVec2 pbr = m_paddingBR;
         if(m_selected)
-            draw_list->AddRect(offset + m_pos - m_paddingTL, offset + m_pos + m_size + m_paddingBR, m_inf->getStyle().colors.node_selected_border, m_inf->getStyle().node_radius, 0, m_inf->getStyle().node_border_selected_thickness);
-        else
-            draw_list->AddRect(offset + m_pos - m_paddingTL, offset + m_pos + m_size + m_paddingBR, m_inf->getStyle().colors.node_border, m_inf->getStyle().node_radius, 0, m_inf->getStyle().node_border_thickness);
+        {
+            col = m_style->border_selected_color;
+            thickness = m_style->border_selected_thickness;
+        }
+        if (thickness < 0.f)
+        {
+            ptl.x -= thickness/2; ptl.y -= thickness/2;
+            pbr.x -= thickness/2; pbr.y -= thickness/2;
+            thickness *= -1.f;
+        }
+        draw_list->AddRect(offset + m_pos - ptl, offset + m_pos + m_size + pbr, col, m_style->radius, 0, thickness);
 
 
         if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !m_inf->on_selected_node())
@@ -303,9 +319,9 @@ namespace ImFlow
         if (m_dragOut)
         {
             if (m_dragOut->getType() == PinType_Output)
-                smart_bezier(m_dragOut->pinPoint(), ImGui::GetMousePos(), m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
+                smart_bezier(m_dragOut->pinPoint(), ImGui::GetMousePos(), m_dragOut->getStyle()->color, m_dragOut->getStyle()->extra.link_dragged_thickness);
             else
-                smart_bezier(ImGui::GetMousePos(), m_dragOut->pinPoint(), m_style.colors.drag_out_link, m_style.drag_out_link_thickness);
+                smart_bezier(ImGui::GetMousePos(), m_dragOut->pinPoint(), m_dragOut->getStyle()->color, m_dragOut->getStyle()->extra.link_dragged_thickness);
 
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                 m_dragOut = nullptr;
