@@ -38,20 +38,20 @@ namespace ImFlow
     T* ImNodeFlow::addNode(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
     {
         static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
-        m_nodes.emplace_back(std::make_shared<T>(name, pos, this, style, std::forward<Params>(args)...));
+        m_nodes.emplace_back(std::make_shared<T>(name, pos, this, std::move(style), std::forward<Params>(args)...));
         return static_cast<T*>(m_nodes.back().get());
     }
 
     template<typename T, typename... Params>
     T* ImNodeFlow::placeNode(const std::string& name, std::shared_ptr<NodeStyle> style, Params&&... args)
     {
-        return placeNodeAt<T>(name, ImGui::GetMousePos(), style, std::forward<Params>(args)...);
+        return placeNodeAt<T>(name, ImGui::GetMousePos(), std::move(style), std::forward<Params>(args)...);
     }
 
     template<typename T, typename... Params>
     T* ImNodeFlow::placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
     {
-        return addNode<T>(name, screen2content(pos), style, std::forward<Params>(args)...);
+        return addNode<T>(name, screen2content(pos), std::move(style), std::forward<Params>(args)...);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -60,21 +60,21 @@ namespace ImFlow
     template<typename T>
     InPin<T>* BaseNode::addIN(const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
-        return addIN_uid(name, name, defReturn, filter, style);
+        return addIN_uid(name, name, defReturn, filter, std::move(style));
     }
 
     template<typename T, typename U>
     InPin<T>* BaseNode::addIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        m_ins.emplace_back(std::make_shared<InPin<T>>(h, name, filter, this, defReturn, m_inf, style));
+        m_ins.emplace_back(std::make_shared<InPin<T>>(h, name, filter, this, defReturn, m_inf, std::move(style)));
         return static_cast<InPin<T>*>(m_ins.back().get());
     }
 
     template<typename T>
     const T& BaseNode::showIN(const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
-        return showIN_uid(name, name, defReturn, filter, style);
+        return showIN_uid(name, name, defReturn, filter, std::move(style));
     }
 
     template<typename T, typename U>
@@ -90,28 +90,28 @@ namespace ImFlow
             }
         }
 
-        m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, filter, this, defReturn, m_inf, style)));
+        m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, filter, this, defReturn, m_inf, std::move(style))));
         return static_cast<InPin<T>*>(m_dynamicIns.back().second.get())->val();
     }
 
     template<typename T>
     OutPin<T>* BaseNode::addOUT(const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
-        return addOUT_uid<T>(name, name, filter, style);
+        return addOUT_uid<T>(name, name, filter, std::move(style));
     }
 
     template<typename T, typename U>
     OutPin<T>* BaseNode::addOUT_uid(U uid, const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        m_outs.emplace_back(std::make_shared<OutPin<T>>(h, name, filter, this, m_inf, style));
+        m_outs.emplace_back(std::make_shared<OutPin<T>>(h, name, filter, this, m_inf, std::move(style)));
         return static_cast<OutPin<T>*>(m_outs.back().get());
     }
 
     template<typename T>
     void BaseNode::showOUT(const std::string& name, std::function<T()> behaviour, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
-        showOUT_uid<T>(name, name, std::move(behaviour), filter, style);
+        showOUT_uid<T>(name, name, std::move(behaviour), filter, std::move(style));
     }
 
     template<typename T, typename U>
@@ -127,7 +127,7 @@ namespace ImFlow
             }
         }
 
-        m_dynamicOuts.emplace_back(std::make_pair(2, std::make_shared<OutPin<T>>(h, name, filter, this, m_inf, style)));
+        m_dynamicOuts.emplace_back(std::make_pair(2, std::make_shared<OutPin<T>>(h, name, filter, this, m_inf, std::move(style))));
         static_cast<OutPin<T>*>(m_dynamicOuts.back().second.get())->behaviour(std::move(behaviour));
     }
 
