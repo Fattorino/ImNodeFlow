@@ -35,16 +35,26 @@ namespace ImFlow
     // HANDLER
 
     template<typename T, typename... Params>
-    T* ImNodeFlow::addNode(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
+    std::shared_ptr<T> ImNodeFlow::addNode(const std::string& name, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style, Params&&... args)
     {
-        static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
-        m_nodes.emplace_back(std::make_shared<T>(name, pos, this, std::forward<Params>(args)...));
-        if (style)
-            m_nodes.back()->getStyle() = std::move(style);
-        return static_cast<T*>(m_nodes.back().get());
+        return addNode_uid<T>(name, name, pos, style, std::forward<Params>(args)...);
     }
 
-    template<typename T, typename... Params>
+    template<typename T, typename U, typename... Params>
+    std::shared_ptr<T> ImNodeFlow::addNode_uid(const U& uid, const std::string& name, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style, Params&&... args)
+    {
+        static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
+        NodeUID h = std::hash<U>{}(uid);
+        assert(m_nodes.find(h) == m_nodes.end() && "Node UID already exists");
+        std::shared_ptr<T> n = std::make_shared<T>(name, pos, this, std::forward<Params>(args)...);
+        if (style)
+            n->getStyle() = style;
+
+        m_nodes[h] = n;
+        return n;
+    }
+
+    /*template<typename T, typename... Params>
     T* ImNodeFlow::placeNode(const std::string& name, std::shared_ptr<NodeStyle> style, Params&&... args)
     {
         return placeNodeAt<T>(name, ImGui::GetMousePos(), std::move(style), std::forward<Params>(args)...);
@@ -54,6 +64,22 @@ namespace ImFlow
     T* ImNodeFlow::placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
     {
         return addNode<T>(name, screen2grid(pos), std::move(style), std::forward<Params>(args)...);
+    }*/
+
+    template<typename U>
+    std::shared_ptr<BaseNode> ImNodeFlow::findNode(const U& uid)
+    {
+        NodeUID h = std::hash<U>{}(uid);
+        auto n = m_nodes.find(h);
+        assert(n != m_nodes.end() && "Node UID not found!");
+        return n->second;
+    }
+
+    template<typename U>
+    void ImNodeFlow::dropNode(const U& uid)
+    {
+        NodeUID h = std::hash<U>{}(uid);
+        m_nodes.erase(h);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

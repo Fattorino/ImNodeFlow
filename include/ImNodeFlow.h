@@ -9,6 +9,7 @@
 #include <memory>
 #include <algorithm>
 #include <functional>
+#include <unordered_map>
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
 #include "../src/context_wrapper.h"
@@ -145,6 +146,8 @@ namespace ImFlow
 
     // -----------------------------------------------------------------------------------------------------------------
     // NODE'S PROPERTIES
+
+    typedef unsigned long long int NodeUID;
 
     /**
      * @brief Defines the visual appearance of a node
@@ -320,7 +323,25 @@ namespace ImFlow
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
          */
         template<typename T, typename... Params>
-        T* addNode(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+        std::shared_ptr<T> addNode(const std::string& name, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style = nullptr, Params&&... args);
+
+        /**
+         * @brief <BR>Adds a node to the editor
+         * @tparam T Derived class of <BaseNode> to be added
+         * @tparam U Type of the UID
+         * @tparam Params types of optional args to forward to derived class ctor
+         *
+         * @param uid Unique identifier of the node
+         * @param name Name to be given to the Node
+         * @param pos Position of the Node in grid coordinates
+         * @param style Optional node's style override
+         * @param args Optional arguments to be forwarded to derived class ctor
+         * @return Pointer of the pushed type to the newly added Node
+         *
+         * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
+         */
+        template<typename T, typename U, typename... Params>
+        std::shared_ptr<T> addNode_uid(const U& uid, const std::string& name, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style = nullptr, Params&&... args);
 
         /**
          * @brief <BR>Adds a node to the editor using mouse position
@@ -334,8 +355,8 @@ namespace ImFlow
          *
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
          */
-        template<typename T, typename... Params>
-        T* placeNode(const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+        //template<typename T, typename... Params>
+        //T* placeNode(const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
 
         /**
          * @brief <BR>Adds a node to the editor
@@ -349,8 +370,14 @@ namespace ImFlow
          *
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
          */
-        template<typename T, typename... Params>
-        T* placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+        //template<typename T, typename... Params>
+        //T* placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+
+        template<typename U>
+        std::shared_ptr<BaseNode> findNode(const U& uid);
+
+        template<typename U>
+        void dropNode(const U& uid);
 
         /**
          * @brief <BR>Add link to the handler internal list
@@ -408,7 +435,7 @@ namespace ImFlow
          * @brief <BR>Get editor's list of nodes
          * @return Const reference to editor's internal nodes list
          */
-        const std::vector<std::shared_ptr<BaseNode>>& getNodes() { return m_nodes; }
+        const std::unordered_map<NodeUID, std::shared_ptr<BaseNode>>& getNodes() { return m_nodes; }
 
         /**
          * @brief <BR>Get nodes count
@@ -491,7 +518,7 @@ namespace ImFlow
 
         bool m_singleUseClick = false;
 
-        std::vector<std::shared_ptr<BaseNode>> m_nodes;
+        std::unordered_map<NodeUID, std::shared_ptr<BaseNode>> m_nodes;
         std::vector<std::weak_ptr<Link>> m_links;
 
         std::function<void()> m_rightClickPopUp;
