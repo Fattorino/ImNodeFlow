@@ -45,11 +45,10 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
 
-    BaseNode::BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf, std::shared_ptr<NodeStyle> style)
-        :m_name(std::move(name)), m_pos(pos), m_inf(inf), m_style(std::move(style))
+    BaseNode::BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf)
+        :m_name(std::move(name)), m_pos(pos), m_inf(inf)
     {
-        if (!m_style)
-            m_style = NodeStyle::cyan();
+        m_style = NodeStyle::cyan();
         m_paddingTL = {m_style->padding.x, m_style->padding.y};
         m_paddingBR = {m_style->padding.z, m_style->padding.w};
         m_posTarget = m_pos;
@@ -57,14 +56,15 @@ namespace ImFlow
 
     bool BaseNode::isHovered()
     {
-        return ImGui::IsMouseHoveringRect(m_inf->content2canvas(m_pos - m_paddingTL), m_inf->content2canvas(m_pos + m_size + m_paddingBR));
+        return ImGui::IsMouseHoveringRect(m_inf->grid2screen(m_pos - m_paddingTL), m_inf->grid2screen(m_pos + m_size + m_paddingBR));
     }
 
-    void BaseNode::update(ImVec2& offset)
+    void BaseNode::update()
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImGui::PushID(this);
         bool mouseClickState = m_inf->getSingleUseClick();
+        ImVec2 offset = m_inf->grid2screen({0.f, 0.f});
 
         draw_list->ChannelsSetCurrent(1); // Foreground
         ImGui::SetCursorScreenPos(offset + m_pos);
@@ -123,19 +123,19 @@ namespace ImFlow
         for (auto& p : m_outs)
         {
             // FIXME: This looks horrible
-            if (m_inf->content2canvas(m_pos + ImVec2(titleW, 0)).x < ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
+            if ((m_pos + ImVec2(titleW, 0) + m_inf->getGrid().scroll()).x < ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
                 p->setPos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p->calcWidth(), 0.f));
             else
-                p->setPos(ImVec2(m_inf->content2canvas(m_pos + ImVec2(titleW - p->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
+                p->setPos(ImVec2((m_pos + ImVec2(titleW - p->calcWidth(), 0) + m_inf->getGrid().scroll()).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
             p->update();
         }
         for (auto& p :m_dynamicOuts)
         {
             // FIXME: This looks horrible
-            if (m_inf->content2canvas(m_pos + ImVec2(titleW, 0)).x < ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
+            if ((m_pos + ImVec2(titleW, 0) + m_inf->getGrid().scroll()).x < ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
                 p.second->setPos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p.second->calcWidth(), 0.f));
             else
-                p.second->setPos(ImVec2(m_inf->content2canvas(m_pos + ImVec2(titleW - p.second->calcWidth(), 0)).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
+                p.second->setPos(ImVec2((m_pos + ImVec2(titleW - p.second->calcWidth(), 0) + m_inf->getGrid().scroll()).x, ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
             p.second->update();
             p.first -= 1;
         }
@@ -236,24 +236,14 @@ namespace ImFlow
                     [](auto& l) {return !l.lock()->isHovered();});
     }
 
-    ImVec2 ImNodeFlow::content2canvas(const ImVec2& p)
-    {
-        return p + m_context.scroll() + ImGui::GetWindowPos();
-    }
-
-    ImVec2 ImNodeFlow::canvas2screen(const ImVec2 &p)
-    {
-        return (p + m_context.scroll()) * m_context.scale() + m_context.origin();
-    }
-
-    ImVec2 ImNodeFlow::screen2content(const ImVec2 &p)
-    {
-        return p - m_context.scroll();
-    }
-
-    ImVec2 ImNodeFlow::screen2canvas(const ImVec2 &p)
+    ImVec2 ImNodeFlow::screen2grid(const ImVec2 &p)
     {
         return p - getPos() - m_context.scroll();
+    }
+
+    ImVec2 ImNodeFlow::grid2screen(const ImVec2 &p)
+    {
+        return p + getPos() + m_context.scroll();
     }
 
     void ImNodeFlow::addLink(std::shared_ptr<Link>& link)
@@ -271,7 +261,6 @@ namespace ImFlow
         // Create child canvas
         m_context.begin();
 
-        ImVec2 offset = ImGui::GetCursorScreenPos() + m_context.scroll();
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
         // Display grid
@@ -288,7 +277,7 @@ namespace ImFlow
 
         // Update and draw nodes
         draw_list->ChannelsSplit(2);
-        for (auto& node : m_nodes) { node->update(offset); }
+        for (auto& node : m_nodes) { node->update(); }
         draw_list->ChannelsMerge();
         for (auto& node : m_nodes) { node->updatePublicStatus(); }
 
