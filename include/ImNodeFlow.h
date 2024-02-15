@@ -566,7 +566,21 @@ namespace ImFlow
          * @return Pointer to the newly added pin
          */
         template<typename T, typename U>
-        InPin<T>* addIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
+        InPin<T>* addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
+
+        /**
+         * @brief <BR>Remove input pin
+         * @tparam U Type of the UID
+         * @param uid Unique identifier of the pin
+         */
+        template<typename U>
+        void dropIN(const U& uid);
+
+        /**
+         * @brief <BR>Remove input pin
+         * @param uid Unique identifier of the pin
+         */
+        void dropIN(const char* uid);
 
         /**
          * @brief <BR>Show a temporary input pin
@@ -599,7 +613,7 @@ namespace ImFlow
          * @return Const reference to the value of the connected link for the current frame of defReturn
          */
         template<typename T, typename U>
-        const T& showIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
+        const T& showIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
 
         /**
          * @brief <BR>Add an Output to the node
@@ -628,7 +642,21 @@ namespace ImFlow
          * @return Pointer to the newly added pin. Must be used to set the behaviour
          */
         template<typename T, typename U>
-        [[nodiscard]] OutPin<T>* addOUT_uid(U uid, const std::string& name, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
+        [[nodiscard]] OutPin<T>* addOUT_uid(const U& uid, const std::string& name, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
+
+        /**
+         * @brief <BR>Remove output pin
+         * @tparam U Type of the UID
+         * @param uid Unique identifier of the pin
+         */
+        template<typename U>
+        void dropOUT(const U& uid);
+
+        /**
+         * @brief <BR>Remove output pin
+         * @param uid Unique identifier of the pin
+         */
+        void dropOUT(const char* uid);
 
         /**
          * @brief <BR>Show a temporary output pin
@@ -659,7 +687,7 @@ namespace ImFlow
          * @param style Style of the pin
          */
         template<typename T, typename U>
-        void showOUT_uid(U uid, const std::string& name, std::function<T()> behaviour, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
+        void showOUT_uid(const U& uid, const std::string& name, std::function<T()> behaviour, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
 
         /**
          * @brief <BR>Get Input value from an InPin
@@ -670,7 +698,7 @@ namespace ImFlow
          * @return Const reference to the value
          */
         template<typename T, typename U>
-        const T& getInVal(U uid);
+        const T& getInVal(const U& uid);
 
         /**
          * @brief <BR>Get Input value from an InPin
@@ -689,7 +717,7 @@ namespace ImFlow
          * @return Generic pointer to the pin
          */
         template<typename U>
-        Pin* inPin(U uid);
+        Pin* inPin(const U& uid);
 
         /**
          * @brief <BR>Get generic reference to input pin
@@ -705,7 +733,7 @@ namespace ImFlow
          * @return Generic pointer to the pin
          */
         template<typename U>
-        Pin* outPin(U uid);
+        Pin* outPin(const U& uid);
 
         /**
          * @brief <BR>Get generic reference to output pin

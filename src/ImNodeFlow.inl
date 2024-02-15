@@ -66,11 +66,30 @@ namespace ImFlow
     }
 
     template<typename T, typename U>
-    InPin<T>* BaseNode::addIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    InPin<T>* BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
         m_ins.emplace_back(std::make_shared<InPin<T>>(h, name, filter, this, defReturn, m_inf, std::move(style)));
         return static_cast<InPin<T>*>(m_ins.back().get());
+    }
+
+    template<typename U>
+    void BaseNode::dropIN(const U& uid)
+    {
+        PinUID h = std::hash<U>{}(uid);
+        for (auto it = m_ins.begin(); it != m_ins.end(); it++)
+        {
+            if (it->get()->getUid() == h)
+            {
+                m_ins.erase(it);
+                return;
+            }
+        }
+    }
+
+    inline void BaseNode::dropIN(const char* uid)
+    {
+        dropIN<std::string>(uid);
     }
 
     template<typename T>
@@ -80,7 +99,7 @@ namespace ImFlow
     }
 
     template<typename T, typename U>
-    const T& BaseNode::showIN_uid(U uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    const T& BaseNode::showIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
         for (std::pair<int, std::shared_ptr<Pin>>& p : m_dynamicIns)
@@ -103,11 +122,30 @@ namespace ImFlow
     }
 
     template<typename T, typename U>
-    OutPin<T>* BaseNode::addOUT_uid(U uid, const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    OutPin<T>* BaseNode::addOUT_uid(const U& uid, const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
         m_outs.emplace_back(std::make_shared<OutPin<T>>(h, name, filter, this, m_inf, std::move(style)));
         return static_cast<OutPin<T>*>(m_outs.back().get());
+    }
+
+    template<typename U>
+    void BaseNode::dropOUT(const U& uid)
+    {
+        PinUID h = std::hash<U>{}(uid);
+        for (auto it = m_outs.begin(); it != m_outs.end(); it++)
+        {
+            if (it->get()->getUid() == h)
+            {
+                m_outs.erase(it);
+                return;
+            }
+        }
+    }
+
+    inline void BaseNode::dropOUT(const char* uid)
+    {
+        dropOUT<std::string>(uid);
     }
 
     template<typename T>
@@ -117,7 +155,7 @@ namespace ImFlow
     }
 
     template<typename T, typename U>
-    void BaseNode::showOUT_uid(U uid, const std::string& name, std::function<T()> behaviour, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    void BaseNode::showOUT_uid(const U& uid, const std::string& name, std::function<T()> behaviour, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
         for (std::pair<int, std::shared_ptr<Pin>>& p : m_dynamicOuts)
@@ -134,7 +172,7 @@ namespace ImFlow
     }
 
     template<typename T, typename U>
-    const T& BaseNode::getInVal(U uid)
+    const T& BaseNode::getInVal(const U& uid)
     {
         PinUID h = std::hash<U>{}(uid);
         auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin>& p)
@@ -146,15 +184,11 @@ namespace ImFlow
     template<typename T>
     const T& BaseNode::getInVal(const char* uid)
     {
-        PinUID h = std::hash<std::string>{}(std::string(uid));
-        auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->getUid() == h; });
-        assert(it != m_ins.end() && "Pin UID not found!");
-        return static_cast<InPin<T>*>(it->get())->val();
+        return getInVal<T, std::string>(uid);
     }
 
     template<typename U>
-    Pin* BaseNode::inPin(U uid)
+    Pin* BaseNode::inPin(const U& uid)
     {
         PinUID h = std::hash<U>{}(uid);
         auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin>& p)
@@ -165,15 +199,11 @@ namespace ImFlow
 
     inline Pin* BaseNode::inPin(const char* uid)
     {
-        PinUID h = std::hash<std::string>{}(std::string(uid));
-        auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->getUid() == h; });
-        assert(it != m_ins.end() && "Pin UID not found!");
-        return it->get();
+        return inPin<std::string>(uid);
     }
 
     template<typename U>
-    Pin* BaseNode::outPin(U uid)
+    Pin* BaseNode::outPin(const U& uid)
     {
         PinUID h = std::hash<U>{}(uid);
         auto it = std::find_if(m_outs.begin(), m_outs.end(), [&h](std::shared_ptr<Pin>& p)
@@ -184,11 +214,7 @@ namespace ImFlow
 
     inline Pin* BaseNode::outPin(const char* uid)
     {
-        PinUID h = std::hash<std::string>{}(std::string(uid));
-        auto it = std::find_if(m_outs.begin(), m_outs.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->getUid() == h; });
-        assert(it != m_outs.end() && "Pin UID not found!");
-        return it->get();
+        return outPin<std::string>(uid);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
