@@ -225,15 +225,15 @@ namespace ImFlow
     bool ImNodeFlow::on_selected_node()
     {
         return std::any_of(m_nodes.begin(), m_nodes.end(),
-                           [](auto& n) { return n->isSelected() && n->isHovered();});
+                           [](const auto& n) { return n.second->isSelected() && n.second->isHovered();});
     }
 
     bool ImNodeFlow::on_free_space()
     {
         return std::all_of(m_nodes.begin(), m_nodes.end(),
-                    [](auto& n) {return !n->isHovered();})
+                    [](const auto& n) {return !n.second->isHovered();})
                && std::all_of(m_links.begin(), m_links.end(),
-                    [](auto& l) {return !l.lock()->isHovered();});
+                    [](const auto& l) {return !l.lock()->isHovered();});
     }
 
     ImVec2 ImNodeFlow::screen2grid(const ImVec2 &p)
@@ -277,9 +277,9 @@ namespace ImFlow
 
         // Update and draw nodes
         draw_list->ChannelsSplit(2);
-        for (auto& node : m_nodes) { node->update(); }
+        for (auto& node : m_nodes) { node.second->update(); }
         draw_list->ChannelsMerge();
-        for (auto& node : m_nodes) { node->updatePublicStatus(); }
+        for (auto& node : m_nodes) { node.second->updatePublicStatus(); }
 
         // Update and draw links
         for (auto& l : m_links) { if(!l.expired()) l.lock()->update(); }
@@ -319,8 +319,7 @@ namespace ImFlow
         // Deletion of selected stuff
         if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
         {
-            m_nodes.erase(std::remove_if(m_nodes.begin(), m_nodes.end(),
-                           [](const std::shared_ptr<BaseNode>& n) { return n->isSelected(); }), m_nodes.end());
+            std::erase_if(m_nodes, [](const std::pair<NodeUID, std::shared_ptr<BaseNode>>& n){ return n.second->isSelected(); });
         }
 
         // Right-click PopUp
