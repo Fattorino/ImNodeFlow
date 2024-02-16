@@ -549,13 +549,7 @@ namespace ImFlow
     class BaseNode
     {
     public:
-        /**
-         * @brief <BR>Basic constructor
-         * @param name Name of the node
-         * @param pos Position in grid coordinates
-         * @param inf Pointer to the Grid Handler the node is in
-         */
-        explicit BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf);
+        BaseNode() = default;
 
         /**
          * @brief <BR>Main loop of the node
@@ -790,13 +784,13 @@ namespace ImFlow
          * @brief <BR>Get node's UID
          * @return Node's unique identifier
          */
-        NodeUID getUID() { return m_uid; }
+        [[nodiscard]] NodeUID getUID() const { return m_uid; }
 
         /**
          * @brief <BR>Get node name
          * @return Const reference to the node's name
          */
-        const std::string& getName() { return m_name; }
+        const std::string& getName() { return m_title; }
 
         /**
          * @brief <BR>Get node size
@@ -809,6 +803,12 @@ namespace ImFlow
          * @return Const reference to the node's position
          */
         const ImVec2& getPos() { return  m_pos; }
+
+        /**
+         * @brief <BR>Get grid handler bound to node
+         * @return Pointer to the handler
+         */
+        ImNodeFlow* getHandler() { return m_inf; }
 
         /**
          * @brief <BR>Get node's style
@@ -838,7 +838,19 @@ namespace ImFlow
          * @brief <BR>Set node's name
          * @param name New name
          */
-        void setName(const std::string& name) { m_name = name; }
+        void setTitle(const std::string& name) { m_title = name; }
+
+        /**
+         * @brief <BR>Set node's position
+         * @param pos Position in grid coordinates
+         */
+        void setPos(const ImVec2& pos) { m_pos = pos; m_posTarget = pos; }
+
+        /**
+         * @brief <BR>Set ImNodeFlow handler
+         * @param inf Grid handler for the node
+         */
+        void setHandler(ImNodeFlow* inf) { m_inf = inf; }
 
         /**
          * @brief <BR>Set selected status
@@ -853,17 +865,15 @@ namespace ImFlow
          */
         void updatePublicStatus() { m_selected = m_selectedNext; }
     private:
-        NodeUID m_uid;
-        std::string m_name;
+        NodeUID m_uid = 0;
+        std::string m_title;
         ImVec2 m_pos, m_posTarget;
         ImVec2 m_size;
-        ImNodeFlow* m_inf;
+        ImNodeFlow* m_inf = nullptr;
         std::shared_ptr<NodeStyle> m_style;
         bool m_selected = false, m_selectedNext = false;
         bool m_dragged = false;
         bool m_destroyed = false;
-        ImVec2 m_paddingTL;
-        ImVec2 m_paddingBR;
 
         std::vector<std::shared_ptr<Pin>> m_ins;
         std::vector<std::pair<int, std::shared_ptr<Pin>>> m_dynamicIns;
@@ -898,7 +908,7 @@ namespace ImFlow
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          * @param style Style of the pin
          */
-        explicit Pin(PinUID uid, std::string name, ConnectionFilter filter, PinType kind, BaseNode* parent, ImNodeFlow* inf, std::shared_ptr<PinStyle> style)
+        explicit Pin(PinUID uid, std::string name, ConnectionFilter filter, PinType kind, BaseNode* parent, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
             :m_uid(uid), m_name(std::move(name)), m_filter(filter), m_type(kind), m_parent(parent), m_inf(inf), m_style(std::move(style))
             {
                 if(!m_style)
@@ -1025,7 +1035,7 @@ namespace ImFlow
         ConnectionFilter m_filter;
         std::shared_ptr<PinStyle> m_style;
         BaseNode* m_parent = nullptr;
-        ImNodeFlow* m_inf;
+        ImNodeFlow** m_inf;
         std::function<void(Pin* p)> m_renderer;
     };
 
@@ -1046,7 +1056,7 @@ namespace ImFlow
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          * @param style Style of the pin
          */
-        explicit InPin(PinUID uid, const std::string& name, ConnectionFilter filter, BaseNode* parent, T defReturn, ImNodeFlow* inf, std::shared_ptr<PinStyle> style)
+        explicit InPin(PinUID uid, const std::string& name, ConnectionFilter filter, BaseNode* parent, T defReturn, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
             : Pin(uid, name, filter, PinType_Input, parent, inf, style), m_emptyVal(defReturn) {}
 
         /**
@@ -1104,7 +1114,7 @@ namespace ImFlow
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          * @param style Style of the pin
          */
-        explicit OutPin(PinUID uid, const std::string& name, ConnectionFilter filter, BaseNode* parent, ImNodeFlow* inf, std::shared_ptr<PinStyle> style)
+        explicit OutPin(PinUID uid, const std::string& name, ConnectionFilter filter, BaseNode* parent, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
             :Pin(uid, name, filter, PinType_Output, parent, inf, style) {}
 
         /**
