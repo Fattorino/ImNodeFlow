@@ -50,7 +50,7 @@ inline static void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
     dl->_IdxWritePtr = dl->IdxBuffer.Data + dl->IdxBuffer.size();
 }
 
-struct ViewPortConfig
+struct ContainedContextConfig
 {
     bool extra_window_wrapper = false;
     ImVec2 size = {0.f, 0.f};
@@ -69,15 +69,16 @@ class ContainedContext
 {
 public:
     ~ContainedContext();
-    ViewPortConfig& config() { return m_config; }
+    ContainedContextConfig& config() { return m_config; }
     void begin();
     void end();
     [[nodiscard]] float scale() const { return m_scale; }
     [[nodiscard]] const ImVec2& origin() const { return m_origin; }
     [[nodiscard]] bool hovered() const { return m_hovered; }
     [[nodiscard]] const ImVec2& scroll() const { return m_scroll; }
+    ImGuiContext* getRawContext() { return m_ctx; }
 private:
-    ViewPortConfig m_config;
+    ContainedContextConfig m_config;
 
     ImVec2 m_origin;
     ImVec2 m_pos;

@@ -1,5 +1,3 @@
-#include <iostream>
-#include <utility>
 #include "ImNodeFlow.h"
 
 namespace ImFlow
@@ -240,12 +238,18 @@ namespace ImFlow
 
     ImVec2 ImNodeFlow::screen2grid(const ImVec2 &p)
     {
-        return p - getPos() - m_context.scroll();
+        if (ImGui::GetCurrentContext() == m_context.getRawContext())
+            return p - m_context.scroll();
+        else
+            return p - m_context.origin() - m_context.scroll() * m_context.scale();
     }
 
     ImVec2 ImNodeFlow::grid2screen(const ImVec2 &p)
     {
-        return p + getPos() + m_context.scroll();
+        if (ImGui::GetCurrentContext() == m_context.getRawContext())
+            return p + m_context.scroll();
+        else
+        return p + m_context.origin() + m_context.scroll() * m_context.scale();
     }
 
     void ImNodeFlow::addLink(std::shared_ptr<Link>& link)
