@@ -105,6 +105,13 @@ namespace ImFlow
         ImGui::EndGroup();
         ImGui::SameLine();
 
+        if (m_destroyed)
+        {
+            ImGui::EndGroup();
+            ImGui::PopID();
+            return;
+        }
+
         // Outputs
         float maxW = 0.0f;
         for (auto& p : m_outs)
