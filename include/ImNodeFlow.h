@@ -343,41 +343,47 @@ namespace ImFlow
         template<typename T, typename U, typename... Params>
         std::shared_ptr<T> addNode_uid(const U& uid, const std::string& name, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style = nullptr, Params&&... args);
 
-        /**
-         * @brief <BR>Adds a node to the editor using mouse position
-         * @tparam T Derived class of <BaseNode> to be added
-         * @tparam Params types of optional args to forward to derived class ctor
-         *
-         * @param name Name to be given to the Node
-         * @param style Optional node's style override
-         * @param args Optional arguments to be forwarded to derived class ctor
-         * @return Pointer of the pushed type to the newly added Node
-         *
-         * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
-         */
-        //template<typename T, typename... Params>
-        //T* placeNode(const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+        template<typename T, typename... Params>
+        std::shared_ptr<T> placeNode(const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+
+        template<typename T, typename U, typename... Params>
+        std::shared_ptr<T> placeNode_uid(const U& uid, const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+
+        template<typename T, typename... Params>
+        std::shared_ptr<T> placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+
+        template<typename T, typename U, typename... Params>
+        std::shared_ptr<T> placeNodeAt_uid(const U& uid, const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
 
         /**
-         * @brief <BR>Adds a node to the editor
-         * @tparam T Derived class of <BaseNode> to be added
-         * @tparam Params types of optional args to forward to derived class ctor
-         * @param name Name to be given to the Node
-         * @param pos Position of the Node in screen coordinates
-         * @param style Optional node's style override
-         * @param args Optional arguments to be forwarded to derived class ctor
-         * @return Pointer of the pushed type to the newly added Node
-         *
-         * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
+         * @brief <BR>Find a node on the grid
+         * @tparam U Type of the UID
+         * @param uid Unique identifier of the node
+         * @return Shared pointer to the node
          */
-        //template<typename T, typename... Params>
-        //T* placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
-
         template<typename U>
         std::shared_ptr<BaseNode> findNode(const U& uid);
 
+        /**
+         * @brief <BR>Find a node on the grid by raw UID
+         * @param uid Unique identifier of the node
+         * @return Shared pointer to the node
+         */
+        std::shared_ptr<BaseNode> findNode_raw(NodeUID uid);
+
+        /**
+         * @brief <BR>Delete a node on the grid
+         * @tparam U Type of the UID
+         * @param uid Unique identifier of the node
+         */
         template<typename U>
         void dropNode(const U& uid);
+
+        /**
+         * @brief <BR>Delete a node on the grid by raw UID
+         * @param uid Unique identifier of the node
+         */
+        void dropNode_raw(NodeUID uid);
 
         /**
          * @brief <BR>Add link to the handler internal list
@@ -770,10 +776,21 @@ namespace ImFlow
         Pin* outPin(const char* uid);
 
         /**
+         * @brief <BR>Delete itself
+         */
+        void destroy() { m_inf->dropNode_raw(m_uid); m_destroyed = true; }
+
+        /**
          * @brief <BR>Get hovered status
          * @return [TRUE] if the mouse is hovering the node
          */
         bool isHovered();
+
+        /**
+         * @brief <BR>Get node's UID
+         * @return Node's unique identifier
+         */
+        NodeUID getUID() { return m_uid; }
 
         /**
          * @brief <BR>Get node name
@@ -812,6 +829,12 @@ namespace ImFlow
         [[nodiscard]] bool isDragged() const { return m_dragged; }
 
         /**
+         * @brief <BR>Set node's uid
+         * @param uid Node's unique identifier
+         */
+        void setUID(NodeUID uid) { m_uid = uid; }
+
+        /**
          * @brief <BR>Set node's name
          * @param name New name
          */
@@ -830,6 +853,7 @@ namespace ImFlow
          */
         void updatePublicStatus() { m_selected = m_selectedNext; }
     private:
+        NodeUID m_uid;
         std::string m_name;
         ImVec2 m_pos, m_posTarget;
         ImVec2 m_size;
@@ -837,6 +861,7 @@ namespace ImFlow
         std::shared_ptr<NodeStyle> m_style;
         bool m_selected = false, m_selectedNext = false;
         bool m_dragged = false;
+        bool m_destroyed = false;
         ImVec2 m_paddingTL;
         ImVec2 m_paddingBR;
 
