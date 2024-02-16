@@ -41,15 +41,20 @@ namespace ImFlow
     }
 
     template<typename T, typename U, typename... Params>
-    std::shared_ptr<T> ImNodeFlow::addNode_uid(const U& uid, const std::string& name, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style, Params&&... args)
+    std::shared_ptr<T> ImNodeFlow::addNode_uid(const U& uid, const std::string& title, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style, Params&&... args)
     {
         static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
         NodeUID h = std::hash<U>{}(uid);
         assert(m_nodes.find(h) == m_nodes.end() && "Node UID already exists");
-        std::shared_ptr<T> n = std::make_shared<T>(name, pos, this, std::forward<Params>(args)...);
+        std::shared_ptr<T> n = std::make_shared<T>(std::forward<Params>(args)...);
         n->setUID(h);
+        n->setTitle(title);
+        n->setPos(pos);
+        n->setHandler(this);
         if (style)
             n->getStyle() = style;
+        else if (!n->getStyle())
+            n->getStyle() = NodeStyle::cyan();
 
         m_nodes[h] = n;
         return n;
@@ -118,7 +123,7 @@ namespace ImFlow
     InPin<T>* BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        m_ins.emplace_back(std::make_shared<InPin<T>>(h, name, filter, this, defReturn, m_inf, std::move(style)));
+        m_ins.emplace_back(std::make_shared<InPin<T>>(h, name, filter, this, defReturn, &m_inf, std::move(style)));
         return static_cast<InPin<T>*>(m_ins.back().get());
     }
 
@@ -160,7 +165,7 @@ namespace ImFlow
             }
         }
 
-        m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, filter, this, defReturn, m_inf, std::move(style))));
+        m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, filter, this, defReturn, &m_inf, std::move(style))));
         return static_cast<InPin<T>*>(m_dynamicIns.back().second.get())->val();
     }
 
@@ -174,7 +179,7 @@ namespace ImFlow
     OutPin<T>* BaseNode::addOUT_uid(const U& uid, const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        m_outs.emplace_back(std::make_shared<OutPin<T>>(h, name, filter, this, m_inf, std::move(style)));
+        m_outs.emplace_back(std::make_shared<OutPin<T>>(h, name, filter, this, &m_inf, std::move(style)));
         return static_cast<OutPin<T>*>(m_outs.back().get());
     }
 
@@ -216,7 +221,7 @@ namespace ImFlow
             }
         }
 
-        m_dynamicOuts.emplace_back(std::make_pair(2, std::make_shared<OutPin<T>>(h, name, filter, this, m_inf, std::move(style))));
+        m_dynamicOuts.emplace_back(std::make_pair(2, std::make_shared<OutPin<T>>(h, name, filter, this, &m_inf, std::move(style))));
         static_cast<OutPin<T>*>(m_dynamicOuts.back().second.get())->behaviour(std::move(behaviour));
     }
 
@@ -279,7 +284,7 @@ namespace ImFlow
             ImGui::EndGroup();
             m_size = ImGui::GetItemRectSize();
             if (ImGui::IsItemHovered())
-                m_inf->hovering(this);
+                (*m_inf)->hovering(this);
             return;
         }
 
@@ -308,7 +313,7 @@ namespace ImFlow
         }
 
         if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
-            m_inf->hovering(this);
+            (*m_inf)->hovering(this);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -338,9 +343,9 @@ namespace ImFlow
             return;
         }
 
-        m_link = std::make_shared<Link>(other, this, m_inf);
+        m_link = std::make_shared<Link>(other, this, (*m_inf));
         other->setLink(m_link);
-        m_inf->addLink(m_link);
+        (*m_inf)->addLink(m_link);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
