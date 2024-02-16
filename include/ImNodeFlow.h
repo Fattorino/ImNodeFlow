@@ -2,6 +2,7 @@
 #define IM_NODE_FLOW
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -341,7 +342,7 @@ namespace ImFlow
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
          */
         template<typename T, typename U, typename... Params>
-        std::shared_ptr<T> addNode_uid(const U& uid, const std::string& name, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style = nullptr, Params&&... args);
+        std::shared_ptr<T> addNode_uid(const U& uid, const std::string& title, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style = nullptr, Params&&... args);
 
         template<typename T, typename... Params>
         std::shared_ptr<T> placeNode(const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
@@ -562,7 +563,7 @@ namespace ImFlow
          * @details Function to be implemented by derived custom nodes.
          *          Must contain the body of the node. If left empty the node will only have input and output pins.
          */
-        virtual void draw() = 0;
+        virtual void draw() {}
 
         /**
          * @brief <BR>Add an Input to the node
@@ -770,6 +771,18 @@ namespace ImFlow
         Pin* outPin(const char* uid);
 
         /**
+         * @brief <BR>Get internal input pins list
+         * @return Const reference to node's internal list
+         */
+        const std::vector<std::shared_ptr<Pin>>& getIns() { return m_ins; }
+
+        /**
+         * @brief <BR>Get internal output pins list
+         * @return Const reference to node's internal list
+         */
+        const std::vector<std::shared_ptr<Pin>>& getOuts() { return m_outs; }
+
+        /**
          * @brief <BR>Delete itself
          */
         void destroy() { m_inf->dropNode_raw(m_uid); m_destroyed = true; }
@@ -920,6 +933,16 @@ namespace ImFlow
          * @details Updates position, hovering and dragging status, and renders the pin. Must be called each frame.
          */
         void update();
+
+        /**
+         * @brief <BR>Draw default pin's socket
+         */
+        void drawSocket();
+
+        /**
+         * @brief <BR>Draw default pin's decoration (border, bg, and hover overlay)
+         */
+        void drawDecoration();
 
         /**
          * @brief <BR>Used by output pins to calculate their values
