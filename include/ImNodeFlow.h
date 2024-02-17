@@ -62,11 +62,12 @@ namespace ImFlow
     {
         ConnectionFilter_None       = 0,
         ConnectionFilter_SameNode   = 1 << 1,
-        ConnectionFilter_Int        = 1 << 2,
-        ConnectionFilter_Float      = 1 << 3,
-        ConnectionFilter_Double     = 1 << 4,
-        ConnectionFilter_String     = 1 << 5,
-        ConnectionFilter_MakeCustom = 1 << 6,
+        ConnectionFilter_Bool       = 1 << 2,
+        ConnectionFilter_Int        = 1 << 3,
+        ConnectionFilter_Float      = 1 << 4,
+        ConnectionFilter_Double     = 1 << 5,
+        ConnectionFilter_String     = 1 << 6,
+        ConnectionFilter_MakeCustom = 1 << 7,
         ConnectionFilter_Numbers = ConnectionFilter_Int | ConnectionFilter_Float | ConnectionFilter_Double
     };
     typedef long ConnectionFilter;
@@ -347,38 +348,6 @@ namespace ImFlow
          */
         template<typename T, typename... Params>
         std::shared_ptr<T> placeNode(Params&&... args);
-
-//        /**
-//         * @brief <BR>Adds a node to the editor
-//         * @tparam T Derived class of <BaseNode> to be added
-//         * @tparam U Type of the UID
-//         * @tparam Params types of optional args to forward to derived class ctor
-//         *
-//         * @param uid Unique identifier of the node
-//         * @param name Name to be given to the Node
-//         * @param pos Position of the Node in grid coordinates
-//         * @param style Optional node's style override
-//         * @param args Optional arguments to be forwarded to derived class ctor
-//         * @return Pointer of the pushed type to the newly added Node
-//         *
-//         * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
-//         */
-//        template<typename T, typename U, typename... Params>
-//        std::shared_ptr<T> addNode_uid(const U& uid, const std::string& title, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style = nullptr, Params&&... args);
-//
-//        template<typename T, typename... Params>
-//        std::shared_ptr<T> placeNode(const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
-//
-//        template<typename T, typename U, typename... Params>
-//        std::shared_ptr<T> placeNode_uid(const U& uid, const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
-//
-//        template<typename T, typename... Params>
-//        std::shared_ptr<T> placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
-//
-//        template<typename T, typename U, typename... Params>
-//        std::shared_ptr<T> placeNodeAt_uid(const U& uid, const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
-
-
 
         /**
          * @brief <BR>Add link to the handler internal list

@@ -63,50 +63,6 @@ namespace ImFlow
         return placeNodeAt<T>(ImGui::GetMousePos(), std::forward<Params>(args)...);
     }
 
-//    template<typename T, typename U, typename... Params>
-//    std::shared_ptr<T> ImNodeFlow::addNode_uid(const U& uid, const std::string& title, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style, Params&&... args)
-//    {
-//        static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
-//        NodeUID h = std::hash<U>{}(uid);
-//        assert(m_nodes.find(h) == m_nodes.end() && "Node UID already exists");
-//        std::shared_ptr<T> n = std::make_shared<T>(std::forward<Params>(args)...);
-//        n->setUID(h);
-//        n->setTitle(title);
-//        n->setPos(pos);
-//        n->setHandler(this);
-//        if (style)
-//            n->getStyle() = style;
-//        else if (!n->getStyle())
-//            n->getStyle() = NodeStyle::cyan();
-//
-//        m_nodes[h] = n;
-//        return n;
-//    }
-//
-//    template<typename T, typename... Params>
-//    std::shared_ptr<T> ImNodeFlow::placeNode(const std::string& name, std::shared_ptr<NodeStyle> style, Params&&... args)
-//    {
-//        return placeNodeAt_uid<T>(name, name, ImGui::GetMousePos(), std::move(style), std::forward<Params>(args)...);
-//    }
-//
-//    template<typename T, typename U, typename... Params>
-//    std::shared_ptr<T> ImNodeFlow::placeNode_uid(const U& uid, const std::string& name, std::shared_ptr<NodeStyle> style, Params&&... args)
-//    {
-//        return placeNodeAt_uid<T>(uid, name, ImGui::GetMousePos(), std::move(style), std::forward<Params>(args)...);
-//    }
-//
-//    template<typename T, typename... Params>
-//    std::shared_ptr<T> ImNodeFlow::placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
-//    {
-//        return placeNodeAt_uid<T>(name, name, pos, std::move(style), std::forward<Params>(args)...);
-//    }
-//
-//    template<typename T, typename U, typename... Params>
-//    std::shared_ptr<T> ImNodeFlow::placeNodeAt_uid(const U& uid, const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
-//    {
-//        return addNode<T>(name, screen2grid(pos), std::move(style), std::forward<Params>(args)...);
-//    }
-
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
 
