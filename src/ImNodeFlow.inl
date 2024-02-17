@@ -35,96 +35,94 @@ namespace ImFlow
     // HANDLER
 
     template<typename T, typename... Params>
-    std::shared_ptr<T> ImNodeFlow::addNode(const std::string& name, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style, Params&&... args)
-    {
-        return addNode_uid<T>(name, name, pos, style, std::forward<Params>(args)...);
-    }
-
-    template<typename T, typename U, typename... Params>
-    std::shared_ptr<T> ImNodeFlow::addNode_uid(const U& uid, const std::string& title, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style, Params&&... args)
+    std::shared_ptr<T> ImNodeFlow::addNode(const ImVec2& pos, Params&&... args)
     {
         static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
-        NodeUID h = std::hash<U>{}(uid);
-        assert(m_nodes.find(h) == m_nodes.end() && "Node UID already exists");
+
         std::shared_ptr<T> n = std::make_shared<T>(std::forward<Params>(args)...);
-        n->setUID(h);
-        n->setTitle(title);
         n->setPos(pos);
         n->setHandler(this);
-        if (style)
-            n->getStyle() = style;
-        else if (!n->getStyle())
-            n->getStyle() = NodeStyle::cyan();
+        if (!n->getStyle())
+            n->setStyle(NodeStyle::cyan());
 
-        m_nodes[h] = n;
+        auto uid = reinterpret_cast<uintptr_t>(n.get());
+        n->setUID(uid);
+        m_nodes[uid] = n;
         return n;
     }
 
     template<typename T, typename... Params>
-    std::shared_ptr<T> ImNodeFlow::placeNode(const std::string& name, std::shared_ptr<NodeStyle> style, Params&&... args)
+    std::shared_ptr<T> ImNodeFlow::placeNodeAt(const ImVec2& pos, Params&&... args)
     {
-        return placeNodeAt_uid<T>(name, name, ImGui::GetMousePos(), std::move(style), std::forward<Params>(args)...);
-    }
-
-    template<typename T, typename U, typename... Params>
-    std::shared_ptr<T> ImNodeFlow::placeNode_uid(const U& uid, const std::string& name, std::shared_ptr<NodeStyle> style, Params&&... args)
-    {
-        return placeNodeAt_uid<T>(uid, name, ImGui::GetMousePos(), std::move(style), std::forward<Params>(args)...);
+        return addNode<T>(screen2grid(pos), std::forward<Params>(args)...);
     }
 
     template<typename T, typename... Params>
-    std::shared_ptr<T> ImNodeFlow::placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
+    std::shared_ptr<T> ImNodeFlow::placeNode(Params&&... args)
     {
-        return placeNodeAt_uid<T>(name, name, pos, std::move(style), std::forward<Params>(args)...);
+        return placeNodeAt<T>(ImGui::GetMousePos(), std::forward<Params>(args)...);
     }
 
-    template<typename T, typename U, typename... Params>
-    std::shared_ptr<T> ImNodeFlow::placeNodeAt_uid(const U& uid, const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
-    {
-        return addNode<T>(name, screen2grid(pos), std::move(style), std::forward<Params>(args)...);
-    }
-
-    template<typename U>
-    std::shared_ptr<BaseNode> ImNodeFlow::findNode(const U& uid)
-    {
-        NodeUID h = std::hash<U>{}(uid);
-        return findNode_raw(h);
-    }
-
-    inline std::shared_ptr<BaseNode> ImNodeFlow::findNode_raw(NodeUID uid)
-    {
-        auto n = m_nodes.find(uid);
-        assert(n != m_nodes.end() && "Node UID not found!");
-        return n->second;
-    }
-
-    template<typename U>
-    void ImNodeFlow::dropNode(const U& uid)
-    {
-        NodeUID h = std::hash<U>{}(uid);
-        dropNode_raw(h);
-    }
-
-    inline void ImNodeFlow::dropNode_raw(NodeUID uid)
-    {
-        m_nodes.erase(uid);
-    }
+//    template<typename T, typename U, typename... Params>
+//    std::shared_ptr<T> ImNodeFlow::addNode_uid(const U& uid, const std::string& title, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style, Params&&... args)
+//    {
+//        static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
+//        NodeUID h = std::hash<U>{}(uid);
+//        assert(m_nodes.find(h) == m_nodes.end() && "Node UID already exists");
+//        std::shared_ptr<T> n = std::make_shared<T>(std::forward<Params>(args)...);
+//        n->setUID(h);
+//        n->setTitle(title);
+//        n->setPos(pos);
+//        n->setHandler(this);
+//        if (style)
+//            n->getStyle() = style;
+//        else if (!n->getStyle())
+//            n->getStyle() = NodeStyle::cyan();
+//
+//        m_nodes[h] = n;
+//        return n;
+//    }
+//
+//    template<typename T, typename... Params>
+//    std::shared_ptr<T> ImNodeFlow::placeNode(const std::string& name, std::shared_ptr<NodeStyle> style, Params&&... args)
+//    {
+//        return placeNodeAt_uid<T>(name, name, ImGui::GetMousePos(), std::move(style), std::forward<Params>(args)...);
+//    }
+//
+//    template<typename T, typename U, typename... Params>
+//    std::shared_ptr<T> ImNodeFlow::placeNode_uid(const U& uid, const std::string& name, std::shared_ptr<NodeStyle> style, Params&&... args)
+//    {
+//        return placeNodeAt_uid<T>(uid, name, ImGui::GetMousePos(), std::move(style), std::forward<Params>(args)...);
+//    }
+//
+//    template<typename T, typename... Params>
+//    std::shared_ptr<T> ImNodeFlow::placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
+//    {
+//        return placeNodeAt_uid<T>(name, name, pos, std::move(style), std::forward<Params>(args)...);
+//    }
+//
+//    template<typename T, typename U, typename... Params>
+//    std::shared_ptr<T> ImNodeFlow::placeNodeAt_uid(const U& uid, const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
+//    {
+//        return addNode<T>(name, screen2grid(pos), std::move(style), std::forward<Params>(args)...);
+//    }
 
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
 
     template<typename T>
-    InPin<T>* BaseNode::addIN(const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    std::shared_ptr<InPin<T>> BaseNode::addIN(const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         return addIN_uid(name, name, defReturn, filter, std::move(style));
     }
 
     template<typename T, typename U>
-    InPin<T>* BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    std::shared_ptr<InPin<T>> BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        m_ins.emplace_back(std::make_shared<InPin<T>>(h, name, filter, this, defReturn, &m_inf, std::move(style)));
-        return static_cast<InPin<T>*>(m_ins.back().get());
+        auto p = std::make_shared<InPin<T>>(h, name, filter, this, defReturn, &m_inf, std::move(style));
+        m_ins.emplace_back(p);
+        return p;
     }
 
     template<typename U>
@@ -170,17 +168,18 @@ namespace ImFlow
     }
 
     template<typename T>
-    OutPin<T>* BaseNode::addOUT(const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    std::shared_ptr<OutPin<T>> BaseNode::addOUT(const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         return addOUT_uid<T>(name, name, filter, std::move(style));
     }
 
     template<typename T, typename U>
-    OutPin<T>* BaseNode::addOUT_uid(const U& uid, const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    std::shared_ptr<OutPin<T>> BaseNode::addOUT_uid(const U& uid, const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        m_outs.emplace_back(std::make_shared<OutPin<T>>(h, name, filter, this, &m_inf, std::move(style)));
-        return static_cast<OutPin<T>*>(m_outs.back().get());
+        auto p = std::make_shared<OutPin<T>>(h, name, filter, this, &m_inf, std::move(style));
+        m_outs.emplace_back(p);
+        return p;
     }
 
     template<typename U>

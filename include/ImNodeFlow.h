@@ -148,7 +148,7 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // NODE'S PROPERTIES
 
-    typedef unsigned long long int NodeUID;
+    typedef uintptr_t NodeUID;
 
     /**
      * @brief Defines the visual appearance of a node
@@ -311,80 +311,74 @@ namespace ImFlow
         void update();
 
         /**
-         * @brief <BR>Adds a node to the editor
+         * @brief <BR>Add a node to the grid
          * @tparam T Derived class of <BaseNode> to be added
          * @tparam Params types of optional args to forward to derived class ctor
-         *
-         * @param name Name to be given to the Node
          * @param pos Position of the Node in grid coordinates
-         * @param style Optional node's style override
          * @param args Optional arguments to be forwarded to derived class ctor
-         * @return Pointer of the pushed type to the newly added Node
+         * @return Shared pointer of the pushed type to the newly added node
          *
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
          */
         template<typename T, typename... Params>
-        std::shared_ptr<T> addNode(const std::string& name, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style = nullptr, Params&&... args);
+        std::shared_ptr<T> addNode(const ImVec2& pos, Params&&... args);
 
         /**
-         * @brief <BR>Adds a node to the editor
+         * @brief <BR>Add a node to the grid
          * @tparam T Derived class of <BaseNode> to be added
-         * @tparam U Type of the UID
          * @tparam Params types of optional args to forward to derived class ctor
-         *
-         * @param uid Unique identifier of the node
-         * @param name Name to be given to the Node
-         * @param pos Position of the Node in grid coordinates
-         * @param style Optional node's style override
+         * @param pos Position of the Node in screen coordinates
          * @param args Optional arguments to be forwarded to derived class ctor
-         * @return Pointer of the pushed type to the newly added Node
+         * @return Shared pointer of the pushed type to the newly added node
          *
          * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
          */
-        template<typename T, typename U, typename... Params>
-        std::shared_ptr<T> addNode_uid(const U& uid, const std::string& title, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style = nullptr, Params&&... args);
-
         template<typename T, typename... Params>
-        std::shared_ptr<T> placeNode(const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+        std::shared_ptr<T> placeNodeAt(const ImVec2& pos, Params&&... args);
 
-        template<typename T, typename U, typename... Params>
-        std::shared_ptr<T> placeNode_uid(const U& uid, const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
-
+        /**
+         * @brief <BR>Add a node to the grid using mouse position
+         * @tparam T Derived class of <BaseNode> to be added
+         * @tparam Params types of optional args to forward to derived class ctor
+         * @param args Optional arguments to be forwarded to derived class ctor
+         * @return Shared pointer of the pushed type to the newly added node
+         *
+         * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
+         */
         template<typename T, typename... Params>
-        std::shared_ptr<T> placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+        std::shared_ptr<T> placeNode(Params&&... args);
 
-        template<typename T, typename U, typename... Params>
-        std::shared_ptr<T> placeNodeAt_uid(const U& uid, const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+//        /**
+//         * @brief <BR>Adds a node to the editor
+//         * @tparam T Derived class of <BaseNode> to be added
+//         * @tparam U Type of the UID
+//         * @tparam Params types of optional args to forward to derived class ctor
+//         *
+//         * @param uid Unique identifier of the node
+//         * @param name Name to be given to the Node
+//         * @param pos Position of the Node in grid coordinates
+//         * @param style Optional node's style override
+//         * @param args Optional arguments to be forwarded to derived class ctor
+//         * @return Pointer of the pushed type to the newly added Node
+//         *
+//         * Inheritance is checked at compile time, \<T> MUST be derived from BaseNode.
+//         */
+//        template<typename T, typename U, typename... Params>
+//        std::shared_ptr<T> addNode_uid(const U& uid, const std::string& title, const ImVec2& pos, const std::shared_ptr<NodeStyle>& style = nullptr, Params&&... args);
+//
+//        template<typename T, typename... Params>
+//        std::shared_ptr<T> placeNode(const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+//
+//        template<typename T, typename U, typename... Params>
+//        std::shared_ptr<T> placeNode_uid(const U& uid, const std::string& name, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+//
+//        template<typename T, typename... Params>
+//        std::shared_ptr<T> placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
+//
+//        template<typename T, typename U, typename... Params>
+//        std::shared_ptr<T> placeNodeAt_uid(const U& uid, const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style = nullptr, Params&&... args);
 
-        /**
-         * @brief <BR>Find a node on the grid
-         * @tparam U Type of the UID
-         * @param uid Unique identifier of the node
-         * @return Shared pointer to the node
-         */
-        template<typename U>
-        std::shared_ptr<BaseNode> findNode(const U& uid);
 
-        /**
-         * @brief <BR>Find a node on the grid by raw UID
-         * @param uid Unique identifier of the node
-         * @return Shared pointer to the node
-         */
-        std::shared_ptr<BaseNode> findNode_raw(NodeUID uid);
-
-        /**
-         * @brief <BR>Delete a node on the grid
-         * @tparam U Type of the UID
-         * @param uid Unique identifier of the node
-         */
-        template<typename U>
-        void dropNode(const U& uid);
-
-        /**
-         * @brief <BR>Delete a node on the grid by raw UID
-         * @param uid Unique identifier of the node
-         */
-        void dropNode_raw(NodeUID uid);
 
         /**
          * @brief <BR>Add link to the handler internal list
@@ -442,7 +436,7 @@ namespace ImFlow
          * @brief <BR>Get editor's list of nodes
          * @return Const reference to editor's internal nodes list
          */
-        const std::unordered_map<NodeUID, std::shared_ptr<BaseNode>>& getNodes() { return m_nodes; }
+        std::unordered_map<NodeUID, std::shared_ptr<BaseNode>>& getNodes() { return m_nodes; }
 
         /**
          * @brief <BR>Get nodes count
@@ -575,10 +569,10 @@ namespace ImFlow
          * @param defReturn Default return value when the pin is not connected
          * @param filter Connection filter
          * @param style Style of the pin
-         * @return Pointer to the newly added pin
+         * @return Shared pointer to the newly added pin
          */
         template<typename T>
-        InPin<T>* addIN(const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
+        std::shared_ptr<InPin<T>> addIN(const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
 
         /**
          * @brief <BR>Add an Input to the node
@@ -591,10 +585,10 @@ namespace ImFlow
          * @param defReturn Default return value when the pin is not connected
          * @param filter Connection filter
          * @param style Style of the pin
-         * @return Pointer to the newly added pin
+         * @return Shared pointer to the newly added pin
          */
         template<typename T, typename U>
-        InPin<T>* addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
+        std::shared_ptr<InPin<T>> addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
 
         /**
          * @brief <BR>Remove input pin
@@ -652,10 +646,10 @@ namespace ImFlow
          * @param name Name of the pin
          * @param filter Connection filter
          * @param style Style of the pin
-         * @return Pointer to the newly added pin. Must be used to set the behaviour
+         * @return Shared pointer to the newly added pin. Must be used to set the behaviour
          */
         template<typename T>
-        [[nodiscard]] OutPin<T>* addOUT(const std::string& name, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
+        [[nodiscard]] std::shared_ptr<OutPin<T>> addOUT(const std::string& name, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
 
         /**
          * @brief <BR>Add an Output to the node
@@ -667,10 +661,10 @@ namespace ImFlow
          * @param name Name of the pin
          * @param filter Connection filter
          * @param style Style of the pin
-         * @return Pointer to the newly added pin. Must be used to set the behaviour
+         * @return Shared pointer to the newly added pin. Must be used to set the behaviour
          */
         template<typename T, typename U>
-        [[nodiscard]] OutPin<T>* addOUT_uid(const U& uid, const std::string& name, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
+        [[nodiscard]] std::shared_ptr<OutPin<T>> addOUT_uid(const U& uid, const std::string& name, ConnectionFilter filter = ConnectionFilter_None, std::shared_ptr<PinStyle> style = nullptr);
 
         /**
          * @brief <BR>Remove output pin
@@ -785,7 +779,7 @@ namespace ImFlow
         /**
          * @brief <BR>Delete itself
          */
-        void destroy() { m_inf->dropNode_raw(m_uid); m_destroyed = true; }
+        void destroy() { m_destroyed = true; m_inf->getNodes().erase(m_uid); }
 
         /**
          * @brief <BR>Get hovered status
@@ -827,7 +821,7 @@ namespace ImFlow
          * @brief <BR>Get node's style
          * @return Shared pointer to the node's style
          */
-        std::shared_ptr<NodeStyle>& getStyle() { return m_style; }
+        const std::shared_ptr<NodeStyle>& getStyle() { return m_style; }
 
         /**
          * @brief <BR>Get selected status
@@ -845,25 +839,31 @@ namespace ImFlow
          * @brief <BR>Set node's uid
          * @param uid Node's unique identifier
          */
-        void setUID(NodeUID uid) { m_uid = uid; }
+        BaseNode* setUID(NodeUID uid) { m_uid = uid; return this; }
 
         /**
          * @brief <BR>Set node's name
-         * @param name New name
+         * @param name New title
          */
-        void setTitle(const std::string& name) { m_title = name; }
+        BaseNode* setTitle(const std::string& title) { m_title = title; return this; }
 
         /**
          * @brief <BR>Set node's position
          * @param pos Position in grid coordinates
          */
-        void setPos(const ImVec2& pos) { m_pos = pos; m_posTarget = pos; }
+        BaseNode* setPos(const ImVec2& pos) { m_pos = pos; m_posTarget = pos; return this; }
 
         /**
          * @brief <BR>Set ImNodeFlow handler
          * @param inf Grid handler for the node
          */
-        void setHandler(ImNodeFlow* inf) { m_inf = inf; }
+        BaseNode* setHandler(ImNodeFlow* inf) { m_inf = inf; return this; }
+
+        /**
+         * @brief Set node's style
+         * @param style New style
+         */
+        BaseNode* setStyle(std::shared_ptr<NodeStyle> style) { m_style = std::move(style); return this; }
 
         /**
          * @brief <BR>Set selected status
@@ -871,7 +871,7 @@ namespace ImFlow
          *
          * Status only updates when updatePublicStatus() is called
          */
-        void selected(bool state) { m_selectedNext = state; }
+        BaseNode* selected(bool state) { m_selectedNext = state; return this; }
 
         /**
          * @brief <BR>Update the isSelected status of the node
