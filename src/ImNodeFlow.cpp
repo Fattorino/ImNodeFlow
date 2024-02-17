@@ -178,6 +178,9 @@ namespace ImFlow
             m_inf->consumeSingleUseClick();
         }
 
+        if (ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
+            destroy();
+
         bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - paddingTL, offset + m_pos + headerSize);
         if (onHeader && mouseClickState)
         {
@@ -320,12 +323,6 @@ namespace ImFlow
 
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                 m_dragOut = nullptr;
-        }
-
-        // Deletion of selected stuff
-        if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
-        {
-            std::erase_if(m_nodes, [](const std::pair<NodeUID, std::shared_ptr<BaseNode>>& n){ return n.second->isSelected(); });
         }
 
         // Right-click PopUp
