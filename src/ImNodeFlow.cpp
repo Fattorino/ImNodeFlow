@@ -1,5 +1,3 @@
-#include <iostream>
-#include <utility>
 #include "ImNodeFlow.h"
 
 namespace ImFlow
@@ -45,18 +43,11 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
 
-    BaseNode::BaseNode(std::string name, ImVec2 pos, ImNodeFlow* inf)
-        :m_name(std::move(name)), m_pos(pos), m_inf(inf)
-    {
-        m_style = NodeStyle::cyan();
-        m_paddingTL = {m_style->padding.x, m_style->padding.y};
-        m_paddingBR = {m_style->padding.z, m_style->padding.w};
-        m_posTarget = m_pos;
-    }
-
     bool BaseNode::isHovered()
     {
-        return ImGui::IsMouseHoveringRect(m_inf->grid2screen(m_pos - m_paddingTL), m_inf->grid2screen(m_pos + m_size + m_paddingBR));
+        ImVec2 paddingTL = {m_style->padding.x, m_style->padding.y};
+        ImVec2 paddingBR = {m_style->padding.z, m_style->padding.w};
+        return ImGui::IsMouseHoveringRect(m_inf->grid2screen(m_pos - paddingTL), m_inf->grid2screen(m_pos + m_size + paddingBR));
     }
 
     void BaseNode::update()
@@ -65,6 +56,8 @@ namespace ImFlow
         ImGui::PushID(this);
         bool mouseClickState = m_inf->getSingleUseClick();
         ImVec2 offset = m_inf->grid2screen({0.f, 0.f});
+        ImVec2 paddingTL = {m_style->padding.x, m_style->padding.y};
+        ImVec2 paddingBR = {m_style->padding.z, m_style->padding.w};
 
         draw_list->ChannelsSetCurrent(1); // Foreground
         ImGui::SetCursorScreenPos(offset + m_pos);
@@ -73,7 +66,7 @@ namespace ImFlow
 
         // Header
         ImGui::BeginGroup();
-        ImGui::TextColored(m_style->header_title_color, m_name.c_str());
+        ImGui::TextColored(m_style->header_title_color, m_title.c_str());
         ImGui::Spacing();
         ImGui::EndGroup();
         float headerH = ImGui::GetItemRectSize().y;
@@ -104,6 +97,13 @@ namespace ImFlow
         ImGui::Dummy(ImVec2(0.f, 0.f));
         ImGui::EndGroup();
         ImGui::SameLine();
+
+        if (m_destroyed)
+        {
+            ImGui::EndGroup();
+            ImGui::PopID();
+            return;
+        }
 
         // Outputs
         float maxW = 0.0f;
@@ -144,17 +144,17 @@ namespace ImFlow
 
         ImGui::EndGroup();
         m_size = ImGui::GetItemRectSize();
-        ImVec2 headerSize = ImVec2(m_size.x + m_paddingBR.x, headerH);
+        ImVec2 headerSize = ImVec2(m_size.x + paddingBR.x, headerH);
 
         // Background
         draw_list->ChannelsSetCurrent(0);
-        draw_list->AddRectFilled(offset + m_pos - m_paddingTL, offset + m_pos + m_size + m_paddingBR, m_style->bg, m_style->radius);
-        draw_list->AddRectFilled(offset + m_pos - m_paddingTL, offset + m_pos + headerSize, m_style->header_bg, m_style->radius, ImDrawFlags_RoundCornersTop);
+        draw_list->AddRectFilled(offset + m_pos - paddingTL, offset + m_pos + m_size + paddingBR, m_style->bg, m_style->radius);
+        draw_list->AddRectFilled(offset + m_pos - paddingTL, offset + m_pos + headerSize, m_style->header_bg, m_style->radius, ImDrawFlags_RoundCornersTop);
 
         ImU32 col = m_style->border_color;
         float thickness = m_style->border_thickness;
-        ImVec2 ptl = m_paddingTL;
-        ImVec2 pbr = m_paddingBR;
+        ImVec2 ptl = paddingTL;
+        ImVec2 pbr = paddingBR;
         if(m_selected)
         {
             col = m_style->border_selected_color;
@@ -178,7 +178,10 @@ namespace ImFlow
             m_inf->consumeSingleUseClick();
         }
 
-        bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - m_paddingTL, offset + m_pos + headerSize);
+        if (ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
+            destroy();
+
+        bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - paddingTL, offset + m_pos + headerSize);
         if (onHeader && mouseClickState)
         {
             m_inf->consumeSingleUseClick();
@@ -225,25 +228,31 @@ namespace ImFlow
     bool ImNodeFlow::on_selected_node()
     {
         return std::any_of(m_nodes.begin(), m_nodes.end(),
-                           [](auto& n) { return n->isSelected() && n->isHovered();});
+                           [](const auto& n) { return n.second->isSelected() && n.second->isHovered();});
     }
 
     bool ImNodeFlow::on_free_space()
     {
         return std::all_of(m_nodes.begin(), m_nodes.end(),
-                    [](auto& n) {return !n->isHovered();})
+                    [](const auto& n) {return !n.second->isHovered();})
                && std::all_of(m_links.begin(), m_links.end(),
-                    [](auto& l) {return !l.lock()->isHovered();});
+                    [](const auto& l) {return !l.lock()->isHovered();});
     }
 
     ImVec2 ImNodeFlow::screen2grid(const ImVec2 &p)
     {
-        return p - getPos() - m_context.scroll();
+        if (ImGui::GetCurrentContext() == m_context.getRawContext())
+            return p - m_context.scroll();
+        else
+            return p - m_context.origin() - m_context.scroll() * m_context.scale();
     }
 
     ImVec2 ImNodeFlow::grid2screen(const ImVec2 &p)
     {
-        return p + getPos() + m_context.scroll();
+        if (ImGui::GetCurrentContext() == m_context.getRawContext())
+            return p + m_context.scroll();
+        else
+        return p + m_context.origin() + m_context.scroll() * m_context.scale();
     }
 
     void ImNodeFlow::addLink(std::shared_ptr<Link>& link)
@@ -277,9 +286,9 @@ namespace ImFlow
 
         // Update and draw nodes
         draw_list->ChannelsSplit(2);
-        for (auto& node : m_nodes) { node->update(); }
+        for (auto& node : m_nodes) { node.second->update(); }
         draw_list->ChannelsMerge();
-        for (auto& node : m_nodes) { node->updatePublicStatus(); }
+        for (auto& node : m_nodes) { node.second->updatePublicStatus(); }
 
         // Update and draw links
         for (auto& l : m_links) { if(!l.expired()) l.lock()->update(); }
@@ -314,13 +323,6 @@ namespace ImFlow
 
             if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
                 m_dragOut = nullptr;
-        }
-
-        // Deletion of selected stuff
-        if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
-        {
-            m_nodes.erase(std::remove_if(m_nodes.begin(), m_nodes.end(),
-                           [](const std::shared_ptr<BaseNode>& n) { return n->isSelected(); }), m_nodes.end());
         }
 
         // Right-click PopUp
