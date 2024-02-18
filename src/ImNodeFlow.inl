@@ -35,42 +35,50 @@ namespace ImFlow
     // HANDLER
 
     template<typename T, typename... Params>
-    T* ImNodeFlow::addNode(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
+    std::shared_ptr<T> ImNodeFlow::addNode(const ImVec2& pos, Params&&... args)
     {
         static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
-        m_nodes.emplace_back(std::make_shared<T>(name, pos, this, std::forward<Params>(args)...));
-        if (style)
-            m_nodes.back()->getStyle() = std::move(style);
-        return static_cast<T*>(m_nodes.back().get());
+
+        std::shared_ptr<T> n = std::make_shared<T>(std::forward<Params>(args)...);
+        n->setPos(pos);
+        n->setHandler(this);
+        if (!n->getStyle())
+            n->setStyle(NodeStyle::cyan());
+
+        auto uid = reinterpret_cast<uintptr_t>(n.get());
+        n->setUID(uid);
+        m_nodes[uid] = n;
+        return n;
     }
 
     template<typename T, typename... Params>
-    T* ImNodeFlow::placeNode(const std::string& name, std::shared_ptr<NodeStyle> style, Params&&... args)
+    std::shared_ptr<T> ImNodeFlow::placeNodeAt(const ImVec2& pos, Params&&... args)
     {
-        return placeNodeAt<T>(name, ImGui::GetMousePos(), std::move(style), std::forward<Params>(args)...);
+        return addNode<T>(screen2grid(pos), std::forward<Params>(args)...);
     }
 
     template<typename T, typename... Params>
-    T* ImNodeFlow::placeNodeAt(const std::string& name, const ImVec2& pos, std::shared_ptr<NodeStyle> style, Params&&... args)
+    std::shared_ptr<T> ImNodeFlow::placeNode(Params&&... args)
     {
-        return addNode<T>(name, screen2grid(pos), std::move(style), std::forward<Params>(args)...);
+        return placeNodeAt<T>(ImGui::GetMousePos(), std::forward<Params>(args)...);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
 
     template<typename T>
-    InPin<T>* BaseNode::addIN(const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    std::shared_ptr<InPin<T>> BaseNode::addIN(const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         return addIN_uid(name, name, defReturn, filter, std::move(style));
     }
 
     template<typename T, typename U>
-    InPin<T>* BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    std::shared_ptr<InPin<T>> BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        m_ins.emplace_back(std::make_shared<InPin<T>>(h, name, filter, this, defReturn, m_inf, std::move(style)));
-        return static_cast<InPin<T>*>(m_ins.back().get());
+        auto p = std::make_shared<InPin<T>>(h, name, filter, this, defReturn, &m_inf, std::move(style));
+        m_ins.emplace_back(p);
+        return p;
     }
 
     template<typename U>
@@ -111,22 +119,23 @@ namespace ImFlow
             }
         }
 
-        m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, filter, this, defReturn, m_inf, std::move(style))));
+        m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, filter, this, defReturn, &m_inf, std::move(style))));
         return static_cast<InPin<T>*>(m_dynamicIns.back().second.get())->val();
     }
 
     template<typename T>
-    OutPin<T>* BaseNode::addOUT(const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    std::shared_ptr<OutPin<T>> BaseNode::addOUT(const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         return addOUT_uid<T>(name, name, filter, std::move(style));
     }
 
     template<typename T, typename U>
-    OutPin<T>* BaseNode::addOUT_uid(const U& uid, const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
+    std::shared_ptr<OutPin<T>> BaseNode::addOUT_uid(const U& uid, const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        m_outs.emplace_back(std::make_shared<OutPin<T>>(h, name, filter, this, m_inf, std::move(style)));
-        return static_cast<OutPin<T>*>(m_outs.back().get());
+        auto p = std::make_shared<OutPin<T>>(h, name, filter, this, &m_inf, std::move(style));
+        m_outs.emplace_back(p);
+        return p;
     }
 
     template<typename U>
@@ -167,7 +176,7 @@ namespace ImFlow
             }
         }
 
-        m_dynamicOuts.emplace_back(std::make_pair(2, std::make_shared<OutPin<T>>(h, name, filter, this, m_inf, std::move(style))));
+        m_dynamicOuts.emplace_back(std::make_pair(2, std::make_shared<OutPin<T>>(h, name, filter, this, &m_inf, std::move(style))));
         static_cast<OutPin<T>*>(m_dynamicOuts.back().second.get())->behaviour(std::move(behaviour));
     }
 
@@ -220,33 +229,11 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // PIN
 
-    inline void Pin::update()
+    inline void Pin::drawSocket()
     {
-        // Custom rendering
-        if (m_renderer)
-        {
-            ImGui::BeginGroup();
-            m_renderer(this);
-            ImGui::EndGroup();
-            m_size = ImGui::GetItemRectSize();
-            if (ImGui::IsItemHovered())
-                m_inf->hovering(this);
-            return;
-        }
-
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImVec2 tl = pinPoint() - ImVec2(m_style->socket_radius, m_style->socket_radius);
         ImVec2 br = pinPoint() + ImVec2(m_style->socket_radius, m_style->socket_radius);
-
-        ImGui::SetCursorPos(m_pos);
-        ImGui::Text(m_name.c_str());
-        m_size = ImGui::GetItemRectSize();
-
-        if (ImGui::IsItemHovered())
-            draw_list->AddRectFilled(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.bg_hover_color, m_style->extra.bg_radius);
-        else
-            draw_list->AddRectFilled(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.bg_color, m_style->extra.bg_radius);
-        draw_list->AddRect(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.border_color, m_style->extra.bg_radius, 0, m_style->extra.border_thickness);
 
         if (isConnected())
             draw_list->AddCircleFilled(pinPoint(), m_style->socket_connected_radius, m_style->color, m_style->socket_shape);
@@ -258,8 +245,44 @@ namespace ImFlow
                 draw_list->AddCircle(pinPoint(), m_style->socket_radius, m_style->color, m_style->socket_shape, m_style->socket_thickness);
         }
 
-        if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
-            m_inf->hovering(this);
+        if (ImGui::IsMouseHoveringRect(tl, br))
+            (*m_inf)->hovering(this);
+    }
+
+    inline void Pin::drawDecoration()
+    {
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+        if (ImGui::IsItemHovered())
+            draw_list->AddRectFilled(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.bg_hover_color, m_style->extra.bg_radius);
+        else
+            draw_list->AddRectFilled(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.bg_color, m_style->extra.bg_radius);
+        draw_list->AddRect(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.border_color, m_style->extra.bg_radius, 0, m_style->extra.border_thickness);
+    }
+
+    inline void Pin::update()
+    {
+        // Custom rendering
+        if (m_renderer)
+        {
+            ImGui::BeginGroup();
+            m_renderer(this);
+            ImGui::EndGroup();
+            m_size = ImGui::GetItemRectSize();
+            if (ImGui::IsItemHovered())
+                (*m_inf)->hovering(this);
+            return;
+        }
+
+        ImGui::SetCursorPos(m_pos);
+        ImGui::Text(m_name.c_str());
+        m_size = ImGui::GetItemRectSize();
+
+        drawDecoration();
+        drawSocket();
+
+        if (ImGui::IsItemHovered())
+            (*m_inf)->hovering(this);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -289,9 +312,9 @@ namespace ImFlow
             return;
         }
 
-        m_link = std::make_shared<Link>(other, this, m_inf);
+        m_link = std::make_shared<Link>(other, this, (*m_inf));
         other->setLink(m_link);
-        m_inf->addLink(m_link);
+        (*m_inf)->addLink(m_link);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
