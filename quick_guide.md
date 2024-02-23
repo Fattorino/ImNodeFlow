@@ -1,4 +1,4 @@
-# ImNodeFlow Documentation
+# ImNodeFlow Quick Guide
 ***
 
 ## Index
@@ -50,7 +50,7 @@ Custom nodes **must** derive from the class BaseNode. This shows at a glance the
 class CustomNode : public ImFlow::BaseNode
 {
     explicit CustomNode(const std::string& name, ImVec2 pos, ImNodeFlow* inf)
-    : BaseNode(name, pos, inf) { /* omitted */}
+    : BaseNode(name, pos, inf) { /* omitted */ }
     void draw() override { /* omitted */ }
 };
 ```
