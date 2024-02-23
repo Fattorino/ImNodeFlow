@@ -71,7 +71,7 @@ private:
 
 
 ## Full documentation
-For a more detailed explanation please refer to the [full documentation](documentation.md)
+For a more detailed explanation please refer to the [quick guide](quick_guide)
 ***
 ### Special credits
 - [ocornut](https://github.com/ocornut) for Dear ImGui
