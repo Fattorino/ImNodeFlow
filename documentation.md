@@ -16,6 +16,7 @@
     - [Styling system](#styling-system-1)
     - [Custom rendering](#custom-rendering)
 - [HANDLER](#handler)
+  - [Creation](#creation)
   - [Main loop](#main-loop)
   - [Adding nodes](#adding-nodes)
   - [Pop-ups](#pop-ups)
@@ -92,7 +93,7 @@ showOUT<T>(pin_name, behaviour, filter, style);
 _As mentioned in Static pins, `behaviour` is explained at [Output pins](#output-pins)._
 
 ### Styling system
-The node's style can be fully customized.
+The node's style can be fully customized. Use `setStyle()` to change the style at any time.
 The default style is cyan, and the available pre-built styles are: cyan, green, red, and brown .
 <BR>It is alo possible to create custom styles either from scratch or starting prom a pre-built one.
 ```c++
@@ -103,7 +104,7 @@ custom1->radius = 10.f;
 // Less used
 auto custom2 std::make_shared<NodeStyle>(IM_COL32(71,142,173,255), ImColor(233,241,244,255), 6.5f);
 ```
-Other than the visual appearance of the node (colors and sizes), it is also possible to set and/or change the node's title: `setTitle(node_title)`.
+Other than the visual appearance of the node (colors and sizes), it is also possible to set and/or change the node's title at any time using `setTitle()`.
 
 ***
 ## PINS
@@ -191,10 +192,70 @@ The content of the pin is a custom `ImGui::Text` with the name and the value of 
 
 ***
 ## HANDLER
+### Creation
+The handler, as the name suggests, handles the grid. It's responsible for all the evens and the rendering.
+<BR>It is possible to create an unlimited number of grid editors. 
+<BR>The default constructor creates a new editor named `"FlowGrid{i}"` where `{i}` is an increment counter.
+<BR>Otherwise it is possible to specify a custom name.
+
 ### Main loop
+Each frame the handler must be updated. On each update the events will be processed and nodes and links are drawn.
+```c++
+// Inside Dear ImGui window
+myGrid.update(); // Update logic and render
+// . . .
+```
+_This will only render the node editor, so it must be called inside a Dear ImGui window. The editor will auto-fit the available space by default.
+(See [Customization](#customization) for more options)._
 
 ### Adding nodes
+The handler has ownership over the nodes. ALl the nodes are stored in a list.
+Three methods are provided to add nodes.
+```c++
+myGrid.addNode<T>(pos, ...);
+```
+Adds a node at the given grid coordinates. 
+<BR>The `...` represents the extra optional parameters that may be required by the custom node.
+```c++
+myGrid.placeNode<CustomNode>(...);
+```
+Adds a node at the mouse position _(screen coordinates)_.
+<BR>The `...` represents the extra optional parameters that may be required by the custom node.
+```c++
+myGrid.placeNodeAt<CustomNode>(pos, ...);
+```
+Adds a node at the given screen coordinates.
+<BR>The `...` represents the extra optional parameters that may be required by the custom node.
 
 ### Pop-ups
+The handler also provides pop-up events for right-click and dropped-link events.
+<BR>The dropped-link even is triggered when the user is dragging a link and _drops it_ on an empty point on the grid.
+<BR><BR>**Right-click pup-up:**
+```c++
+myGrid.rightClickPopUpContent([this](BaseNode* node){
+    /* omitted */
+});
+```
+Takes a function or a lambda expression (like in the example) with the content of the pop-up and the subsequent logic.
+<BR>The pointer `node` points to the right-clicked node. Can be `nullptr` if the right-click happened on an empty point.
+
+**Dropped-link pup-up:**
+```c++
+myGrid.droppedLinkPopUpContent([this](Pin* dragged){
+    /* omitted */
+}, key);
+```
+The first parameter is a function or a lambda expression (like in the example) with the content of the pop-up and the subsequent logic.
+<BR>Additionally, an optional key can be specified. In this case the pop-up will trigger only if the given key is being held down at the moment of the _drop_.
+<BR>The pointer `dragged` points to the pin the dropped link is attached to.
 
 ### Customization
+The handler is fully customizable. A custom fixed size can be specified using `.setSize()`, and the visual appearance can be accessed using `.getStyle()`.
+<BR>All the remaining configuration parameters can be accessed via `.getGrid().config()`.
+
+***
+_Also consult the [examples folder]() for hands-on practical examples **(coming soon)**_.
+
+_In case of problems or questions, consider opening an issue._
+
+_Please refer to the doxygen documentation for a list of public methods and their details._

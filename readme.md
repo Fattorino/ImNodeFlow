@@ -8,10 +8,10 @@ ImNodeFlow will handle connections, editor logic and rendering.
 
 ## Features
 - Support for Zoom
-- Backed-in Input and Output logic
-- Backed-in links handling
+- Built-in Input and Output logic
+- Built-in links handling
 - Customizable filters for different connections
-- Backed-in customizable pop-ups
+- Built-in customizable pop-up events
 - Appearance 100% customizable
 
 ## Implementation (CMake project)
@@ -21,7 +21,7 @@ ImNodeFlow will handle connections, editor logic and rendering.
    include(FetchContent)
    FetchContent_Declare(ImNodeFlow
         GIT_REPOSITORY "https://github.com/Fattorino/ImNodeFlow.git"
-        GIT_TAG "v1.1.1"
+        GIT_TAG "v1.2.0"
         SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/includes/ImNodeFlow"
    )
    FetchContent_MakeAvailable(ImNodeFlow)
@@ -50,8 +50,10 @@ ImNodeFlow will handle connections, editor logic and rendering.
 class SimpleSum : public BaseNode
 {
 public:
-    explicit SimpleSum(const std::string& name, ImVec2 pos, ImNodeFlow* inf) : BaseNode(name, pos, inf)
+    SimpleSum()
     {
+        setTitle("Simple sum");
+        setStyle(NodeStyle::green());
         addIN<int>("IN_VAL", 0, ConnectionFilter_Int);
         addOUT<int>("OUT_VAL", ConnectionFilter_Int)
                 ->behaviour([this](){ return getInVal<int>("IN_VAL") + m_valB; });
@@ -66,12 +68,11 @@ private:
     int m_valB = 0;
 };
 ```
-
-![image](https://github.com/Fattorino/ImNodeFlow/assets/90210751/4722b1e8-a52c-4ae2-b3f7-babfc713d8db)
-
+--------------- Insert image
 
 ## Full documentation
-For a more detailed explanation please refer to the [quick guide](quick_guide)
+For a more detailed explanation please refer to the [documentation](documentation.md)
+
 ***
 ### Special credits
 - [ocornut](https://github.com/ocornut) for Dear ImGui
