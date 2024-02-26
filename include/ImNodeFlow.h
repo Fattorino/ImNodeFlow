@@ -369,7 +369,7 @@ namespace ImFlow
          * @details Sets the content of a pop-up that can be displayed when right-clicking on the grid.
          * @param content Function or Lambda containing only the contents of the pop-up and the subsequent logic
          */
-        void rightClickPopUpContent(std::function<void()> content) { m_rightClickPopUp = std::move(content); }
+        void rightClickPopUpContent(std::function<void(BaseNode* node)> content) { m_rightClickPopUp = std::move(content); }
 
         /**
          * @brief <BR>Get mouse clicking status
@@ -423,7 +423,7 @@ namespace ImFlow
          * @brief <BR>Get zooming viewport
          * @return Const reference to editor's internal viewport for zoom support
          */
-        const ContainedContext& getGrid() { return m_context; }
+        ContainedContext& getGrid() { return m_context; }
 
         /**
          * @brief <BR>Get dragging status
@@ -456,6 +456,12 @@ namespace ImFlow
          * @param hovering Pointer to the hovered pin
          */
         void hovering(Pin* hovering) { m_hovering = hovering; }
+
+        /**
+         * @brief <BR>Set what node is being hovered
+         * @param hovering Pointer to the hovered node
+         */
+        void hoveredNode(BaseNode* hovering) { m_hoveredNode = hovering; }
 
         /**
          * @brief <BR>Convert coordinates from screen to grid
@@ -491,11 +497,13 @@ namespace ImFlow
         std::unordered_map<NodeUID, std::shared_ptr<BaseNode>> m_nodes;
         std::vector<std::weak_ptr<Link>> m_links;
 
-        std::function<void()> m_rightClickPopUp;
         std::function<void(Pin* dragged)> m_droppedLinkPopUp;
         ImGuiKey m_droppedLinkPupUpComboKey = ImGuiKey_None;
         Pin* m_droppedLinkLeft = nullptr;
+        std::function<void(BaseNode* node)> m_rightClickPopUp;
+        BaseNode* m_hoveredNodeAux = nullptr;
 
+        BaseNode* m_hoveredNode = nullptr;
         bool m_draggingNode = false, m_draggingNodeNext = false;
         Pin* m_hovering = nullptr;
         Pin* m_dragOut = nullptr;

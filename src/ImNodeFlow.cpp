@@ -172,10 +172,14 @@ namespace ImFlow
         if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !m_inf->on_selected_node())
             selected(false);
 
-        if (isHovered() && mouseClickState)
+        if (isHovered())
         {
-            selected(true);
-            m_inf->consumeSingleUseClick();
+            m_inf->hoveredNode(this);
+            if (mouseClickState)
+            {
+                selected(true);
+                m_inf->consumeSingleUseClick();
+            }
         }
 
         if (ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
@@ -264,6 +268,7 @@ namespace ImFlow
     {
         // Updating looping stuff
         m_hovering = nullptr;
+        m_hoveredNode = nullptr;
         m_draggingNode = m_draggingNodeNext;
         m_singleUseClick = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
 
@@ -326,14 +331,14 @@ namespace ImFlow
         }
 
         // Right-click PopUp
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered() && on_free_space())
+        if (m_rightClickPopUp && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered())
         {
-            if (m_rightClickPopUp)
-                ImGui::OpenPopup("RightClickPopUp");
+            m_hoveredNodeAux = m_hoveredNode;
+            ImGui::OpenPopup("RightClickPopUp");
         }
         if (ImGui::BeginPopup("RightClickPopUp"))
         {
-            m_rightClickPopUp();
+            m_rightClickPopUp(m_hoveredNodeAux);
             ImGui::EndPopup();
         }
 
