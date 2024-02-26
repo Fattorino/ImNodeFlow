@@ -1,8 +1,7 @@
 # ImNodeFlow
-**Node based editor/blueprints for ImGui**
+**Node-based editor/blueprints for ImGui**
 
-Create your custom nodes, and their logic.
-ImNodeFlow will handle connections, editor logic and rendering.
+Create your custom nodes and their logic... ImNodeFlow will handle connections, editor logic, and rendering.
 
 ![image](https://github.com/Fattorino/ImNodeFlow/assets/90210751/605f8cc5-794f-45bd-b4dd-2d6ffdb706e7)
 
@@ -68,7 +67,8 @@ private:
     int m_valB = 0;
 };
 ```
---------------- Insert image
+![image](https://github.com/Fattorino/ImNodeFlow/assets/90210751/0ef78533-23f6-4cda-96aa-dabb121d1503)
+
 
 ## Full documentation
 For a more detailed explanation please refer to the [documentation](documentation.md)
