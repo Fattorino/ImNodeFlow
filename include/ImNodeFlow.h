@@ -756,7 +756,12 @@ namespace ImFlow
         /**
          * @brief <BR>Delete itself
          */
-        void destroy() { m_destroyed = true; m_inf->getNodes().erase(m_uid); }
+        void destroy() { m_destroyed = true; }
+
+        /*
+         * @brief <BR>Get if node must be deleted
+         */
+        [[nodiscard]] bool toDestroy() const { return m_destroyed; }
 
         /**
          * @brief <BR>Get hovered status

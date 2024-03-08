@@ -20,7 +20,7 @@ Create your custom nodes and their logic... ImNodeFlow will handle connections, 
    include(FetchContent)
    FetchContent_Declare(ImNodeFlow
         GIT_REPOSITORY "https://github.com/Fattorino/ImNodeFlow.git"
-        GIT_TAG "v1.2.0"
+        GIT_TAG "v1.2.1"
         SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/includes/ImNodeFlow"
    )
    FetchContent_MakeAvailable(ImNodeFlow)
