@@ -29,8 +29,6 @@ Create your custom nodes and their logic... ImNodeFlow will handle connections, 
    add_compile_definitions(IMGUI_DEFINE_MATH_OPERATORS)
    target_link_libraries(YourProject ImNodeFlow)
    ```
-2. Make sure you have the following dependencies available for `find_package()`:
-   - [Dear ImGui](https://github.com/ocornut/imgui)
 
 ### Manually
 1. Download and copy, or clone the repo (or the latest release) inside your project
@@ -41,7 +39,10 @@ Create your custom nodes and their logic... ImNodeFlow will handle connections, 
    add_compile_definitions(IMGUI_DEFINE_MATH_OPERATORS)
    target_link_libraries(YourProject ImNodeFlow)
    ```
-3. Make sure you have the following dependencies available for `find_package()`:
+   
+## Requirements
+1. C++20 or greater
+2. Make sure you have the following dependencies available for `find_package()`:
    - [Dear ImGui](https://github.com/ocornut/imgui)
 
 ## Simple Node example
