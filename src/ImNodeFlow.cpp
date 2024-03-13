@@ -273,7 +273,13 @@ namespace ImFlow {
         // TODO: I don't like this
         draw_list->ChannelsSplit(2);
         for (auto &node: m_nodes) { node.second->update(); }
-        std::erase_if(m_nodes, [](const auto &n) { return n.second->toDestroy(); });
+        // Remove "toDelete" nodes
+        for (auto iter = m_nodes.begin(); iter != m_nodes.end();) {
+            if (iter->second->toDestroy())
+                iter = m_nodes.erase(iter);
+            else
+                ++iter;
+        }
         draw_list->ChannelsMerge();
         for (auto &node: m_nodes) { node.second->updatePublicStatus(); }
 
