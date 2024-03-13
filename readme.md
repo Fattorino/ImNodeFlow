@@ -41,7 +41,7 @@ Create your custom nodes and their logic... ImNodeFlow will handle connections, 
    ```
    
 ## Requirements
-2. Make sure you have the following dependencies available for `find_package()`:
+1. Make sure you have the following dependencies available for `find_package()`:
    - [Dear ImGui](https://github.com/ocornut/imgui)
 
 ## Simple Node example
