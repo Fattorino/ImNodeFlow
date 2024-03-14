@@ -349,10 +349,10 @@ namespace ImFlow {
             }
             };
 
-        if (old_scale != new_scale){
-            correct_grid(2);
-            correct_grid(0.5f);
-            correct_grid(0.25f);
+        if (old_scale != new_scale) {
+            for (float border = 32.0f; border > 0.001f; border *= 0.5f) {
+                correct_grid(border);
+            }
         }
     }
 }
