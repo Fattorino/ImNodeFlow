@@ -258,16 +258,16 @@ namespace ImFlow {
         // Display grid
         ImVec2 win_pos = ImGui::GetCursorScreenPos();
         ImVec2 canvas_sz = ImGui::GetWindowSize();
-        for (float x = fmodf(m_context.scroll().x, m_style.grid_size); x < canvas_sz.x; x += m_style.grid_size)
-            draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, m_style.colors.grid);
-        for (float y = fmodf(m_context.scroll().y, m_style.grid_size); y < canvas_sz.y; y += m_style.grid_size)
-            draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, m_style.colors.grid);
         for (float x = fmodf(m_context.scroll().x, m_style.grid_size / m_style.grid_subdivisions);
              x < canvas_sz.x; x += m_style.grid_size / m_style.grid_subdivisions)
             draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, m_style.colors.subGrid);
         for (float y = fmodf(m_context.scroll().y, m_style.grid_size / m_style.grid_subdivisions);
              y < canvas_sz.y; y += m_style.grid_size / m_style.grid_subdivisions)
             draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, m_style.colors.subGrid);
+        for (float x = fmodf(m_context.scroll().x, m_style.grid_size); x < canvas_sz.x; x += m_style.grid_size)
+            draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, m_style.colors.grid);
+        for (float y = fmodf(m_context.scroll().y, m_style.grid_size); y < canvas_sz.y; y += m_style.grid_size)
+            draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, m_style.colors.grid);
 
         // Update and draw nodes
         // TODO: I don't like this
@@ -334,6 +334,25 @@ namespace ImFlow {
         m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
                                      [](const std::weak_ptr<Link> &l) { return l.expired(); }), m_links.end());
 
+        float old_scale = m_context.scale();
+
         m_context.end();
+
+        float new_scale = m_context.scale();
+
+        auto correct_grid = [this, old_scale, new_scale](float border) {
+            if (old_scale < border && new_scale > border) {
+                m_style.grid_size /= m_style.grid_subdivisions;
+            }
+            else if (old_scale > border && new_scale < border) {
+                m_style.grid_size *= m_style.grid_subdivisions;
+            }
+            };
+
+        if (old_scale != new_scale){
+            correct_grid(2);
+            correct_grid(0.5f);
+            correct_grid(0.25f);
+        }
     }
 }
