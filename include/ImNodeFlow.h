@@ -204,7 +204,7 @@ namespace ImFlow
          * @param right Pointer to the input Pin of the Link
          * @param inf Pointer to the Handler that contains the Link
          */
-        explicit Link(Pin* left, Pin* right, ImNodeFlow* inf) : m_inf(inf), m_left(left), m_right(right) {}
+        explicit Link(Pin* left, Pin* right, ImNodeFlow* inf) : m_left(left), m_right(right), m_inf(inf) {} {}
 
         /**
          * @brief <BR>Destruction of a link
@@ -242,9 +242,9 @@ namespace ImFlow
          */
         [[nodiscard]] bool isSelected() const { return m_selected; }
     private:
-        ImNodeFlow* m_inf;
         Pin* m_left;
         Pin* m_right;
+        ImNodeFlow* m_inf;
         bool m_hovered = false;
         bool m_selected = false;
     };
@@ -905,7 +905,7 @@ namespace ImFlow
          * @param style Style of the pin
          */
         explicit Pin(PinUID uid, std::string name, ConnectionFilter filter, PinType kind, BaseNode* parent, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
-            :m_uid(uid), m_name(std::move(name)), m_type(kind), m_filter(filter), m_style(std::move(style)), m_parent(parent), m_inf(inf)
+            :m_uid(uid), m_name(std::move(name)), m_filter(filter), m_type(kind), m_parent(parent), m_inf(inf), m_style(std::move(style))
             {
                 if(!m_style)
                     m_style = PinStyle::cyan();
@@ -1039,11 +1039,11 @@ namespace ImFlow
         std::string m_name;
         ImVec2 m_pos = ImVec2(0.f, 0.f);
         ImVec2 m_size = ImVec2(0.f, 0.f);
-        PinType m_type;
         ConnectionFilter m_filter;
-        std::shared_ptr<PinStyle> m_style;
+        PinType m_type;
         BaseNode* m_parent = nullptr;
         ImNodeFlow** m_inf;
+        std::shared_ptr<PinStyle> m_style;
         std::function<void(Pin* p)> m_renderer;
     };
 
