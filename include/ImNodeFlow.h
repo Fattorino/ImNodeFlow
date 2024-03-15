@@ -204,7 +204,7 @@ namespace ImFlow
          * @param right Pointer to the input Pin of the Link
          * @param inf Pointer to the Handler that contains the Link
          */
-        explicit Link(Pin* left, Pin* right, ImNodeFlow* inf) :m_left(left), m_right(right), m_inf(inf) {}
+        explicit Link(Pin* left, Pin* right, ImNodeFlow* inf) : m_inf(inf), m_left(left), m_right(right) {}
 
         /**
          * @brief <BR>Destruction of a link
@@ -521,6 +521,7 @@ namespace ImFlow
     class BaseNode
     {
     public:
+		virtual ~BaseNode() = default;
         BaseNode() = default;
 
         /**
@@ -904,11 +905,13 @@ namespace ImFlow
          * @param style Style of the pin
          */
         explicit Pin(PinUID uid, std::string name, ConnectionFilter filter, PinType kind, BaseNode* parent, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
-            :m_uid(uid), m_name(std::move(name)), m_filter(filter), m_type(kind), m_parent(parent), m_inf(inf), m_style(std::move(style))
+            :m_uid(uid), m_name(std::move(name)), m_type(kind), m_filter(filter), m_style(std::move(style)), m_parent(parent), m_inf(inf)
             {
                 if(!m_style)
                     m_style = PinStyle::cyan();
             }
+
+        virtual ~Pin() = default;
 
         /**
          * @brief <BR>Main loop of the pin
