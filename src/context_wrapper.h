@@ -72,6 +72,7 @@ public:
     ContainedContextConfig& config() { return m_config; }
     void begin();
     void end();
+    [[nodiscard]] ImVec2 size() const { return m_size; }
     [[nodiscard]] float scale() const { return m_scale; }
     [[nodiscard]] const ImVec2& origin() const { return m_origin; }
     [[nodiscard]] bool hovered() const { return m_hovered; }
@@ -82,6 +83,7 @@ private:
 
     ImVec2 m_origin;
     ImVec2 m_pos;
+    ImVec2 m_size;
     ImGuiContext* m_ctx = nullptr;
     ImGuiContext* m_original_ctx = nullptr;
 
@@ -104,10 +106,9 @@ inline void ContainedContext::begin()
     ImGui::PushStyleColor(ImGuiCol_ChildBg, m_config.color);
     ImGui::BeginChild("view_port", m_config.size, 0, ImGuiWindowFlags_NoMove);
     ImGui::PopStyleColor();
-//    m_size = ImGui::GetWindowSize();
     m_pos = ImGui::GetWindowPos();
 
-    ImVec2 size = ImGui::GetContentRegionAvail();
+    m_size = ImGui::GetContentRegionAvail();
     m_origin = ImGui::GetCursorScreenPos();
     m_original_ctx = ImGui::GetCurrentContext();
     const ImGuiStyle& orig_style = ImGui::GetStyle();
@@ -118,7 +119,7 @@ inline void ContainedContext::begin()
 
     CopyIOEvents(m_original_ctx, m_ctx, m_origin, m_scale);
 
-    ImGui::GetIO().DisplaySize = size / m_scale;
+    ImGui::GetIO().DisplaySize = m_size / m_scale;
     ImGui::GetIO().ConfigInputTrickleEventQueue = false;
     ImGui::NewFrame();
 
