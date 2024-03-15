@@ -521,7 +521,7 @@ namespace ImFlow
     class BaseNode
     {
     public:
-		virtual ~BaseNode() = default;
+        virtual ~BaseNode() = default;
         BaseNode() = default;
 
         /**
