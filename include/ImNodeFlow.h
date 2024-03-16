@@ -1064,7 +1064,7 @@ namespace ImFlow
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          * @param style Style of the pin
          */
-        explicit InPin(PinUID uid, const std::string& name, ConnectionFilter filter, BaseNode* parent, T defReturn, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
+        explicit InPin(PinUID uid, const std::string& name, T defReturn, ConnectionFilter filter, BaseNode* parent, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
             : Pin(uid, name, filter, PinType_Input, parent, inf, style), m_emptyVal(defReturn) {}
 
         /**
