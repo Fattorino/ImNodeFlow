@@ -285,10 +285,19 @@ namespace ImFlow {
                 draw_list->AddLine(ImVec2(0.0f, y), ImVec2(gridSize.x, y), m_style.colors.subGrid);
         }
 
+        ImVec2 clipTL = -m_context.scroll() / m_context.scale();
+        ImVec2 clipBR = (m_context.size() + m_context.scroll()) / m_context.scale();
+
         // Update and draw nodes
-        // TODO: I don't like this
         draw_list->ChannelsSplit(2);
-        for (auto &node: m_nodes) { node.second->render(); node.second->update(); }
+        for (auto &node: m_nodes) {
+            ImVec2 ps = node.second->getPos();
+            ImVec2 sz = node.second->getSize();
+            // FIXME: Problems on first frame, need to find a way to preview node's size
+            if (ps.x + sz.x > clipTL.x && ps.y + sz.y > clipTL.y && ps.x < clipBR.x && ps.y < clipBR.y)
+                node.second->render();
+            node.second->update();
+        }
         // Remove "toDelete" nodes
         for (auto iter = m_nodes.begin(); iter != m_nodes.end();) {
             if (iter->second->toDestroy())
