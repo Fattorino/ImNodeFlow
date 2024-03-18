@@ -60,7 +60,7 @@ namespace ImFlow {
 
         // Header
         ImGui::BeginGroup();
-        ImGui::TextColored(m_style->header_title_color, m_title.c_str());
+        ImGui::TextColored(m_style->header_title_color, "%s", m_title.c_str());
         ImGui::Spacing();
         ImGui::EndGroup();
         float headerH = ImGui::GetItemRectSize().y;

@@ -204,7 +204,7 @@ namespace ImFlow
          * @param right Pointer to the input Pin of the Link
          * @param inf Pointer to the Handler that contains the Link
          */
-        explicit Link(Pin* left, Pin* right, ImNodeFlow* inf) :m_left(left), m_right(right), m_inf(inf) {}
+        explicit Link(Pin* left, Pin* right, ImNodeFlow* inf) : m_left(left), m_right(right), m_inf(inf) {} {}
 
         /**
          * @brief <BR>Destruction of a link
@@ -242,9 +242,9 @@ namespace ImFlow
          */
         [[nodiscard]] bool isSelected() const { return m_selected; }
     private:
-        ImNodeFlow* m_inf;
         Pin* m_left;
         Pin* m_right;
+        ImNodeFlow* m_inf;
         bool m_hovered = false;
         bool m_selected = false;
     };
@@ -521,6 +521,7 @@ namespace ImFlow
     class BaseNode
     {
     public:
+        virtual ~BaseNode() = default;
         BaseNode() = default;
 
         /**
@@ -910,6 +911,8 @@ namespace ImFlow
                     m_style = PinStyle::cyan();
             }
 
+        virtual ~Pin() = default;
+
         /**
          * @brief <BR>Main loop of the pin
          * @details Updates position, hovering and dragging status, and renders the pin. Must be called each frame.
@@ -1036,11 +1039,11 @@ namespace ImFlow
         std::string m_name;
         ImVec2 m_pos = ImVec2(0.f, 0.f);
         ImVec2 m_size = ImVec2(0.f, 0.f);
-        PinType m_type;
         ConnectionFilter m_filter;
-        std::shared_ptr<PinStyle> m_style;
+        PinType m_type;
         BaseNode* m_parent = nullptr;
         ImNodeFlow** m_inf;
+        std::shared_ptr<PinStyle> m_style;
         std::function<void(Pin* p)> m_renderer;
     };
 
@@ -1061,7 +1064,7 @@ namespace ImFlow
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          * @param style Style of the pin
          */
-        explicit InPin(PinUID uid, const std::string& name, ConnectionFilter filter, BaseNode* parent, T defReturn, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
+        explicit InPin(PinUID uid, const std::string& name, T defReturn, ConnectionFilter filter, BaseNode* parent, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
             : Pin(uid, name, filter, PinType_Input, parent, inf, style), m_emptyVal(defReturn) {}
 
         /**
