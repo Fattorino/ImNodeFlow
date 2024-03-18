@@ -204,7 +204,7 @@ namespace ImFlow
          * @param right Pointer to the input Pin of the Link
          * @param inf Pointer to the Handler that contains the Link
          */
-        explicit Link(Pin* left, Pin* right, ImNodeFlow* inf) : m_left(left), m_right(right), m_inf(inf) {} {}
+        explicit Link(Pin* left, Pin* right, ImNodeFlow* inf) : m_left(left), m_right(right), m_inf(inf) {}
 
         /**
          * @brief <BR>Destruction of a link
