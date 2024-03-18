@@ -27,7 +27,7 @@ namespace ImFlow
      * @param color Color of the curve
      * @param thickness Thickness of the curve
      */
-    inline static void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness);
+    inline static void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness, int segments = 0);
 
     /**
      * @brief <BR>Collider checker for smart_bezier
@@ -382,6 +382,8 @@ namespace ImFlow
          */
         void consumeSingleUseClick() { m_singleUseClick = false; }
 
+        bool fullRender() { return m_context.scale() > 0.7f; }
+
         /**
          * @brief <BR>Get editor's name
          * @return Const reference to editor's name
@@ -525,10 +527,15 @@ namespace ImFlow
         BaseNode() = default;
 
         /**
-         * @brief <BR>Main loop of the node
-         * @details Updates position, hovering and selected status, and renders the node. Must be called each frame.
+         * @brief <BR>Updates node's state
+         * @details Updates position, hovering and selected status. Must be called each frame.
          */
         void update();
+
+        /**
+         * @brief <BR>Renders the node
+         */
+        void render();
 
         /**
          * @brief <BR>Content of the node
@@ -865,6 +872,7 @@ namespace ImFlow
         std::string m_title;
         ImVec2 m_pos, m_posTarget;
         ImVec2 m_size;
+        ImVec2 m_headerSize;
         ImNodeFlow* m_inf = nullptr;
         std::shared_ptr<NodeStyle> m_style;
         bool m_selected = false, m_selectedNext = false;
