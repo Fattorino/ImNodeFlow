@@ -4,7 +4,7 @@
 
 namespace ImFlow
 {
-    inline void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness)
+    inline void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness, int segments)
     {
         ImDrawList* dl = ImGui::GetWindowDrawList();
         float distance = sqrt(pow((p2.x - p1.x), 2.f) + pow((p2.y - p1.y), 2.f));
@@ -15,7 +15,7 @@ namespace ImFlow
         ImVec2 p22 = p2 - ImVec2(delta, vert);
         if (p2.x < p1.x - 50.f) delta *= -1.f;
         ImVec2 p11 = p1 + ImVec2(delta, vert);
-        dl->AddBezierCubic(p1, p11, p22, p2, color, thickness);
+        dl->AddBezierCubic(p1, p11, p22, p2, color, thickness, segments);
     }
 
     inline bool smart_bezier_collider(const ImVec2& p, const ImVec2& p1, const ImVec2& p2, float radius)
@@ -76,7 +76,7 @@ namespace ImFlow
     std::shared_ptr<InPin<T>> BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        auto p = std::make_shared<InPin<T>>(h, name, filter, this, defReturn, &m_inf, std::move(style));
+        auto p = std::make_shared<InPin<T>>(h, name, defReturn, filter, this, &m_inf, std::move(style));
         m_ins.emplace_back(p);
         return p;
     }
@@ -119,7 +119,7 @@ namespace ImFlow
             }
         }
 
-        m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, filter, this, defReturn, &m_inf, std::move(style))));
+        m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, defReturn, filter, this, &m_inf, std::move(style))));
         return static_cast<InPin<T>*>(m_dynamicIns.back().second.get())->val();
     }
 
@@ -275,7 +275,12 @@ namespace ImFlow
         }
 
         ImGui::SetCursorPos(m_pos);
-        ImGui::Text("%s", m_name.c_str());
+        if ((*m_inf)->fullRender())
+            ImGui::Text("%s", m_name.c_str());
+        else {
+            ImVec2 d = ImGui::CalcTextSize(m_name.c_str());
+            ImGui::Dummy(d);
+        }
         m_size = ImGui::GetItemRectSize();
 
         drawDecoration();
