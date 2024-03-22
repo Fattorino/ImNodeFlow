@@ -165,6 +165,8 @@ namespace ImFlow {
         }
         draw_list->AddRect(offset + m_pos - ptl, offset + m_pos + m_size + pbr, col,
                            m_inf->fullRender() ? m_style->radius : 0, 0, thickness);
+
+        ImGui::PopID();
     }
 
     void BaseNode::update() {
@@ -207,7 +209,6 @@ namespace ImFlow {
                 m_posTarget = m_pos;
             }
         }
-        ImGui::PopID();
 
         // Resolve output pins values
         for (auto &p: m_outs)
@@ -285,19 +286,23 @@ namespace ImFlow {
                 draw_list->AddLine(ImVec2(0.0f, y), ImVec2(gridSize.x, y), m_style.colors.subGrid);
         }
 
-        ImVec2 clipTL = -m_context.scroll() / m_context.scale();
-        ImVec2 clipBR = (m_context.size() + m_context.scroll()) / m_context.scale();
+        ImVec2 clipTL = (-m_context.scroll());
+        ImVec2 clipBR = (m_context.size() - m_context.scroll());
 
         // Update and draw nodes
         draw_list->ChannelsSplit(2);
+        int rn = 0;
         for (auto &node: m_nodes) {
             ImVec2 ps = node.second->getPos();
             ImVec2 sz = node.second->getSize();
             // FIXME: Problems on first frame, need to find a way to preview node's size
-            if (ps.x + sz.x > clipTL.x && ps.y + sz.y > clipTL.y && ps.x < clipBR.x && ps.y < clipBR.y)
+            if (ps.x + sz.x > clipTL.x && ps.y + sz.y > clipTL.y && ps.x < clipBR.x && ps.y < clipBR.y) {
                 node.second->render();
+                rn++;
+            }
             node.second->update();
         }
+        std::cout << rn << "\n";
         // Remove "toDelete" nodes
         for (auto iter = m_nodes.begin(); iter != m_nodes.end();) {
             if (iter->second->toDestroy())
@@ -309,6 +314,7 @@ namespace ImFlow {
         for (auto &node: m_nodes) { node.second->updatePublicStatus(); }
 
         // Update and draw links
+        //TODO: Split render and update
         for (auto &l: m_links) { if (!l.expired()) l.lock()->update(); }
 
         // Links drop-off
@@ -361,6 +367,6 @@ namespace ImFlow {
 
         m_context.end();
 
-        std::cout << "Zoom: " << m_context.scale() << std::endl;
+        ImGui::GetForegroundDrawList()->AddRect(clipTL + m_context.origin(), clipBR + m_context.origin(), ImColor(255,255,0,255), 0, 0, 5);
     }
 }
