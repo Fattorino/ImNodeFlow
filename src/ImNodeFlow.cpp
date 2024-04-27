@@ -351,7 +351,5 @@ namespace ImFlow {
                                      [](const std::weak_ptr<Link> &l) { return l.expired(); }), m_links.end());
 
         m_context.end();
-
-        std::cout << "Zoom: " << m_context.scale() << std::endl;
     }
 }
