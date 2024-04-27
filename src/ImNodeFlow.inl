@@ -76,7 +76,7 @@ namespace ImFlow
     std::shared_ptr<InPin<T>> BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        auto p = std::make_shared<InPin<T>>(h, name, filter, this, defReturn, &m_inf, std::move(style));
+        auto p = std::make_shared<InPin<T>>(h, name, defReturn, filter, std::move(style), this, &m_inf);
         m_ins.emplace_back(p);
         return p;
     }
@@ -119,7 +119,7 @@ namespace ImFlow
             }
         }
 
-        m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, filter, this, defReturn, &m_inf, std::move(style))));
+        m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, defReturn, filter, std::move(style), this, &m_inf)));
         return static_cast<InPin<T>*>(m_dynamicIns.back().second.get())->val();
     }
 
@@ -133,7 +133,7 @@ namespace ImFlow
     std::shared_ptr<OutPin<T>> BaseNode::addOUT_uid(const U& uid, const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        auto p = std::make_shared<OutPin<T>>(h, name, filter, this, &m_inf, std::move(style));
+        auto p = std::make_shared<OutPin<T>>(h, name, filter, std::move(style), this, &m_inf);
         m_outs.emplace_back(p);
         return p;
     }
@@ -176,7 +176,7 @@ namespace ImFlow
             }
         }
 
-        m_dynamicOuts.emplace_back(std::make_pair(2, std::make_shared<OutPin<T>>(h, name, filter, this, &m_inf, std::move(style))));
+        m_dynamicOuts.emplace_back(std::make_pair(2, std::make_shared<OutPin<T>>(h, name, filter, std::move(style), this, &m_inf)));
         static_cast<OutPin<T>*>(m_dynamicOuts.back().second.get())->behaviour(std::move(behaviour));
     }
 
