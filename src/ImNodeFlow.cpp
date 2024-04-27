@@ -24,10 +24,8 @@ namespace ImFlow {
 
         if (m_selected)
             smart_bezier(start, end, m_left->getStyle()->extra.outline_color,
-                         thickness + m_left->getStyle()->extra.link_selected_outline_thickness,
-                         m_inf->fullRender() ? 0 : 3);
-        smart_bezier(start, end, m_left->getStyle()->color, thickness,
-                     m_inf->fullRender() ? 0 : 3);
+                         thickness + m_left->getStyle()->extra.link_selected_outline_thickness);
+        smart_bezier(start, end, m_left->getStyle()->color, thickness);
 
         if (m_selected && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
             m_right->deleteLink();
@@ -47,9 +45,10 @@ namespace ImFlow {
                                           m_inf->grid2screen(m_pos + m_size + paddingBR));
     }
 
-    void BaseNode::render() {
+    void BaseNode::update() {
         ImDrawList *draw_list = ImGui::GetWindowDrawList();
         ImGui::PushID(this);
+        bool mouseClickState = m_inf->getSingleUseClick();
         ImVec2 offset = m_inf->grid2screen({0.f, 0.f});
         ImVec2 paddingTL = {m_style->padding.x, m_style->padding.y};
         ImVec2 paddingBR = {m_style->padding.z, m_style->padding.w};
@@ -60,20 +59,12 @@ namespace ImFlow {
         ImGui::BeginGroup();
 
         // Header
-        float headerH;
-        float titleW;
-        if (m_inf->fullRender()) {
-            ImGui::BeginGroup();
-            ImGui::TextColored(m_style->header_title_color, "%s", m_title.c_str());
-            ImGui::Spacing();
-            ImGui::EndGroup();
-            headerH = ImGui::GetItemRectSize().y;
-            titleW = ImGui::GetItemRectSize().x;
-        } else {
-            headerH = ImGui::CalcTextSize(m_title.c_str()).y;
-            titleW = ImGui::CalcTextSize(m_title.c_str()).x;
-            ImGui::Dummy(ImVec2(titleW, headerH));
-        }
+        ImGui::BeginGroup();
+        ImGui::TextColored(m_style->header_title_color, "%s", m_title.c_str());
+        ImGui::Spacing();
+        ImGui::EndGroup();
+        float headerH = ImGui::GetItemRectSize().y;
+        float titleW = ImGui::GetItemRectSize().x;
 
         // Inputs
         ImGui::BeginGroup();
@@ -139,14 +130,14 @@ namespace ImFlow {
 
         ImGui::EndGroup();
         m_size = ImGui::GetItemRectSize();
-        m_headerSize = ImVec2(m_size.x + paddingBR.x, headerH);
+        ImVec2 headerSize = ImVec2(m_size.x + paddingBR.x, headerH);
 
         // Background
         draw_list->ChannelsSetCurrent(0);
         draw_list->AddRectFilled(offset + m_pos - paddingTL, offset + m_pos + m_size + paddingBR, m_style->bg,
-                                 m_inf->fullRender() ? m_style->radius : 0);
-        draw_list->AddRectFilled(offset + m_pos - paddingTL, offset + m_pos + m_headerSize, m_style->header_bg,
-                                 m_inf->fullRender() ? m_style->radius : 0, ImDrawFlags_RoundCornersTop);
+                                 m_style->radius);
+        draw_list->AddRectFilled(offset + m_pos - paddingTL, offset + m_pos + headerSize, m_style->header_bg,
+                                 m_style->radius, ImDrawFlags_RoundCornersTop);
 
         ImU32 col = m_style->border_color;
         float thickness = m_style->border_thickness;
@@ -163,15 +154,8 @@ namespace ImFlow {
             pbr.y -= thickness / 2;
             thickness *= -1.f;
         }
-        draw_list->AddRect(offset + m_pos - ptl, offset + m_pos + m_size + pbr, col,
-                           m_inf->fullRender() ? m_style->radius : 0, 0, thickness);
-    }
+        draw_list->AddRect(offset + m_pos - ptl, offset + m_pos + m_size + pbr, col, m_style->radius, 0, thickness);
 
-    void BaseNode::update() {
-        bool mouseClickState = m_inf->getSingleUseClick();
-        ImVec2 offset = m_inf->grid2screen({0.f, 0.f});
-        ImVec2 paddingTL = {m_style->padding.x, m_style->padding.y};
-        ImVec2 paddingBR = {m_style->padding.z, m_style->padding.w};
 
         if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
             !m_inf->on_selected_node())
@@ -188,7 +172,7 @@ namespace ImFlow {
         if (ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
             destroy();
 
-        bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - paddingTL, offset + m_pos + m_headerSize);
+        bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - paddingTL, offset + m_pos + headerSize);
         if (onHeader && mouseClickState) {
             m_inf->consumeSingleUseClick();
             m_dragged = true;
@@ -288,7 +272,7 @@ namespace ImFlow {
         // Update and draw nodes
         // TODO: I don't like this
         draw_list->ChannelsSplit(2);
-        for (auto &node: m_nodes) { node.second->render(); node.second->update(); }
+        for (auto &node: m_nodes) { node.second->update(); }
         // Remove "toDelete" nodes
         for (auto iter = m_nodes.begin(); iter != m_nodes.end();) {
             if (iter->second->toDestroy())
@@ -351,7 +335,5 @@ namespace ImFlow {
                                      [](const std::weak_ptr<Link> &l) { return l.expired(); }), m_links.end());
 
         m_context.end();
-
-        std::cout << "Zoom: " << m_context.scale() << std::endl;
     }
 }
