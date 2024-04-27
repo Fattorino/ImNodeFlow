@@ -904,8 +904,8 @@ namespace ImFlow
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          * @param style Style of the pin
          */
-        explicit Pin(PinUID uid, std::string name, ConnectionFilter filter, PinType kind, BaseNode* parent, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
-            :m_uid(uid), m_name(std::move(name)), m_filter(filter), m_type(kind), m_parent(parent), m_inf(inf), m_style(std::move(style))
+        explicit Pin(PinUID uid, std::string name, ConnectionFilter filter, std::shared_ptr<PinStyle> style, PinType kind, BaseNode* parent, ImNodeFlow** inf)
+            :m_uid(uid), m_name(std::move(name)), m_filter(filter), m_style(std::move(style)), m_type(kind), m_parent(parent), m_inf(inf)
             {
                 if(!m_style)
                     m_style = PinStyle::cyan();
@@ -1064,8 +1064,8 @@ namespace ImFlow
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          * @param style Style of the pin
          */
-        explicit InPin(PinUID uid, const std::string& name, T defReturn, ConnectionFilter filter, BaseNode* parent, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
-            : Pin(uid, name, filter, PinType_Input, parent, inf, style), m_emptyVal(defReturn) {}
+        explicit InPin(PinUID uid, const std::string& name, T defReturn, ConnectionFilter filter, std::shared_ptr<PinStyle> style, BaseNode* parent, ImNodeFlow** inf)
+            : Pin(uid, name, filter, style, PinType_Input, parent, inf), m_emptyVal(defReturn) {}
 
         /**
          * @brief <BR>Create link between pins
@@ -1122,8 +1122,8 @@ namespace ImFlow
          * @param inf Pointer to the Grid Handler the pin is in (same as parent)
          * @param style Style of the pin
          */
-        explicit OutPin(PinUID uid, const std::string& name, ConnectionFilter filter, BaseNode* parent, ImNodeFlow** inf, std::shared_ptr<PinStyle> style)
-            :Pin(uid, name, filter, PinType_Output, parent, inf, style) {}
+        explicit OutPin(PinUID uid, const std::string& name, ConnectionFilter filter, std::shared_ptr<PinStyle> style, BaseNode* parent, ImNodeFlow** inf)
+            :Pin(uid, name, filter, style, PinType_Output, parent, inf) {}
 
         /**
          * @brief <BR>When parent gets deleted, remove the links
