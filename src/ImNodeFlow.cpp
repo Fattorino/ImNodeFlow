@@ -252,6 +252,7 @@ namespace ImFlow {
 
         // Create child canvas
         m_context.begin();
+        ImGui::GetIO().IniFilename = nullptr;
 
         ImDrawList *draw_list = ImGui::GetWindowDrawList();
 
