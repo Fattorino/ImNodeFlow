@@ -743,7 +743,7 @@ namespace ImFlow
         /**
          * @brief <BR>Delete itself
          */
-        void destroy() { m_destroyed = true; }
+        virtual void destroy() { m_destroyed = true; }
 
         /*
          * @brief <BR>Get if node must be deleted
