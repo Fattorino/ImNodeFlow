@@ -474,6 +474,8 @@ namespace ImFlow
          * @return [TRUE] if the mouse is not hovering a node or a link
          */
         bool on_free_space();
+
+        void set_last_selected_node(BaseNode* node) { m_selectedNode = node; }
     private:
         std::string m_name;
         ContainedContext m_context;
@@ -490,6 +492,7 @@ namespace ImFlow
         BaseNode* m_hoveredNodeAux = nullptr;
 
         BaseNode* m_hoveredNode = nullptr;
+        BaseNode* m_selectedNode = nullptr;
         bool m_draggingNode = false, m_draggingNodeNext = false;
         Pin* m_hovering = nullptr;
         Pin* m_dragOut = nullptr;
@@ -840,7 +843,7 @@ namespace ImFlow
          *
          * Status only updates when updatePublicStatus() is called
          */
-        BaseNode* selected(bool state) { m_selectedNext = state; return this; }
+        BaseNode* selected(const bool state) { m_selectedNext = state; return this; }
 
         /**
          * @brief <BR>Update the isSelected status of the node
