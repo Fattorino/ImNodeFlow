@@ -157,8 +157,8 @@ namespace ImFlow {
         draw_list->AddRect(offset + m_pos - ptl, offset + m_pos + m_size + pbr, col, m_style->radius, 0, thickness);
 
 
-        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
-            !m_inf->on_selected_node())
+        if (ImGui::IsWindowHovered() && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl) &&
+            ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !m_inf->on_selected_node())
             selected(false);
 
         if (isHovered()) {
@@ -169,7 +169,7 @@ namespace ImFlow {
             }
         }
 
-        if (ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
+        if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
             destroy();
 
         bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - paddingTL, offset + m_pos + headerSize);
