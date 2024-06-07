@@ -303,6 +303,9 @@ namespace ImFlow
         if (other == this || other->getType() == PinType_Input)
             return;
 
+        if (m_parent == other->getParent() && !m_allowSelfConnection)
+            return;
+
         if (m_link && m_link->left() == other)
         {
             m_link.reset();

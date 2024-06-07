@@ -1075,6 +1075,12 @@ namespace ImFlow
         void deleteLink() override { m_link.reset(); }
 
         /**
+         * @brief Specify if connections from an output on the same node are allowed
+         * @param state New state of the flag
+         */
+        void allowSameNodeConnections(bool state) { m_allowSelfConnection = state; }
+
+        /**
          * @brief <BR>Get connected status
          * @return [TRUE] is pin is connected to a link
          */
@@ -1113,6 +1119,7 @@ namespace ImFlow
         std::shared_ptr<Link> m_link;
         T m_emptyVal;
         std::function<bool(Pin*, Pin*)> m_filter;
+        bool m_allowSelfConnection = false;
     };
 
     /**
