@@ -193,12 +193,6 @@ namespace ImFlow {
         }
         ImGui::PopID();
 
-        // Resolve output pins values
-        for (auto &p: m_outs)
-            p->resolve();
-        for (auto &p: m_dynamicOuts)
-            p.second->resolve();
-
         // Deleting dead pins
         m_dynamicIns.erase(std::remove_if(m_dynamicIns.begin(), m_dynamicIns.end(),
                                           [](const std::pair<int, std::shared_ptr<Pin>> &p) { return p.first == 0; }),
@@ -334,6 +328,9 @@ namespace ImFlow {
         // Removing dead Links
         m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
                                      [](const std::weak_ptr<Link> &l) { return l.expired(); }), m_links.end());
+
+        // Clearing recursion blacklist
+        m_nodeRecursionBlacklist.clear();
 
         m_context.end();
     }

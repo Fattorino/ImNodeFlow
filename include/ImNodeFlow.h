@@ -474,6 +474,12 @@ namespace ImFlow
          * @return [TRUE] if the mouse is not hovering a node or a link
          */
         bool on_free_space();
+
+        /**
+         * @brief <BR>Get recursion blacklist for nodes
+         * @return Reference to blacklist
+         */
+        std::vector<NodeUID>& get_recursion_blacklist() { return m_nodeRecursionBlacklist; }
     private:
         std::string m_name;
         ContainedContext m_context;
@@ -481,6 +487,7 @@ namespace ImFlow
         bool m_singleUseClick = false;
 
         std::unordered_map<NodeUID, std::shared_ptr<BaseNode>> m_nodes;
+        std::vector<NodeUID> m_nodeRecursionBlacklist;
         std::vector<std::weak_ptr<Link>> m_links;
 
         std::function<void(Pin* dragged)> m_droppedLinkPopUp;
@@ -1145,11 +1152,6 @@ namespace ImFlow
          * @brief <BR>When parent gets deleted, remove the links
          */
         ~OutPin() override { for (auto &l: m_links) if (!l.expired()) l.lock()->right()->deleteLink(); }
-
-        /**
-         * @brief <BR>Calculate output value based on set behaviour
-         */
-        void resolve() override { m_val = m_behaviour(); }
 
         /**
          * @brief <BR>Create link between pins
