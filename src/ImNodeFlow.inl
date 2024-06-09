@@ -324,7 +324,16 @@ namespace ImFlow
     // OUT PIN
 
     template<class T>
-    const T &OutPin<T>::val() { return m_val; }
+    const T &OutPin<T>::val()
+    {
+        if (std::find((*m_inf)->get_recursion_blacklist().begin(), (*m_inf)->get_recursion_blacklist().end(), m_parent->getUID()) == (*m_inf)->get_recursion_blacklist().end())
+        {
+            (*m_inf)->get_recursion_blacklist().emplace_back(m_parent->getUID());
+            m_val = m_behaviour();
+        }
+
+        return m_val;
+    }
 
     template<class T>
     void OutPin<T>::createLink(ImFlow::Pin *other)
