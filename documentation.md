@@ -79,7 +79,7 @@ _The **necessary** `behaviour()` method for Output pins is explained at [Output 
 with a default return value of 0 (value returned when the pin is not connected), a filter, 
 and the default pin style (cyan).
 ```c++
-addIN<int>("Input A", 0, ConnectionFilter_Int);
+addIN<int>("Input A", 0, ConnectionFilter::SameType());
 ```
 _For a detailed explanation of pins see [PINS](#pins)._
 
@@ -119,31 +119,20 @@ The UID can be used to get a reference to the pin, and in case of an input pin, 
 
 ### Connection filters
 Filters are useful to avoid unwanted connection between pins.
-The user is provided with some pre-built filters in the `ConnectionFilters_` enumerator.
-<BR><BR>It is also possible to create more filters with the help of `ConnectionFilter_MakeCustom`
-```c++
-ConnectionFilter myFilter = ConnectionFilter_MakeCustom << 0;
 
-enum MyFilters
-{
-    FilterA = ConnectionFilter_MakeCustom << 1,
-    FilterB = ConnectionFilter_MakeCustom << 2,
-    FilterC = FilterA | FilterB
-};
-```
-_NB: each filter is nothing else than a number, so `ConnectionFilter_Int` for example, does not imply in any way a pin of `int` type._
+_TODO: Update this section_
 
 ### Output pins
 Output pins are in charge of processing the output and, as per the name, outputting it to the connected link.
 <BR>What is outputted is defined by the pin behaviour. _(See [Static pins](#static-pins) and/or [Dynamic pins](#dynamic-pins) to set the behaviour)._
 <BR>In particular, the behaviour is a function or a lambda expression that returns the same type of the pin.
 ```c++
-addOUT<int>(pin_name, filter)
+addOUT<int>(pin_name)
                 ->behaviour([this](){ return 0; });
 ```
 In this simple example, a static pin is added, such pin will always output a value of 0 to the connected link.
 ```c++
-addOUT_uid<float>(uid, pin_name, filter)
+addOUT_uid<float>(uid, pin_name)
                 ->behaviour([this](){ /* omitted */ });
 ```
 In this other example, another static pi is added, a custom UID is used and the behaviour is some custom, more complex, logic.
