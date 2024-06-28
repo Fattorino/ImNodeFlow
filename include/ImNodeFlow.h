@@ -1070,6 +1070,8 @@ namespace ImFlow
         explicit InPin(PinUID uid, const std::string& name, T defReturn, std::function<bool(Pin*, Pin*)> filter, std::shared_ptr<PinStyle> style, BaseNode* parent, ImNodeFlow** inf)
             : Pin(uid, name, style, PinType_Input, parent, inf), m_emptyVal(defReturn), m_filter(std::move(filter)) {}
 
+        ~InPin() override { m_link.reset(); }
+
         /**
          * @brief <BR>Create link between pins
          * @param other Pointer to the other pin
