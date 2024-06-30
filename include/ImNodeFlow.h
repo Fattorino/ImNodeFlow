@@ -1023,8 +1023,13 @@ namespace ImFlow
          * @param pos Position in screen coordinates
          */
         void setPos(ImVec2 pos) { m_pos = pos; }
+
+        void setFilterID(int id) { m_filterID = id; }
+
+        int getFilterID() const { return m_filterID; }
     protected:
         PinUID m_uid;
+        int m_filterID;
         std::string m_name;
         ImVec2 m_pos = ImVec2(0.f, 0.f);
         ImVec2 m_size = ImVec2(0.f, 0.f);
