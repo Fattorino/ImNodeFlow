@@ -1070,8 +1070,6 @@ namespace ImFlow
         explicit InPin(PinUID uid, const std::string& name, T defReturn, std::function<bool(Pin*, Pin*)> filter, std::shared_ptr<PinStyle> style, BaseNode* parent, ImNodeFlow** inf)
             : Pin(uid, name, style, PinType_Input, parent, inf), m_emptyVal(defReturn), m_filter(std::move(filter)) {}
 
-        ~InPin() override { m_link.reset(); }
-
         /**
          * @brief <BR>Create link between pins
          * @param other Pointer to the other pin
@@ -1153,7 +1151,10 @@ namespace ImFlow
         /**
          * @brief <BR>When parent gets deleted, remove the links
          */
-        ~OutPin() override { for (auto &l: m_links) if (!l.expired()) l.lock()->right()->deleteLink(); }
+        ~OutPin() override {
+            std::vector<std::weak_ptr<Link>> links = std::move(m_links);
+            for (auto &l: links) if (!l.expired()) l.lock()->right()->deleteLink();
+        }
 
         /**
          * @brief <BR>Create link between pins
