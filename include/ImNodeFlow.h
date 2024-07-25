@@ -479,7 +479,7 @@ namespace ImFlow
          * @brief <BR>Get recursion blacklist for nodes
          * @return Reference to blacklist
          */
-        std::vector<PinUID>& get_recursion_blacklist() { return m_nodeRecursionBlacklist; }
+        std::vector<std::string>& get_recursion_blacklist() { return m_pinRecursionBlacklist; }
     private:
         std::string m_name;
         ContainedContext m_context;
@@ -487,7 +487,7 @@ namespace ImFlow
         bool m_singleUseClick = false;
 
         std::unordered_map<NodeUID, std::shared_ptr<BaseNode>> m_nodes;
-        std::vector<NodeUID> m_nodeRecursionBlacklist;
+        std::vector<std::string> m_pinRecursionBlacklist;
         std::vector<std::weak_ptr<Link>> m_links;
 
         std::function<void(Pin* dragged)> m_droppedLinkPopUp;

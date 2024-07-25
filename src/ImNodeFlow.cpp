@@ -330,7 +330,7 @@ namespace ImFlow {
                                      [](const std::weak_ptr<Link> &l) { return l.expired(); }), m_links.end());
 
         // Clearing recursion blacklist
-        m_nodeRecursionBlacklist.clear();
+        m_pinRecursionBlacklist.clear();
 
         m_context.end();
     }
