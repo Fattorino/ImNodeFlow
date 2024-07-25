@@ -75,7 +75,7 @@ namespace ImFlow
     template<typename T, typename U>
     std::shared_ptr<InPin<T>> BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, std::function<bool(Pin*, Pin*)> filter, std::shared_ptr<PinStyle> style)
     {
-        PinUID h = std::hash<U>{}(uid);
+        PinUID h = std::hash<U>{}(uid) + m_uid;
         auto p = std::make_shared<InPin<T>>(h, name, defReturn, std::move(filter), std::move(style), this, &m_inf);
         m_ins.emplace_back(p);
         return p;
@@ -326,9 +326,10 @@ namespace ImFlow
     template<class T>
     const T &OutPin<T>::val()
     {
-        if (std::find((*m_inf)->get_recursion_blacklist().begin(), (*m_inf)->get_recursion_blacklist().end(), m_uid) == (*m_inf)->get_recursion_blacklist().end())
+        std::string s = std::to_string(m_uid) + std::to_string(m_parent->getUID());
+        if (std::find((*m_inf)->get_recursion_blacklist().begin(), (*m_inf)->get_recursion_blacklist().end(), s) == (*m_inf)->get_recursion_blacklist().end())
         {
-            (*m_inf)->get_recursion_blacklist().emplace_back(m_uid);
+            (*m_inf)->get_recursion_blacklist().emplace_back(s);
             m_val = m_behaviour();
         }
 
