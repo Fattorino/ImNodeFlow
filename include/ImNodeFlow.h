@@ -479,7 +479,7 @@ namespace ImFlow
          * @brief <BR>Get recursion blacklist for nodes
          * @return Reference to blacklist
          */
-        std::vector<NodeUID>& get_recursion_blacklist() { return m_nodeRecursionBlacklist; }
+        std::vector<PinUID>& get_recursion_blacklist() { return m_nodeRecursionBlacklist; }
     private:
         std::string m_name;
         ContainedContext m_context;

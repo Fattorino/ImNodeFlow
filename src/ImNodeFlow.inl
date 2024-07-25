@@ -326,9 +326,9 @@ namespace ImFlow
     template<class T>
     const T &OutPin<T>::val()
     {
-        if (std::find((*m_inf)->get_recursion_blacklist().begin(), (*m_inf)->get_recursion_blacklist().end(), m_parent->getUID()) == (*m_inf)->get_recursion_blacklist().end())
+        if (std::find((*m_inf)->get_recursion_blacklist().begin(), (*m_inf)->get_recursion_blacklist().end(), m_uid) == (*m_inf)->get_recursion_blacklist().end())
         {
-            (*m_inf)->get_recursion_blacklist().emplace_back(m_parent->getUID());
+            (*m_inf)->get_recursion_blacklist().emplace_back(m_uid);
             m_val = m_behaviour();
         }
 
