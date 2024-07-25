@@ -75,7 +75,7 @@ namespace ImFlow
     template<typename T, typename U>
     std::shared_ptr<InPin<T>> BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, std::function<bool(Pin*, Pin*)> filter, std::shared_ptr<PinStyle> style)
     {
-        PinUID h = std::hash<U>{}(uid) + m_uid;
+        PinUID h = std::hash<U>{}(uid);
         auto p = std::make_shared<InPin<T>>(h, name, defReturn, std::move(filter), std::move(style), this, &m_inf);
         m_ins.emplace_back(p);
         return p;
