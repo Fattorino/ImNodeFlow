@@ -34,11 +34,11 @@ set(IMNODEFLOW_DIR ${CMAKE_CURRENT_LIST_DIR}/includes/ImNodeFlow)
 include(FetchContent)
 
 FetchContent_Declare(ImNodeFlow
-     GIT_REPOSITORY "https://github.com/pavanakumar/ImNodeFlow.git"
-     GIT_TAG "example"
+     GIT_REPOSITORY "https://github.com/Fattorino/ImNodeFlow.git"
+     GIT_TAG "master"
      SOURCE_DIR ${IMNODEFLOW_DIR}
 )
-FetchContent_GetProperties(imgui)
+FetchContent_GetProperties(ImNodeFlow)
 if(NOT imnodeflow_POPULATED)
   FetchContent_Populate(ImNodeFlow)
 endif()
@@ -70,7 +70,7 @@ set_property(TARGET custom_exe PROPERTY CXX_STANDARD 17)
 target_include_directories(custom_exe PRIVATE ${IMGUI_DIR} ${IMNODEFLOW_DIR}/include ${IMGUI_DIR}/backends)
 target_compile_definitions(custom_exe PRIVATE IMGUI_DEFINE_MATH_OPERATORS)
 ```
-Depending on the backend you choose for Imgui you can set `target_link_libraries(custom_exe <LIBS>)` to the correct sets. For example SDL2+OpenGL requires the following defintitions,
+Depending on the backend you choose for Imgui you can set `target_link_libraries` to the correct sets. For example SDL2+OpenGL requires the following defintitions,
 
 ```
 find_package(OpenGL REQUIRED)
