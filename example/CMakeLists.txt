@@ -1,17 +1,7 @@
 set(IMGUI_DIR ${CMAKE_CURRENT_LIST_DIR}/includes/imgui)
-set(IMNODEFLOW_DIR ${CMAKE_CURRENT_LIST_DIR}/includes/ImNodeFlow)
+set(IMNODEFLOW_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 
 include(FetchContent)
-
-FetchContent_Declare(ImNodeFlow
-     GIT_REPOSITORY "https://github.com/pavanakumar/ImNodeFlow.git"
-     GIT_TAG "example"
-     SOURCE_DIR ${IMNODEFLOW_DIR}
-)
-FetchContent_GetProperties(imgui)
-if(NOT imnodeflow_POPULATED)
-  FetchContent_Populate(ImNodeFlow)
-endif()
 
 FetchContent_Declare(imgui
      GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
