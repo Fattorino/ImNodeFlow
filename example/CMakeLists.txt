@@ -5,7 +5,7 @@ include(FetchContent)
 
 FetchContent_Declare(ImNodeFlow
      GIT_REPOSITORY "https://github.com/pavanakumar/ImNodeFlow.git"
-     GIT_TAG "origin/master"
+     GIT_TAG "example"
      SOURCE_DIR ${IMNODEFLOW_DIR}
 )
 FetchContent_GetProperties(imgui)
