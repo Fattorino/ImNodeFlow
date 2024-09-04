@@ -595,7 +595,7 @@ inline void ImCubicBezierFixedStep(ImCubicBezierFixedStepCallback callback, void
         float t_end   = t_max;
         float t       = t_0;
 
-        float t_best     = t;
+//        float t_best     = t;
         float error_best = total_length;
 
         while (true)
@@ -615,7 +615,7 @@ inline void ImCubicBezierFixedStep(ImCubicBezierFixedStepCallback callback, void
             if (error < error_best)
             {
                 error_best = error;
-                t_best     = t;
+//                t_best     = t;
             }
 
             if (ImFabs(error) <= max_value_error || ImFabs(t_start - t_end) <= max_t_error)
