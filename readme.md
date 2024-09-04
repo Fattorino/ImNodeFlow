@@ -20,7 +20,7 @@ A simple example using SDL2 + OpenGL3 backend is provided in the /example folder
     > mkdir build
     > cd build
     > cmake ..
-    > ./nd
+    > ./example
 ```
 
 ![image](https://github.com/Fattorino/ImNodeFlow/assets/90210751/0ef78533-23f6-4cda-96aa-dabb121d1503)
