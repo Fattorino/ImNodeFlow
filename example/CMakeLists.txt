@@ -25,10 +25,10 @@ list(APPEND imgui_sources
 list(APPEND imnode_flow_sources
   ${IMNODEFLOW_DIR}/src/ImNodeFlow.cpp)
 
-add_executable(nd nd.cpp ${imgui_sources} ${imnode_flow_sources})
-set_property(TARGET nd PROPERTY CXX_STANDARD 17)
-target_include_directories(nd PRIVATE ${IMGUI_DIR} ${IMNODEFLOW_DIR}/include ${IMGUI_DIR}/backends)
-target_compile_definitions(nd PRIVATE IMGUI_DEFINE_MATH_OPERATORS)
+add_executable(example example.cpp ${imgui_sources} ${imnode_flow_sources})
+set_property(TARGET example PROPERTY CXX_STANDARD 17)
+target_include_directories(example PRIVATE ${IMGUI_DIR} ${IMNODEFLOW_DIR}/include ${IMGUI_DIR}/backends)
+target_compile_definitions(example PRIVATE IMGUI_DEFINE_MATH_OPERATORS)
 
 if(CMAKE_SYSTEM_NAME MATCHES Emscripten)
   include(cmake/emscripten.cmake)

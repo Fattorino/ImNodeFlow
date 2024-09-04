@@ -14,7 +14,7 @@
 #include "../libs/emscripten/emscripten_mainloop_stub.h"
 #endif
 
-#include "nd.hpp"
+#include "example.hpp"
 
 // Main code
 int main(int, char**)

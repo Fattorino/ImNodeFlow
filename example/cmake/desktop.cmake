@@ -4,12 +4,9 @@ if (UNIX)
     if (NOT APPLE)
         find_package(Threads REQUIRED)
         find_package(X11 REQUIRED)
-        target_link_libraries(nd PRIVATE
+        target_link_libraries(example PRIVATE
                 ${CMAKE_THREAD_LIBS_INIT} ${X11_LIBRARIES} ${CMAKE_DL_LIBS})
     endif()
 endif()
 
-# Fix for GNU libstdfs
-# target_link_libraries(nd PUBLIC "$<$<CXX_COMPILER_ID:CXX,GNU>:stdc++fs>")
-target_link_libraries(nd PUBLIC OpenGL::GL SDL2::SDL2)
-
+target_link_libraries(example PUBLIC OpenGL::GL SDL2::SDL2)
