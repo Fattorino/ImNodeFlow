@@ -45,6 +45,33 @@ namespace ImFlow {
                                           m_inf->grid2screen(m_pos + m_size + paddingBR));
     }
 
+    BaseNode* BaseNode::setUID(const NodeUID uid)
+    {
+        m_inf->moveNode(m_uid, uid);
+        m_uid = uid;
+        return this;
+    }
+
+    ImFlow::Pin* BaseNode::outPinByFilderID(const int filterID) const
+    {
+        for (const auto& pin : m_outs)
+        {
+            if (pin->getFilterID() == filterID)
+                return pin.get();
+        }
+        return nullptr;
+    }
+
+    ImFlow::Pin* BaseNode::inPinByFilderID(const int filterID) const
+    {
+        for (const auto& pin : m_ins)
+        {
+            if (pin->getFilterID() == filterID)
+                return pin.get();
+        }
+        return nullptr;
+    }
+
     void BaseNode::update() {
         ImDrawList *draw_list = ImGui::GetWindowDrawList();
         ImGui::PushID(this);
@@ -223,6 +250,16 @@ namespace ImFlow {
                            [](const auto &n) { return !n.second->isHovered(); })
                && std::all_of(m_links.begin(), m_links.end(),
                               [](const auto &l) { return !l.lock()->isHovered(); });
+    }
+
+    void ImNodeFlow::moveNode(const NodeUID oldID, const NodeUID newID)
+    {
+        const auto node = m_nodes.find(oldID);
+        if (node != m_nodes.end())
+        {
+            m_nodes[newID] = node->second;
+            m_nodes.erase(node);
+        }
     }
 
     ImVec2 ImNodeFlow::screen2grid(const ImVec2 &p) {

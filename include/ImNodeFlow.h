@@ -476,6 +476,9 @@ namespace ImFlow
         bool on_free_space();
 
         void set_last_selected_node(BaseNode* node) { m_selectedNode = node; }
+
+        void moveNode(NodeUID oldID, NodeUID newID);
+
     private:
         std::string m_name;
         ContainedContext m_context;
@@ -811,7 +814,7 @@ namespace ImFlow
          * @brief <BR>Set node's uid
          * @param uid Node's unique identifier
          */
-        BaseNode* setUID(NodeUID uid) { m_uid = uid; return this; }
+        BaseNode* setUID(NodeUID uid);
 
         /**
          * @brief <BR>Set node's name
@@ -849,6 +852,11 @@ namespace ImFlow
          * @brief <BR>Update the isSelected status of the node
          */
         void updatePublicStatus() { m_selected = m_selectedNext; }
+
+        
+        ImFlow::Pin* outPinByFilderID(int filterID) const;
+
+        ImFlow::Pin* inPinByFilderID(int filterID) const;
     private:
         NodeUID m_uid = 0;
         std::string m_title;
@@ -962,7 +970,7 @@ namespace ImFlow
          * @brief <BR>Get pin's UID
          * @return Unique identifier of the pin
          */
-        [[nodiscard]] PinUID getUid() const { return m_uid; }
+        [[nodiscard]] PinUID getUID() const { return m_uid; }
 
         /**
          * @brief <BR>Get pin's name
