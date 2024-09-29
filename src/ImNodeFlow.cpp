@@ -314,7 +314,10 @@ namespace ImFlow {
         // Remove "toDelete" nodes
         for (auto iter = m_nodes.begin(); iter != m_nodes.end();) {
             if (iter->second->toDestroy())
+            {
+                m_nodeDeletedSignal.emit(iter->second.get());
                 iter = m_nodes.erase(iter);
+            }
             else
                 ++iter;
         }
@@ -322,7 +325,11 @@ namespace ImFlow {
         for (auto &node: m_nodes) { node.second->updatePublicStatus(); }
 
         // Update and draw links
-        for (auto &l: m_links) { if (!l.expired()) l.lock()->update(); }
+        for (std::weak_ptr<Link>& l : m_links) 
+        {
+            if (!l.expired()) 
+                l.lock()->update();
+        }
 
         // Links drop-off
         if (m_dragOut && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
@@ -334,7 +341,10 @@ namespace ImFlow {
                     }
                 }
             } else
+            {
                 m_dragOut->createLink(m_hovering);
+                m_connectionSignal.emit(m_dragOut, m_hovering);
+            }
         }
 
         // Links drag-out
@@ -369,8 +379,7 @@ namespace ImFlow {
         }
 
         // Removing dead Links
-        m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
-                                     [](const std::weak_ptr<Link> &l) { return l.expired(); }), m_links.end());
+        m_links.erase(std::remove_if(m_links.begin(), m_links.end(), [](const std::weak_ptr<Link> &l) { return l.expired(); }), m_links.end());
 
         m_context.end();
     }

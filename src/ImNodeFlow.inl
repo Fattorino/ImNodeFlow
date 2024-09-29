@@ -48,6 +48,7 @@ namespace ImFlow
         auto uid = reinterpret_cast<uintptr_t>(n.get());
         n->setUID(uid);
         m_nodes[uid] = n;
+        m_nodeCreatedSignal.emit(n.get());
         return n;
     }
 

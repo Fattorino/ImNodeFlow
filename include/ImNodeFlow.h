@@ -12,6 +12,8 @@
 #include <functional>
 #include <unordered_map>
 #include <imgui.h>
+
+#include "../../../VkPlayground/repo/include/utils/signal.hpp"
 #include "../src/imgui_bezier_math.h"
 #include "../src/context_wrapper.h"
 
@@ -479,6 +481,10 @@ namespace ImFlow
 
         void moveNode(NodeUID oldID, NodeUID newID);
 
+        Signal<ImFlow::BaseNode*>& getNodeCreatedSignal() { return m_nodeCreatedSignal; }
+        Signal<ImFlow::BaseNode*>& getNodeDeletedSignal() { return m_nodeDeletedSignal; }
+        Signal<ImFlow::Pin*, ImFlow::Pin*>& getConnectionSignal() { return m_connectionSignal; }
+
     private:
         std::string m_name;
         ContainedContext m_context;
@@ -501,6 +507,10 @@ namespace ImFlow
         Pin* m_dragOut = nullptr;
 
         InfStyler m_style;
+
+        Signal<ImFlow::BaseNode*> m_nodeCreatedSignal;
+        Signal<ImFlow::BaseNode*> m_nodeDeletedSignal;
+        Signal<ImFlow::Pin*, ImFlow::Pin*> m_connectionSignal;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
