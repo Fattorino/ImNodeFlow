@@ -1182,6 +1182,8 @@ namespace ImFlow
          */
         void setLink(std::shared_ptr<Link>& link) override;
 
+        std::weak_ptr<Link> getLink() override { return m_links.empty() ? std::weak_ptr<Link>{} : m_links[0]; }
+
         /**
          * @brief <BR>Delete any expired weak pointers to a (now deleted) link
          */
@@ -1216,7 +1218,7 @@ namespace ImFlow
          * @brief <BR>Get pin's data type (aka: \<T>)
          * @return String containing unique information identifying the data type
          */
-        [[nodiscard]] const std::type_info& getDataType() const override { return typeid(T); };
+        [[nodiscard]] const std::type_info& getDataType() const override { return typeid(T); }
     private:
         std::vector<std::weak_ptr<Link>> m_links;
         std::function<T()> m_behaviour;
