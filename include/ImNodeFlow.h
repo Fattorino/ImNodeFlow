@@ -6,15 +6,13 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <cmath>
 #include <memory>
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
 #include <imgui.h>
 
-#include "../../../VkPlayground/repo/include/utils/signal.hpp"
-#include "../src/imgui_bezier_math.h"
+#include "utils/signal.hpp"
 #include "../src/context_wrapper.h"
 
 //#define ConnectionFilter_None       [](ImFlow::Pin* out, ImFlow::Pin* in){ return true; }
@@ -124,6 +122,8 @@ namespace ImFlow
         static std::shared_ptr<PinStyle> cyan() { return std::make_shared<PinStyle>(PinStyle(IM_COL32(87,155,185,255), 0, 4.f, 4.67f, 3.7f, 1.f)); }
         /// @brief <BR>Default green style
         static std::shared_ptr<PinStyle> green() { return std::make_shared<PinStyle>(PinStyle(IM_COL32(90,191,93,255), 4, 4.f, 4.67f, 4.2f, 1.3f)); }
+        /// @brief <BR>Default green style
+        static std::shared_ptr<PinStyle> light_green() { return std::make_shared<PinStyle>(PinStyle(IM_COL32(124,235,128,255), 4, 4.f, 4.67f, 4.2f, 1.3f)); }
         /// @brief <BR>Default blue style
         static std::shared_ptr<PinStyle> blue() { return std::make_shared<PinStyle>(PinStyle(IM_COL32(90,117,191,255), 0, 4.f, 4.67f, 3.7f, 1.f)); }
         /// @brief <BR>Default brown style

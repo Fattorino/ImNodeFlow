@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ImNodeFlow.h"
+#include "imgui_bezier_math.h"
 
 namespace ImFlow
 {
