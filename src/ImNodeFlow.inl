@@ -91,6 +91,7 @@ namespace ImFlow
         {
             if (it->get()->getUID() == h)
             {
+                it->get()->dropLinks();
                 m_ins.erase(it);
                 return;
             }
@@ -299,6 +300,12 @@ namespace ImFlow
         return reinterpret_cast<OutPin<T>*>(m_link->left())->val();
     }
 
+    template <class T>
+    void InPin<T>::dropLinks()
+    {
+        deleteLink();
+    }
+
     template<class T>
     void InPin<T>::createLink(Pin *other)
     {
@@ -325,6 +332,14 @@ namespace ImFlow
     template<class T>
     const T &OutPin<T>::val() { return m_val; }
 
+    template <class T>
+    void OutPin<T>::dropLinks()
+    {
+        for (std::weak_ptr<Link>& l : m_links)
+            if (!l.expired())
+                l.lock()->right()->deleteLink();
+    }
+
     template<class T>
     void OutPin<T>::createLink(ImFlow::Pin *other)
     {
@@ -343,7 +358,6 @@ namespace ImFlow
     template<class T>
     void OutPin<T>::deleteLink()
     {
-        m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
-                                     [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
+        m_links.erase(std::remove_if(m_links.begin(), m_links.end(), [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
     }
 }

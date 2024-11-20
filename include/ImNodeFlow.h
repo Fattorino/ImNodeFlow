@@ -1045,6 +1045,9 @@ namespace ImFlow
         void setFilterID(int id) { m_filterID = id; }
 
         int getFilterID() const { return m_filterID; }
+
+        virtual void dropLinks() = 0;
+
     protected:
         PinUID m_uid;
         int m_filterID;
@@ -1135,6 +1138,9 @@ namespace ImFlow
          * @return Reference to the value of the connected OutPin. Or the default value if not connected
          */
         const T& val();
+
+        void dropLinks() override;
+
     private:
         std::shared_ptr<Link> m_link;
         T m_emptyVal;
@@ -1219,6 +1225,9 @@ namespace ImFlow
          * @return String containing unique information identifying the data type
          */
         [[nodiscard]] const std::type_info& getDataType() const override { return typeid(T); }
+
+        void dropLinks() override;
+
     private:
         std::vector<std::weak_ptr<Link>> m_links;
         std::function<T()> m_behaviour;
