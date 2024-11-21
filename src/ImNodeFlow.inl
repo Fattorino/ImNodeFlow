@@ -320,6 +320,9 @@ namespace ImFlow
         if (other == this || other->getType() == PinType_Input)
             return;
 
+        if (m_parent == other->getParent() && !m_allowSelfConnection)
+            return;
+
         if (m_link && m_link->left() == other)
         {
             m_link.reset();
@@ -338,7 +341,17 @@ namespace ImFlow
     // OUT PIN
 
     template<class T>
-    const T &OutPin<T>::val() { return m_val; }
+    const T &OutPin<T>::val()
+    {
+        std::string s = std::to_string(m_uid) + std::to_string(m_parent->getUID());
+        if (std::find((*m_inf)->get_recursion_blacklist().begin(), (*m_inf)->get_recursion_blacklist().end(), s) == (*m_inf)->get_recursion_blacklist().end())
+        {
+            (*m_inf)->get_recursion_blacklist().emplace_back(s);
+            m_val = m_behaviour();
+        }
+
+        return m_val;
+    }
 
     template <class T>
     void OutPin<T>::dropLinks()

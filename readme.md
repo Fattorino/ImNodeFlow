@@ -20,7 +20,7 @@ Create your custom nodes and their logic... ImNodeFlow will handle connections, 
    include(FetchContent)
    FetchContent_Declare(ImNodeFlow
         GIT_REPOSITORY "https://github.com/Fattorino/ImNodeFlow.git"
-        GIT_TAG "v1.2.1"
+        GIT_TAG "origin/master"
         SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/includes/ImNodeFlow"
    )
    FetchContent_MakeAvailable(ImNodeFlow)
@@ -53,8 +53,8 @@ public:
     {
         setTitle("Simple sum");
         setStyle(NodeStyle::green());
-        addIN<int>("IN_VAL", 0, ConnectionFilter_Int);
-        addOUT<int>("OUT_VAL", ConnectionFilter_Int)
+        addIN<int>("IN_VAL", 0, ConnectionFilter::SameType());
+        addOUT<int>("OUT_VAL", ConnectionFilter::SameType())
                 ->behaviour([this](){ return getInVal<int>("IN_VAL") + m_valB; });
     }
 

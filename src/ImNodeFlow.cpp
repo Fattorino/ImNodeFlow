@@ -184,8 +184,8 @@ namespace ImFlow {
         draw_list->AddRect(offset + m_pos - ptl, offset + m_pos + m_size + pbr, col, m_style->radius, 0, thickness);
 
 
-        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
-            !m_inf->on_selected_node())
+        if (ImGui::IsWindowHovered() && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl) &&
+            ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !m_inf->on_selected_node())
             selected(false);
 
         if (isHovered()) {
@@ -196,7 +196,7 @@ namespace ImFlow {
             }
         }
 
-        if (ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
+        if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
             destroy();
 
         bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - paddingTL, offset + m_pos + headerSize);
@@ -219,12 +219,6 @@ namespace ImFlow {
             }
         }
         ImGui::PopID();
-
-        // Resolve output pins values
-        for (auto &p: m_outs)
-            p->resolve();
-        for (auto &p: m_dynamicOuts)
-            p.second->resolve();
 
         // Deleting dead pins
         m_dynamicIns.erase(std::remove_if(m_dynamicIns.begin(), m_dynamicIns.end(),
@@ -380,6 +374,9 @@ namespace ImFlow {
 
         // Removing dead Links
         m_links.erase(std::remove_if(m_links.begin(), m_links.end(), [](const std::weak_ptr<Link> &l) { return l.expired(); }), m_links.end());
+
+        // Clearing recursion blacklist
+        m_pinRecursionBlacklist.clear();
 
         m_context.end();
     }

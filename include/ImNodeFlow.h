@@ -477,6 +477,12 @@ namespace ImFlow
          */
         bool on_free_space();
 
+        /**
+         * @brief <BR>Get recursion blacklist for nodes
+         * @return Reference to blacklist
+         */
+        std::vector<std::string>& get_recursion_blacklist() { return m_pinRecursionBlacklist; }
+
         void set_last_selected_node(BaseNode* node) { m_selectedNode = node; }
 
         void moveNode(NodeUID oldID, NodeUID newID);
@@ -484,7 +490,6 @@ namespace ImFlow
         Signal<ImFlow::BaseNode*>& getNodeCreatedSignal() { return m_nodeCreatedSignal; }
         Signal<ImFlow::BaseNode*>& getNodeDeletedSignal() { return m_nodeDeletedSignal; }
         Signal<ImFlow::Pin*, ImFlow::Pin*>& getConnectionSignal() { return m_connectionSignal; }
-
     private:
         std::string m_name;
         ContainedContext m_context;
@@ -492,6 +497,7 @@ namespace ImFlow
         bool m_singleUseClick = false;
 
         std::unordered_map<NodeUID, std::shared_ptr<BaseNode>> m_nodes;
+        std::vector<std::string> m_pinRecursionBlacklist;
         std::vector<std::weak_ptr<Link>> m_links;
 
         std::function<void(Pin* dragged)> m_droppedLinkPopUp;
@@ -1104,6 +1110,12 @@ namespace ImFlow
         void deleteLink() override { m_link.reset(); }
 
         /**
+         * @brief Specify if connections from an output on the same node are allowed
+         * @param state New state of the flag
+         */
+        void allowSameNodeConnections(bool state) { m_allowSelfConnection = state; }
+
+        /**
          * @brief <BR>Get connected status
          * @return [TRUE] is pin is connected to a link
          */
@@ -1145,6 +1157,7 @@ namespace ImFlow
         std::shared_ptr<Link> m_link;
         T m_emptyVal;
         std::function<bool(Pin*, Pin*)> m_filter;
+        bool m_allowSelfConnection = false;
     };
 
     /**
@@ -1169,12 +1182,10 @@ namespace ImFlow
         /**
          * @brief <BR>When parent gets deleted, remove the links
          */
-        ~OutPin() override { for (auto &l: m_links) if (!l.expired()) l.lock()->right()->deleteLink(); }
-
-        /**
-         * @brief <BR>Calculate output value based on set behaviour
-         */
-        void resolve() override { m_val = m_behaviour(); }
+        ~OutPin() override {
+            std::vector<std::weak_ptr<Link>> links = std::move(m_links);
+            for (auto &l: links) if (!l.expired()) l.lock()->right()->deleteLink();
+        }
 
         /**
          * @brief <BR>Create link between pins
