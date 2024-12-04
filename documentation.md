@@ -92,6 +92,22 @@ showOUT<T>(pin_name, behaviour, filter, style);
 ```
 _As mentioned in Static pins, `behaviour` is explained at [Output pins](#output-pins)._
 
+### Lambda Node Alternative
+
+When logic is straightforward enough or for quick prototyping this might be sufficient.
+This avoids all the general hassle that comes with writing classes by using dynamic pins.
+
+```c++
+ImFlow::ImNodeFlow INF;
+
+INF.addLambda([](ImFlow::BaseNode* self){
+  ImGui::Text("lambda");
+  self->showIN<double>("INPUT", 0.0, ImFlow::ConnectionFilter::SameType());
+  self->showOUT<double>("OUTPUT", [self](){ return self->getInVal<double>("INPUT"); });
+}, {0,0});
+```
+
+
 ### Styling system
 The node's style can be fully customized. Use `setStyle()` to change the style at any time.
 The default style is cyan, and the available pre-built styles are: cyan, green, red, and brown .
