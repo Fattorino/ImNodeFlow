@@ -7,6 +7,7 @@
     - [Body content](#body-content)
     - [Static pins](#static-pins)
     - [Dynamic pins](#dynamic-pins)
+    - [Lambda Defined Nodes](#lambda-defined-nodes)
     - [Styling system](#styling-system)
 - [PINS](#pins)
     - [UID system](#uid-system)
@@ -92,7 +93,7 @@ showOUT<T>(pin_name, behaviour, filter, style);
 ```
 _As mentioned in Static pins, `behaviour` is explained at [Output pins](#output-pins)._
 
-### Lambda Node Alternative
+### Lambda Defined Nodes
 
 When logic is straightforward enough or for quick prototyping this might be sufficient.
 This avoids all the general hassle that comes with writing classes by using dynamic pins.
