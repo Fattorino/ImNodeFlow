@@ -172,6 +172,7 @@ namespace ImFlow
             if (p.second->getUid() == h)
             {
                 p.first = 2;
+                static_cast<OutPin<T>*>(m_dynamicOuts.back().second.get())->behaviour(std::move(behaviour));
                 return;
             }
         }
