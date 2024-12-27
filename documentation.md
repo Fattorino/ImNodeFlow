@@ -7,6 +7,7 @@
     - [Body content](#body-content)
     - [Static pins](#static-pins)
     - [Dynamic pins](#dynamic-pins)
+    - [Lambda Defined Nodes](#lambda-defined-nodes)
     - [Styling system](#styling-system)
 - [PINS](#pins)
     - [UID system](#uid-system)
@@ -91,6 +92,22 @@ T val = showIN<T>(pin_name, default_value, filter, style);
 showOUT<T>(pin_name, behaviour, filter, style);
 ```
 _As mentioned in Static pins, `behaviour` is explained at [Output pins](#output-pins)._
+
+### Lambda Defined Nodes
+
+When logic is straightforward enough or for quick prototyping this might be sufficient.
+This avoids all the general hassle that comes with writing classes by using dynamic pins.
+
+```c++
+ImFlow::ImNodeFlow INF;
+
+INF.addLambda([](ImFlow::BaseNode* self){
+  ImGui::Text("lambda");
+  self->showIN<double>("INPUT", 0.0, ImFlow::ConnectionFilter::SameType());
+  self->showOUT<double>("OUTPUT", [self](){ return self->getInVal<double>("INPUT"); });
+}, {0,0});
+```
+
 
 ### Styling system
 The node's style can be fully customized. Use `setStyle()` to change the style at any time.

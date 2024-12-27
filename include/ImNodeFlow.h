@@ -310,6 +310,34 @@ namespace ImFlow
         template<typename T, typename... Params>
         std::shared_ptr<T> addNode(const ImVec2& pos, Params&&... args);
 
+    private:
+        /**
+         * @brief <BR>Helper struct for creating a node struct from a lambda
+         * @sa addLambdaNode which wraps creating one of these
+         * @tparam L the type of the lambda
+         * @tparam B always BaseNode, tparam because BaseNode is incomplete here
+         */
+        template <typename L, typename B = BaseNode>
+        struct NodeWrapper : public B
+        {
+            L mLambda;
+            NodeWrapper(L&& l): BaseNode(), mLambda(std::forward<L>(l)) {}
+            void draw() { mLambda(this); }
+        };
+
+    public:
+        /**
+         * @brief <BR>Add a node whos operation can be defined within a lambda.
+         * @tparam L the type of the lambda
+         * @param lambda the lambda that defines the nodes operation
+         * @param pos the position at which to place the node
+         */
+        template<typename L>
+        std::shared_ptr<NodeWrapper<L>> addLambdaNode(L&& lambda, const ImVec2& pos)
+        {
+            return addNode<NodeWrapper<L>>(pos, std::forward<L>(lambda));
+        }
+
         /**
          * @brief <BR>Add a node to the grid
          * @tparam T Derived class of <BaseNode> to be added
