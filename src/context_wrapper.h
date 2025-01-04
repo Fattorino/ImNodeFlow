@@ -92,7 +92,7 @@ private:
     bool m_hovered = false;
 
     float m_scale = m_config.default_zoom, m_scaleTarget = m_config.default_zoom;
-    ImVec2 m_scroll = {0.f, 0.f}, m_scrollTarget = {0.f, 0.f};
+    ImVec2 m_scroll = {0.f, 0.f};
 };
 
 inline ContainedContext::~ContainedContext()
@@ -190,7 +190,6 @@ inline void ContainedContext::end()
     if (m_hovered && !m_anyItemActive && ImGui::IsMouseDragging(m_config.scroll_button, 0.f))
     {
         m_scroll += ImGui::GetIO().MouseDelta / m_scale;
-        m_scrollTarget = m_scroll;
     }
 
     ImGui::EndChild();
