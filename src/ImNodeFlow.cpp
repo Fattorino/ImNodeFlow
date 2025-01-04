@@ -221,18 +221,18 @@ namespace ImFlow {
                               [](const auto &l) { return !l.lock()->isHovered(); });
     }
 
-    ImVec2 ImNodeFlow::screen2grid(const ImVec2 &p) {
-        if (ImGui::GetCurrentContext() == m_context.getRawContext())
+    ImVec2 ImNodeFlow::screen2grid( const ImVec2 & p )
+    {
+        if ( ImGui::GetCurrentContext() == m_context.getRawContext() )
             return p - m_context.scroll();
-        else
-            return p - m_context.origin() - m_context.scroll() * m_context.scale();
+        return ( p - m_context.origin() ) / m_context.scale() - m_context.scroll();
     }
 
-    ImVec2 ImNodeFlow::grid2screen(const ImVec2 &p) {
-        if (ImGui::GetCurrentContext() == m_context.getRawContext())
+    ImVec2 ImNodeFlow::grid2screen( const ImVec2 & p )
+    {
+        if ( ImGui::GetCurrentContext() == m_context.getRawContext() )
             return p + m_context.scroll();
-        else
-            return p + m_context.origin() + m_context.scroll() * m_context.scale();
+        return ( p + m_context.scroll() ) * m_context.scale() + m_context.origin();
     }
 
     void ImNodeFlow::addLink(std::shared_ptr<Link> &link) {
