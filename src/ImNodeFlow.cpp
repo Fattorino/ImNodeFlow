@@ -67,20 +67,22 @@ namespace ImFlow {
         float titleW = ImGui::GetItemRectSize().x;
 
         // Inputs
-        ImGui::BeginGroup();
-        for (auto &p: m_ins) {
-            p->setPos(ImGui::GetCursorPos());
-            p->update();
-        }
-        for (auto &p: m_dynamicIns) {
-            if (p.first == 1) {
-                p.second->setPos(ImGui::GetCursorPos());
-                p.second->update();
-                p.first = 0;
+        if (!m_ins.empty()) {
+            ImGui::BeginGroup();
+            for (auto &p: m_ins) {
+                p->setPos(ImGui::GetCursorPos());
+                p->update();
             }
+            for (auto &p: m_dynamicIns) {
+                if (p.first == 1) {
+                    p.second->setPos(ImGui::GetCursorPos());
+                    p.second->update();
+                    p.first = 0;
+                }
+            }
+            ImGui::EndGroup();
+            ImGui::SameLine();
         }
-        ImGui::EndGroup();
-        ImGui::SameLine();
 
         // Content
         ImGui::BeginGroup();
