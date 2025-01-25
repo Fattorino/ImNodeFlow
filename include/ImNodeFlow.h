@@ -304,7 +304,7 @@ namespace ImFlow
          */
         void update();
 
-        void addNode(std::shared_ptr<BaseNode> &n, const ImVec2 &pos);
+        void emplaceNode(std::shared_ptr<BaseNode> &n, const ImVec2 &pos);
 
         /**
          * @brief <BR>Add a node to the grid
