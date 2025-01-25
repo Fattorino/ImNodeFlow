@@ -394,7 +394,7 @@ namespace ImFlow
         m_context.end();
     }
 
-    void ImNodeFlow::emplaceNode(std::shared_ptr<BaseNode> &n, const ImVec2 &pos)
+    void ImNodeFlow::addNode(std::shared_ptr<BaseNode> &n, const ImVec2 &pos)
     {
         n->setPos(pos);
         n->setHandler(this);
