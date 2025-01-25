@@ -144,7 +144,10 @@ inline void ContainedContext::begin()
     ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::PopStyleVar();
 
-    canvas_clip_rect = (canvas_clip_rect - ImVec4(m_origin.x, m_origin.y, m_origin.x, m_origin.y)) / m_scale;
+    canvas_clip_rect.y = (canvas_clip_rect.y - m_origin.x) / m_scale;
+    canvas_clip_rect.x = (canvas_clip_rect.x - m_origin.y) / m_scale;
+    canvas_clip_rect.z = (canvas_clip_rect.z - m_origin.x) / m_scale;
+    canvas_clip_rect.w = (canvas_clip_rect.w - m_origin.y) / m_scale;
     ImGui::PushClipRect({canvas_clip_rect.x, canvas_clip_rect.y}, {canvas_clip_rect.z, canvas_clip_rect.w}, false);
 }
 
