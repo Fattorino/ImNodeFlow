@@ -3,21 +3,23 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
-inline static void CopyIOEvents(ImGuiContext* src, ImGuiContext* dst, ImVec2 origin, float scale)
+inline static void CopyIOEvents(ImGuiContext *src, ImGuiContext *dst, ImVec2 origin, float scale)
 {
     dst->InputEventsQueue = src->InputEventsTrail;
-    for (ImGuiInputEvent& e : dst->InputEventsQueue) {
-        if (e.Type == ImGuiInputEventType_MousePos) {
+    for (ImGuiInputEvent &e : dst->InputEventsQueue)
+    {
+        if (e.Type == ImGuiInputEventType_MousePos)
+        {
             e.MousePos.PosX = (e.MousePos.PosX - origin.x) / scale;
             e.MousePos.PosY = (e.MousePos.PosY - origin.y) / scale;
         }
     }
 }
 
-inline static void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
+inline static void AppendDrawData(ImDrawList *src, ImVec2 origin, float scale)
 {
     // TODO optimize if vtx_start == 0 || if idx_start == 0
-    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImDrawList *dl = ImGui::GetWindowDrawList();
     const int vtx_start = dl->VtxBuffer.size();
     const int idx_start = dl->IdxBuffer.size();
     dl->VtxBuffer.resize(dl->VtxBuffer.size() + src->VtxBuffer.size());
@@ -25,17 +27,20 @@ inline static void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
     dl->CmdBuffer.reserve(dl->CmdBuffer.size() + src->CmdBuffer.size());
     dl->_VtxWritePtr = dl->VtxBuffer.Data + vtx_start;
     dl->_IdxWritePtr = dl->IdxBuffer.Data + idx_start;
-    const ImDrawVert* vtx_read = src->VtxBuffer.Data;
-    const ImDrawIdx* idx_read = src->IdxBuffer.Data;
-    for (int i = 0, c = src->VtxBuffer.size(); i < c; ++i) {
+    const ImDrawVert *vtx_read = src->VtxBuffer.Data;
+    const ImDrawIdx *idx_read = src->IdxBuffer.Data;
+    for (int i = 0, c = src->VtxBuffer.size(); i < c; ++i)
+    {
         dl->_VtxWritePtr[i].uv = vtx_read[i].uv;
         dl->_VtxWritePtr[i].col = vtx_read[i].col;
         dl->_VtxWritePtr[i].pos = vtx_read[i].pos * scale + origin;
     }
-    for (int i = 0, c = src->IdxBuffer.size(); i < c; ++i) {
+    for (int i = 0, c = src->IdxBuffer.size(); i < c; ++i)
+    {
         dl->_IdxWritePtr[i] = idx_read[i] + vtx_start;
     }
-    for (auto cmd : src->CmdBuffer) {
+    for (auto cmd : src->CmdBuffer)
+    {
         cmd.IdxOffset += idx_start;
         IM_ASSERT(cmd.VtxOffset == 0);
         cmd.ClipRect.x = cmd.ClipRect.x * scale + origin.x;
@@ -69,23 +74,24 @@ class ContainedContext
 {
 public:
     ~ContainedContext();
-    ContainedContextConfig& config() { return m_config; }
+    ContainedContextConfig &config() { return m_config; }
     void begin();
     void end();
     [[nodiscard]] ImVec2 size() const { return m_size; }
     [[nodiscard]] float scale() const { return m_scale; }
-    [[nodiscard]] const ImVec2& origin() const { return m_origin; }
+    [[nodiscard]] const ImVec2 &origin() const { return m_origin; }
     [[nodiscard]] bool hovered() const { return m_hovered; }
-    [[nodiscard]] const ImVec2& scroll() const { return m_scroll; }
-    ImGuiContext* getRawContext() { return m_ctx; }
+    [[nodiscard]] const ImVec2 &scroll() const { return m_scroll; }
+    ImGuiContext *getRawContext() { return m_ctx; }
+
 private:
     ContainedContextConfig m_config;
 
     ImVec2 m_origin;
     ImVec2 m_pos;
     ImVec2 m_size;
-    ImGuiContext* m_ctx = nullptr;
-    ImGuiContext* m_original_ctx = nullptr;
+    ImGuiContext *m_ctx = nullptr;
+    ImGuiContext *m_original_ctx = nullptr;
 
     bool m_anyWindowHovered = false;
     bool m_anyItemActive = false;
@@ -97,7 +103,8 @@ private:
 
 inline ContainedContext::~ContainedContext()
 {
-    if (m_ctx) ImGui::DestroyContext(m_ctx);
+    if (m_ctx)
+        ImGui::DestroyContext(m_ctx);
 }
 
 inline void ContainedContext::begin()
@@ -110,11 +117,17 @@ inline void ContainedContext::begin()
 
     m_size = ImGui::GetContentRegionAvail();
     m_origin = ImGui::GetCursorScreenPos();
+
+    ImGui::PushClipRect(m_origin, m_origin + m_size, true);
+    auto canvas_clip_rect = ImGui::GetWindowDrawList()->CmdBuffer.back().ClipRect;
+    ImGui::PopClipRect();
+
     m_original_ctx = ImGui::GetCurrentContext();
-    const ImGuiStyle& orig_style = ImGui::GetStyle();
-    if (!m_ctx) m_ctx = ImGui::CreateContext(ImGui::GetIO().Fonts);
+    const ImGuiStyle &orig_style = ImGui::GetStyle();
+    if (!m_ctx)
+        m_ctx = ImGui::CreateContext(ImGui::GetIO().Fonts);
     ImGui::SetCurrentContext(m_ctx);
-    ImGuiStyle& new_style = ImGui::GetStyle();
+    ImGuiStyle &new_style = ImGui::GetStyle();
     new_style = orig_style;
 
     CopyIOEvents(m_original_ctx, m_ctx, m_origin, m_scale);
@@ -128,13 +141,17 @@ inline void ContainedContext::begin()
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Appearing);
     ImGui::SetNextWindowSize(ImGui::GetMainViewport()->WorkSize);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove
-                                                | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::PopStyleVar();
+
+    canvas_clip_rect = (canvas_clip_rect - ImVec4(m_origin.x, m_origin.y, m_origin.x, m_origin.y)) / m_scale;
+    ImGui::PushClipRect({canvas_clip_rect.x, canvas_clip_rect.y}, {canvas_clip_rect.z, canvas_clip_rect.w}, false);
 }
 
 inline void ContainedContext::end()
 {
+    ImGui::PopClipRect();
+
     m_anyWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
     if (m_config.extra_window_wrapper && ImGui::IsWindowHovered())
         m_anyWindowHovered = false;
@@ -146,7 +163,7 @@ inline void ContainedContext::end()
 
     ImGui::Render();
 
-    ImDrawData* draw_data = ImGui::GetDrawData();
+    ImDrawData *draw_data = ImGui::GetDrawData();
 
     ImGui::SetCurrentContext(m_original_ctx);
     m_original_ctx = nullptr;

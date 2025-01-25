@@ -4,29 +4,42 @@
 
 namespace ImFlow
 {
-    inline void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness)
+    struct NodePrioritySorter
     {
-        ImDrawList* dl = ImGui::GetWindowDrawList();
+        bool operator()(const std::shared_ptr<Node> &a, const std::shared_ptr<Node> &b)
+        {
+            return a->getPriority() >= b->getPriority();
+        }
+    }
+
+    inline void
+    smart_bezier(const ImVec2 &p1, const ImVec2 &p2, ImU32 color, float thickness)
+    {
+        ImDrawList *dl = ImGui::GetWindowDrawList();
         float distance = sqrt(pow((p2.x - p1.x), 2.f) + pow((p2.y - p1.y), 2.f));
         float delta = distance * 0.45f;
-        if (p2.x < p1.x) delta += 0.2f * (p1.x - p2.x);
+        if (p2.x < p1.x)
+            delta += 0.2f * (p1.x - p2.x);
         // float vert = (p2.x < p1.x - 20.f) ? 0.062f * distance * (p2.y - p1.y) * 0.005f : 0.f;
         float vert = 0.f;
         ImVec2 p22 = p2 - ImVec2(delta, vert);
-        if (p2.x < p1.x - 50.f) delta *= -1.f;
+        if (p2.x < p1.x - 50.f)
+            delta *= -1.f;
         ImVec2 p11 = p1 + ImVec2(delta, vert);
         dl->AddBezierCubic(p1, p11, p22, p2, color, thickness);
     }
 
-    inline bool smart_bezier_collider(const ImVec2& p, const ImVec2& p1, const ImVec2& p2, float radius)
+    inline bool smart_bezier_collider(const ImVec2 &p, const ImVec2 &p1, const ImVec2 &p2, float radius)
     {
         float distance = sqrt(pow((p2.x - p1.x), 2.f) + pow((p2.y - p1.y), 2.f));
         float delta = distance * 0.45f;
-        if (p2.x < p1.x) delta += 0.2f * (p1.x - p2.x);
+        if (p2.x < p1.x)
+            delta += 0.2f * (p1.x - p2.x);
         // float vert = (p2.x < p1.x - 20.f) ? 0.062f * distance * (p2.y - p1.y) * 0.005f : 0.f;
         float vert = 0.f;
         ImVec2 p22 = p2 - ImVec2(delta, vert);
-        if (p2.x < p1.x - 50.f) delta *= -1.f;
+        if (p2.x < p1.x - 50.f)
+            delta *= -1.f;
         ImVec2 p11 = p1 + ImVec2(delta, vert);
         return ImProjectOnCubicBezier(p, p1, p11, p22, p2).Distance < radius;
     }
@@ -34,8 +47,8 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // HANDLER
 
-    template<typename T, typename... Params>
-    std::shared_ptr<T> ImNodeFlow::addNode(const ImVec2& pos, Params&&... args)
+    template <typename T, typename... Params>
+    std::shared_ptr<T> ImNodeFlow::addNode(const ImVec2 &pos, Params &&...args)
     {
         static_assert(std::is_base_of<BaseNode, T>::value, "Pushed type is not a subclass of BaseNode!");
 
@@ -51,14 +64,14 @@ namespace ImFlow
         return n;
     }
 
-    template<typename T, typename... Params>
-    std::shared_ptr<T> ImNodeFlow::placeNodeAt(const ImVec2& pos, Params&&... args)
+    template <typename T, typename... Params>
+    std::shared_ptr<T> ImNodeFlow::placeNodeAt(const ImVec2 &pos, Params &&...args)
     {
         return addNode<T>(screen2grid(pos), std::forward<Params>(args)...);
     }
 
-    template<typename T, typename... Params>
-    std::shared_ptr<T> ImNodeFlow::placeNode(Params&&... args)
+    template <typename T, typename... Params>
+    std::shared_ptr<T> ImNodeFlow::placeNode(Params &&...args)
     {
         return placeNodeAt<T>(ImGui::GetMousePos(), std::forward<Params>(args)...);
     }
@@ -66,23 +79,24 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // BASE NODE
 
-    template<typename T>
-    std::shared_ptr<InPin<T>> BaseNode::addIN(const std::string& name, T defReturn, std::function<bool(Pin*, Pin*)> filter, std::shared_ptr<PinStyle> style)
+    template <typename T>
+    std::shared_ptr<InPin<T>> BaseNode::addIN(const std::string &name, T defReturn, std::function<bool(Pin *, Pin *)> filter, std::shared_ptr<PinStyle> style)
     {
         return addIN_uid(name, name, defReturn, std::move(filter), std::move(style));
     }
 
-    template<typename T, typename U>
-    std::shared_ptr<InPin<T>> BaseNode::addIN_uid(const U& uid, const std::string& name, T defReturn, std::function<bool(Pin*, Pin*)> filter, std::shared_ptr<PinStyle> style)
+    template <typename T, typename U>
+    std::shared_ptr<InPin<T>> BaseNode::addIN_uid(const U &uid, const std::string &name, T defReturn, std::function<bool(Pin *, Pin *)> filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
         auto p = std::make_shared<InPin<T>>(h, name, defReturn, std::move(filter), std::move(style), this, &m_inf);
         m_ins.emplace_back(p);
+        std::sort(m_ins.begin(), m_ins.end(), NodePrioritySorter());
         return p;
     }
 
-    template<typename U>
-    void BaseNode::dropIN(const U& uid)
+    template <typename U>
+    void BaseNode::dropIN(const U &uid)
     {
         PinUID h = std::hash<U>{}(uid);
         for (auto it = m_ins.begin(); it != m_ins.end(); it++)
@@ -95,51 +109,52 @@ namespace ImFlow
         }
     }
 
-    inline void BaseNode::dropIN(const char* uid)
+    inline void BaseNode::dropIN(const char *uid)
     {
         dropIN<std::string>(uid);
     }
 
-    template<typename T>
-    const T& BaseNode::showIN(const std::string& name, T defReturn, std::function<bool(Pin*, Pin*)> filter, std::shared_ptr<PinStyle> style)
+    template <typename T>
+    const T &BaseNode::showIN(const std::string &name, T defReturn, std::function<bool(Pin *, Pin *)> filter, std::shared_ptr<PinStyle> style)
     {
         return showIN_uid(name, name, defReturn, std::move(filter), std::move(style));
     }
 
-    template<typename T, typename U>
-    const T& BaseNode::showIN_uid(const U& uid, const std::string& name, T defReturn, std::function<bool(Pin*, Pin*)> filter, std::shared_ptr<PinStyle> style)
+    template <typename T, typename U>
+    const T &BaseNode::showIN_uid(const U &uid, const std::string &name, T defReturn, std::function<bool(Pin *, Pin *)> filter, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        for (std::pair<int, std::shared_ptr<Pin>>& p : m_dynamicIns)
+        for (std::pair<int, std::shared_ptr<Pin>> &p : m_dynamicIns)
         {
             if (p.second->getUid() == h)
             {
                 p.first = 1;
-                return static_cast<InPin<T>*>(p.second.get())->val();
+                return static_cast<InPin<T> *>(p.second.get())->val();
             }
         }
 
         m_dynamicIns.emplace_back(std::make_pair(1, std::make_shared<InPin<T>>(h, name, defReturn, std::move(filter), std::move(style), this, &m_inf)));
-        return static_cast<InPin<T>*>(m_dynamicIns.back().second.get())->val();
+        return static_cast<InPin<T> *>(m_dynamicIns.back().second.get())->val();
     }
 
-    template<typename T>
-    std::shared_ptr<OutPin<T>> BaseNode::addOUT(const std::string& name, std::shared_ptr<PinStyle> style)
+    template <typename T>
+    std::shared_ptr<OutPin<T>> BaseNode::addOUT(const std::string &name, std::shared_ptr<PinStyle> style)
     {
         return addOUT_uid<T>(name, name, std::move(style));
     }
 
-    template<typename T, typename U>
-    std::shared_ptr<OutPin<T>> BaseNode::addOUT_uid(const U& uid, const std::string& name, std::shared_ptr<PinStyle> style)
+    template <typename T, typename U>
+    std::shared_ptr<OutPin<T>> BaseNode::addOUT_uid(const U &uid, const std::string &name, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
         auto p = std::make_shared<OutPin<T>>(h, name, std::move(style), this, &m_inf);
         m_outs.emplace_back(p);
+        std::sort(m_outs.begin(), m_outs.end(), NodePrioritySorter());
         return p;
     }
 
-    template<typename U>
-    void BaseNode::dropOUT(const U& uid)
+    template <typename U>
+    void BaseNode::dropOUT(const U &uid)
     {
         PinUID h = std::hash<U>{}(uid);
         for (auto it = m_outs.begin(); it != m_outs.end(); it++)
@@ -152,77 +167,77 @@ namespace ImFlow
         }
     }
 
-    inline void BaseNode::dropOUT(const char* uid)
+    inline void BaseNode::dropOUT(const char *uid)
     {
         dropOUT<std::string>(uid);
     }
 
-    template<typename T>
-    void BaseNode::showOUT(const std::string& name, std::function<T()> behaviour, std::shared_ptr<PinStyle> style)
+    template <typename T>
+    void BaseNode::showOUT(const std::string &name, std::function<T()> behaviour, std::shared_ptr<PinStyle> style)
     {
         showOUT_uid<T>(name, name, std::move(behaviour), std::move(style));
     }
 
-    template<typename T, typename U>
-    void BaseNode::showOUT_uid(const U& uid, const std::string& name, std::function<T()> behaviour, std::shared_ptr<PinStyle> style)
+    template <typename T, typename U>
+    void BaseNode::showOUT_uid(const U &uid, const std::string &name, std::function<T()> behaviour, std::shared_ptr<PinStyle> style)
     {
         PinUID h = std::hash<U>{}(uid);
-        for (std::pair<int, std::shared_ptr<Pin>>& p : m_dynamicOuts)
+        for (std::pair<int, std::shared_ptr<Pin>> &p : m_dynamicOuts)
         {
             if (p.second->getUid() == h)
             {
                 p.first = 2;
-                static_cast<OutPin<T>*>(m_dynamicOuts.back().second.get())->behaviour(std::move(behaviour));
+                static_cast<OutPin<T> *>(m_dynamicOuts.back().second.get())->behaviour(std::move(behaviour));
                 return;
             }
         }
 
         m_dynamicOuts.emplace_back(std::make_pair(2, std::make_shared<OutPin<T>>(h, name, std::move(style), this, &m_inf)));
-        static_cast<OutPin<T>*>(m_dynamicOuts.back().second.get())->behaviour(std::move(behaviour));
+        static_cast<OutPin<T> *>(m_dynamicOuts.back().second.get())->behaviour(std::move(behaviour));
     }
 
-    template<typename T, typename U>
-    const T& BaseNode::getInVal(const U& uid)
+    template <typename T, typename U>
+    const T &BaseNode::getInVal(const U &uid)
     {
         PinUID h = std::hash<U>{}(uid);
-        auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->getUid() == h; });
+        auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin> &p)
+                               { return p->getUid() == h; });
         assert(it != m_ins.end() && "Pin UID not found!");
-        return static_cast<InPin<T>*>(it->get())->val();
+        return static_cast<InPin<T> *>(it->get())->val();
     }
 
-    template<typename T>
-    const T& BaseNode::getInVal(const char* uid)
+    template <typename T>
+    const T &BaseNode::getInVal(const char *uid)
     {
         return getInVal<T, std::string>(uid);
     }
 
-    template<typename U>
-    Pin* BaseNode::inPin(const U& uid)
+    template <typename U>
+    Pin *BaseNode::inPin(const U &uid)
     {
         PinUID h = std::hash<U>{}(uid);
-        auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->getUid() == h; });
+        auto it = std::find_if(m_ins.begin(), m_ins.end(), [&h](std::shared_ptr<Pin> &p)
+                               { return p->getUid() == h; });
         assert(it != m_ins.end() && "Pin UID not found!");
         return it->get();
     }
 
-    inline Pin* BaseNode::inPin(const char* uid)
+    inline Pin *BaseNode::inPin(const char *uid)
     {
         return inPin<std::string>(uid);
     }
 
-    template<typename U>
-    Pin* BaseNode::outPin(const U& uid)
+    template <typename U>
+    Pin *BaseNode::outPin(const U &uid)
     {
         PinUID h = std::hash<U>{}(uid);
-        auto it = std::find_if(m_outs.begin(), m_outs.end(), [&h](std::shared_ptr<Pin>& p)
-                            { return p->getUid() == h; });
+        auto it = std::find_if(m_outs.begin(), m_outs.end(), [&h](std::shared_ptr<Pin> &p)
+                               { return p->getUid() == h; });
         assert(it != m_outs.end() && "Pin UID not found!");
         return it->get();
     }
 
-    inline Pin* BaseNode::outPin(const char* uid)
+    inline Pin *BaseNode::outPin(const char *uid)
     {
         return outPin<std::string>(uid);
     }
@@ -232,7 +247,7 @@ namespace ImFlow
 
     inline void Pin::drawSocket()
     {
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
         ImVec2 tl = pinPoint() - ImVec2(m_style->socket_radius, m_style->socket_radius);
         ImVec2 br = pinPoint() + ImVec2(m_style->socket_radius, m_style->socket_radius);
 
@@ -252,7 +267,7 @@ namespace ImFlow
 
     inline void Pin::drawDecoration()
     {
-        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
 
         if (ImGui::IsItemHovered())
             draw_list->AddRectFilled(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.bg_hover_color, m_style->extra.bg_radius);
@@ -289,16 +304,16 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // IN PIN
 
-    template<class T>
-    const T& InPin<T>::val()
+    template <class T>
+    const T &InPin<T>::val()
     {
-        if(!m_link)
+        if (!m_link)
             return m_emptyVal;
 
-        return reinterpret_cast<OutPin<T>*>(m_link->left())->val();
+        return reinterpret_cast<OutPin<T> *>(m_link->left())->val();
     }
 
-    template<class T>
+    template <class T>
     void InPin<T>::createLink(Pin *other)
     {
         if (other == this || other->getType() == PinType_Input)
@@ -324,7 +339,7 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // OUT PIN
 
-    template<class T>
+    template <class T>
     const T &OutPin<T>::val()
     {
         std::string s = std::to_string(m_uid) + std::to_string(m_parent->getUID());
@@ -337,7 +352,7 @@ namespace ImFlow
         return m_val;
     }
 
-    template<class T>
+    template <class T>
     void OutPin<T>::createLink(ImFlow::Pin *other)
     {
         if (other == this || other->getType() == PinType_Output)
@@ -346,16 +361,18 @@ namespace ImFlow
         other->createLink(this);
     }
 
-    template<class T>
-    void OutPin<T>::setLink(std::shared_ptr<Link>& link)
+    template <class T>
+    void OutPin<T>::setLink(std::shared_ptr<Link> &link)
     {
         m_links.emplace_back(link);
     }
 
-    template<class T>
+    template <class T>
     void OutPin<T>::deleteLink()
     {
         m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
-                                     [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
+                                     [](const std::weak_ptr<Link> &l)
+                                     { return l.expired(); }),
+                      m_links.end());
     }
 }
