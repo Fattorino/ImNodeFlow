@@ -830,12 +830,6 @@ namespace ImFlow
         const ImVec2 &getPos() { return m_pos; }
 
         /**
-         * @brief <BR>Get node display priority list
-         * @return nodes's display priority
-         */
-        uint32_t getPriority() const { return m_priority; }
-
-        /**
          * @brief <BR>Get grid handler bound to node
          * @return Pointer to the handler
          */
@@ -890,11 +884,6 @@ namespace ImFlow
             return this;
         }
 
-        BaseNode *setPriority(uint32_t priority)
-        {
-            m_priority = priority;
-        }
-
         /**
          * @brief <BR>Set ImNodeFlow handler
          * @param inf Grid handler for the node
@@ -947,8 +936,6 @@ namespace ImFlow
         std::vector<std::pair<int, std::shared_ptr<Pin>>> m_dynamicIns;
         std::vector<std::shared_ptr<Pin>> m_outs;
         std::vector<std::pair<int, std::shared_ptr<Pin>>> m_dynamicOuts;
-
-        uint32_t m_priority = 0;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1030,6 +1017,12 @@ namespace ImFlow
          */
         virtual void setLink(std::shared_ptr<Link> &link) {}
 
+        Pin *setPriority(uint32_t priority)
+        {
+            m_priority = priority;
+            return this;
+        }
+
         /**
          * @brief <BR>Delete link reference
          */
@@ -1070,6 +1063,12 @@ namespace ImFlow
          * @return Const reference to pin's hit-box size
          */
         [[nodiscard]] const ImVec2 &getSize() { return m_size; }
+
+        /**
+         * @brief <BR>Get node display priority list
+         * @return nodes's display priority
+         */
+        uint32_t getPriority() const { return m_priority; }
 
         /**
          * @brief <BR>Get pin's parent node
@@ -1123,6 +1122,8 @@ namespace ImFlow
         ImNodeFlow **m_inf;
         std::shared_ptr<PinStyle> m_style;
         std::function<void(Pin *p)> m_renderer;
+
+        uint32_t m_priority = 0;
     };
 
     /**

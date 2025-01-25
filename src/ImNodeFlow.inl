@@ -6,7 +6,7 @@ namespace ImFlow
 {
     struct NodePrioritySorter
     {
-        bool operator()(const std::shared_ptr<BaseNode> &a, const std::shared_ptr<BaseNode> &b)
+        bool operator()(const std::shared_ptr<Pin> &a, const std::shared_ptr<Pin> &b)
         {
             return a->getPriority() >= b->getPriority();
         }
