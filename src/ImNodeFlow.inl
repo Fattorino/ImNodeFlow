@@ -6,11 +6,11 @@ namespace ImFlow
 {
     struct NodePrioritySorter
     {
-        bool operator()(const std::shared_ptr<Node> &a, const std::shared_ptr<Node> &b)
+        bool operator()(const std::shared_ptr<BaseNode> &a, const std::shared_ptr<BaseNode> &b)
         {
             return a->getPriority() >= b->getPriority();
         }
-    }
+    };
 
     inline void
     smart_bezier(const ImVec2 &p1, const ImVec2 &p2, ImU32 color, float thickness)
