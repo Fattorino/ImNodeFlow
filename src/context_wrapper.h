@@ -136,6 +136,12 @@ inline void ContainedContext::begin()
     ImGui::GetIO().ConfigInputTrickleEventQueue = false;
     ImGui::NewFrame();
 
+    canvas_clip_rect.y = (canvas_clip_rect.y - m_origin.x) / m_scale;
+    canvas_clip_rect.x = (canvas_clip_rect.x - m_origin.y) / m_scale;
+    canvas_clip_rect.z = (canvas_clip_rect.z - m_origin.x) / m_scale;
+    canvas_clip_rect.w = (canvas_clip_rect.w - m_origin.y) / m_scale;
+    ImGui::PushClipRect({canvas_clip_rect.x, canvas_clip_rect.y}, {canvas_clip_rect.z, canvas_clip_rect.w}, false);
+
     if (!m_config.extra_window_wrapper)
         return;
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Appearing);
@@ -143,17 +149,10 @@ inline void ContainedContext::begin()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::PopStyleVar();
-
-    canvas_clip_rect.y = (canvas_clip_rect.y - m_origin.x) / m_scale;
-    canvas_clip_rect.x = (canvas_clip_rect.x - m_origin.y) / m_scale;
-    canvas_clip_rect.z = (canvas_clip_rect.z - m_origin.x) / m_scale;
-    canvas_clip_rect.w = (canvas_clip_rect.w - m_origin.y) / m_scale;
-    ImGui::PushClipRect({canvas_clip_rect.x, canvas_clip_rect.y}, {canvas_clip_rect.z, canvas_clip_rect.w}, false);
 }
 
 inline void ContainedContext::end()
 {
-    ImGui::PopClipRect();
 
     m_anyWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
     if (m_config.extra_window_wrapper && ImGui::IsWindowHovered())
@@ -163,6 +162,8 @@ inline void ContainedContext::end()
 
     if (m_config.extra_window_wrapper)
         ImGui::End();
+
+    ImGui::PopClipRect();
 
     ImGui::Render();
 
