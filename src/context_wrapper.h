@@ -31,13 +31,16 @@ inline static void AppendDrawData(ImDrawList *src, ImVec2 origin, float scale)
     const ImDrawIdx *idx_read = src->IdxBuffer.Data;
     for (int i = 0, c = src->VtxBuffer.size(); i < c; ++i)
     {
-        dl->_VtxWritePtr[i].uv = vtx_read[i].uv;
-        dl->_VtxWritePtr[i].col = vtx_read[i].col;
-        dl->_VtxWritePtr[i].pos = vtx_read[i].pos * scale + origin;
+        dl->_VtxWritePtr->uv = vtx_read[i].uv;
+        dl->_VtxWritePtr->col = vtx_read[i].col;
+        dl->_VtxWritePtr->pos = vtx_read[i].pos * scale + origin;
+        dl->_VtxWritePtr++;
+        dl->_VtxCurrentIdx++;
     }
     for (int i = 0, c = src->IdxBuffer.size(); i < c; ++i)
     {
-        dl->_IdxWritePtr[i] = idx_read[i] + vtx_start;
+        *dl->_IdxWritePtr = idx_read[i] + vtx_start;
+        dl->_IdxWritePtr++;
     }
     for (auto cmd : src->CmdBuffer)
     {
@@ -49,15 +52,10 @@ inline static void AppendDrawData(ImDrawList *src, ImVec2 origin, float scale)
         cmd.ClipRect.w = cmd.ClipRect.w * scale + origin.y;
         dl->CmdBuffer.push_back(cmd);
     }
-
-    dl->_VtxCurrentIdx += src->VtxBuffer.size();
-    dl->_VtxWritePtr = dl->VtxBuffer.Data + dl->VtxBuffer.size();
-    dl->_IdxWritePtr = dl->IdxBuffer.Data + dl->IdxBuffer.size();
 }
 
 struct ContainedContextConfig
 {
-    bool extra_window_wrapper = false;
     ImVec2 size = {0.f, 0.f};
     ImU32 color = IM_COL32_WHITE;
     bool zoom_enabled = true;
@@ -136,23 +134,22 @@ inline void ContainedContext::begin()
     ImGui::GetIO().ConfigInputTrickleEventQueue = false;
     ImGui::NewFrame();
 
-    canvas_clip_rect.y = (canvas_clip_rect.y - m_origin.x) / m_scale;
-    canvas_clip_rect.x = (canvas_clip_rect.x - m_origin.y) / m_scale;
-    canvas_clip_rect.z = (canvas_clip_rect.z - m_origin.x) / m_scale;
-    canvas_clip_rect.w = (canvas_clip_rect.w - m_origin.y) / m_scale;
-    ImGui::PushClipRect({canvas_clip_rect.x, canvas_clip_rect.y}, {canvas_clip_rect.z, canvas_clip_rect.w}, false);
-
-    if (!m_config.extra_window_wrapper)
-        return;
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos({});
     ImGui::SetNextWindowSize(ImGui::GetMainViewport()->WorkSize);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::PopStyleVar();
+
+    canvas_clip_rect.x = (canvas_clip_rect.x - m_origin.x) / m_scale;
+    canvas_clip_rect.y = (canvas_clip_rect.y - m_origin.y) / m_scale;
+    canvas_clip_rect.z = (canvas_clip_rect.z - m_origin.x) / m_scale;
+    canvas_clip_rect.w = (canvas_clip_rect.w - m_origin.y) / m_scale;
+    ImGui::PushClipRect({canvas_clip_rect.x, canvas_clip_rect.y}, {canvas_clip_rect.z, canvas_clip_rect.w}, false);
 }
 
 inline void ContainedContext::end()
 {
+    ImGui::PopClipRect();
 
     m_anyWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
     if (m_config.extra_window_wrapper && ImGui::IsWindowHovered())
@@ -160,10 +157,7 @@ inline void ContainedContext::end()
 
     m_anyItemActive = ImGui::IsAnyItemActive();
 
-    if (m_config.extra_window_wrapper)
-        ImGui::End();
-
-    ImGui::PopClipRect();
+    ImGui::End();
 
     ImGui::Render();
 

@@ -294,7 +294,6 @@ namespace ImFlow
         explicit ImNodeFlow(std::string name) : m_name(std::move(name))
         {
             m_instances++;
-            m_context.config().extra_window_wrapper = true;
             m_context.config().color = m_style.colors.background;
         }
 
