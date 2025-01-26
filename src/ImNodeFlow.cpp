@@ -198,7 +198,7 @@ namespace ImFlow
         if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
             destroy();
 
-        bool onNode = ImGui::IsMouseHoveringRect(m_rect.Min, m_rect.Max);
+        bool onNode = ImGui::IsMouseHoveringRect(m_rect.Min, m_rect.Max) && !ImGui::IsAnyItemHovered();
         if (onNode && mouseClickState)
         {
             m_inf->consumeSingleUseClick();
