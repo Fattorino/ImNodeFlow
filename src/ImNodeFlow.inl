@@ -6,7 +6,7 @@ namespace ImFlow
 {
 	struct NodePrioritySorter
 	{
-		bool operator()(const std::shared_ptr<Pin> &a, const std::shared_ptr<Pin> &b) { return a->getPriority() >= b->getPriority(); }
+		bool operator()(const std::shared_ptr<Pin> &a, const std::shared_ptr<Pin> &b) { return a->getPriority() < b->getPriority(); }
 	};
 
 	inline void smart_bezier(const ImVec2 &p1, const ImVec2 &p2, ImU32 color, float thickness)
@@ -244,10 +244,11 @@ namespace ImFlow
 
 	inline void Pin::drawSocket()
 	{
+
 		ImDrawList *draw_list = ImGui::GetWindowDrawList();
 		ImVec2 tl = pinPoint() - ImVec2(m_style->socket_radius, m_style->socket_radius);
 		ImVec2 br = pinPoint() + ImVec2(m_style->socket_radius, m_style->socket_radius);
-		bool hovered = ImGui::ItemHoverable({tl, br}, ImHashData(this, sizeof(this)), ImGuiItemFlags_None);
+		bool hovered = ImGui::ItemHoverable({tl, br}, ImGui::GetID(this), ImGuiItemFlags_None);
 
 		if (isConnected())
 			draw_list->AddCircleFilled(pinPoint(), m_style->socket_connected_radius, m_style->color, m_style->socket_shape);
@@ -282,6 +283,8 @@ namespace ImFlow
 
 	inline void Pin::update()
 	{
+		ImGui::PushID(this);
+
 		// Custom rendering
 		if (m_renderer)
 		{
@@ -289,20 +292,21 @@ namespace ImFlow
 			m_renderer(this);
 			ImGui::EndGroup();
 			m_size = ImGui::GetItemRectSize();
-			if (ImGui::IsItemHovered())
-				(*m_inf)->hovering(this);
-			return;
 		}
+		else
+		{
+			ImGui::SetCursorPos(m_pos);
+			ImGui::Text("%s", m_name.c_str());
+			m_size = ImGui::GetItemRectSize();
 
-		ImGui::SetCursorPos(m_pos);
-		ImGui::Text("%s", m_name.c_str());
-		m_size = ImGui::GetItemRectSize();
-
-		drawDecoration();
-		drawSocket();
+			drawDecoration();
+			drawSocket();
+		}
 
 		if (ImGui::IsItemHovered())
 			(*m_inf)->hovering(this);
+
+		ImGui::PopID();
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------

@@ -145,7 +145,7 @@ namespace ImFlow
 		ImGui::EndGroup();
 		m_size = ImGui::GetItemRectSize();
 		m_rect = ImRect{offset + m_pos - paddingTL, offset + m_pos + m_size + paddingBR};
-		m_hovered = ImGui::ItemHoverable(m_rect, ImHashData(this, sizeof(this)), ImGuiItemFlags_None);
+		m_hovered = ImGui::ItemHoverable(m_rect, ImGui::GetID(this), ImGuiItemFlags_None);
 
 		ImVec2 headerSize = ImVec2(m_size.x + paddingBR.x, headerH);
 
@@ -369,6 +369,7 @@ namespace ImFlow
 		}
 
 		// Right-click PopUp
+
 		if (m_rightClickPopUp && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered())
 		{
 			m_hoveredNodeAux = m_hoveredNode;
@@ -376,7 +377,7 @@ namespace ImFlow
 		}
 		if (ImGui::BeginPopup("RightClickPopUp"))
 		{
-			m_rightClickPopUp(m_hoveredNodeAux);
+			m_rightClickPopUp(m_hoveredNodeAux, screen2grid(ImGui::GetMousePos()));
 			ImGui::EndPopup();
 		}
 
@@ -394,6 +395,14 @@ namespace ImFlow
 		m_pinRecursionBlacklist.clear();
 
 		m_context.end();
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (m_dragdropTarget)
+				m_dragdropTarget(screen2grid(ImGui::GetMousePos()));
+
+			ImGui::EndDragDropTarget();
+		}
 	}
 
 	void ImNodeFlow::addNode(std::shared_ptr<BaseNode> &n, const ImVec2 &pos)

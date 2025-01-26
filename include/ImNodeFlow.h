@@ -447,7 +447,9 @@ namespace ImFlow
 		 * @details Sets the content of a pop-up that can be displayed when right-clicking on the grid.
 		 * @param content Function or Lambda containing only the contents of the pop-up and the subsequent logic
 		 */
-		void rightClickPopUpContent(std::function<void(BaseNode *node)> content) { m_rightClickPopUp = std::move(content); }
+		void rightClickPopUpContent(std::function<void(BaseNode *node, const ImVec2 &pos)> content) { m_rightClickPopUp = std::move(content); }
+
+		void dragDropTarget(std::function<void(const ImVec2 &)> content) { m_dragdropTarget = std::move(content); }
 
 		/**
 		 * @brief <BR>Get mouse clicking status
@@ -586,7 +588,9 @@ namespace ImFlow
 		std::function<void(Pin *dragged)> m_droppedLinkPopUp;
 		ImGuiKey m_droppedLinkPupUpComboKey = ImGuiKey_None;
 		Pin *m_droppedLinkLeft = nullptr;
-		std::function<void(BaseNode *node)> m_rightClickPopUp;
+		std::function<void(BaseNode *node, const ImVec2 &pos)> m_rightClickPopUp;
+		std::function<void(const ImVec2 &)> m_dragdropTarget;
+
 		BaseNode *m_hoveredNodeAux = nullptr;
 
 		BaseNode *m_hoveredNode = nullptr;
