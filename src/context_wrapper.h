@@ -153,7 +153,10 @@ inline void ContainedContext::end()
 
     m_anyWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
     if (ImGui::IsWindowHovered())
+    {
         m_anyWindowHovered = false;
+        ImGui::SetKeyOwner(ImGuiKey_MouseWheelY, ImGui::GetCurrentWindow()->ID);
+    }
 
     m_anyItemActive = ImGui::IsAnyItemActive();
 
