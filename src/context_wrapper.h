@@ -140,6 +140,11 @@ inline void ContainedContext::begin()
     ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::PopStyleVar();
 
+    if (ImGui::IsWindowHovered())
+    {
+        ImGui::SetKeyOwner(ImGuiKey_MouseWheelY, ImGui::GetCurrentWindow()->ID);
+    }
+
     canvas_clip_rect.x = (canvas_clip_rect.x - m_origin.x) / m_scale;
     canvas_clip_rect.y = (canvas_clip_rect.y - m_origin.y) / m_scale;
     canvas_clip_rect.z = (canvas_clip_rect.z - m_origin.x) / m_scale;
@@ -155,7 +160,6 @@ inline void ContainedContext::end()
     if (ImGui::IsWindowHovered())
     {
         m_anyWindowHovered = false;
-        ImGui::SetKeyOwner(ImGuiKey_MouseWheelY, ImGui::GetCurrentWindow()->ID);
     }
 
     m_anyItemActive = ImGui::IsAnyItemActive();
