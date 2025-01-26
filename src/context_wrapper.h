@@ -152,7 +152,7 @@ inline void ContainedContext::end()
     ImGui::PopClipRect();
 
     m_anyWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
-    if (m_config.extra_window_wrapper && ImGui::IsWindowHovered())
+    if (ImGui::IsWindowHovered())
         m_anyWindowHovered = false;
 
     m_anyItemActive = ImGui::IsAnyItemActive();
