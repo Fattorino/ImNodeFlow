@@ -111,6 +111,12 @@ inline void ContainedContext::begin()
     ImGui::PushStyleColor(ImGuiCol_ChildBg, m_config.color);
     ImGui::BeginChild("view_port", m_config.size, 0, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::PopStyleColor();
+
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+    {
+        ImGui::SetKeyOwner(ImGuiKey_MouseWheelY, ImHashStr("view_port"));
+    }
+
     m_pos = ImGui::GetWindowPos();
 
     m_size = ImGui::GetContentRegionAvail();
@@ -139,11 +145,6 @@ inline void ContainedContext::begin()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     ImGui::PopStyleVar();
-
-    if (ImGui::IsWindowHovered())
-    {
-        ImGui::SetKeyOwner(ImGuiKey_MouseWheelY, ImGui::GetCurrentWindow()->ID);
-    }
 
     canvas_clip_rect.x = (canvas_clip_rect.x - m_origin.x) / m_scale;
     canvas_clip_rect.y = (canvas_clip_rect.y - m_origin.y) / m_scale;
