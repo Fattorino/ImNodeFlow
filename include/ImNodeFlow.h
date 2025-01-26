@@ -828,6 +828,8 @@ namespace ImFlow
          */
         const ImVec2 &getPos() { return m_pos; }
 
+        const ImRect &getRect() { return m_rect; }
+
         /**
          * @brief <BR>Get grid handler bound to node
          * @return Pointer to the handler
@@ -925,6 +927,7 @@ namespace ImFlow
         std::string m_title;
         ImVec2 m_pos, m_posTarget;
         ImVec2 m_size;
+        ImRect m_rect;
         ImNodeFlow *m_inf = nullptr;
         std::shared_ptr<NodeStyle> m_style;
         bool m_selected = false, m_selectedNext = false;

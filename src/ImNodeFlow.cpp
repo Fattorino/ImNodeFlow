@@ -151,6 +151,8 @@ namespace ImFlow
 
         ImGui::EndGroup();
         m_size = ImGui::GetItemRectSize();
+        m_rect = ImRect{ImGui::GetItemRectMin() - paddingTL, ImGui::GetItemRectMax() + paddingBR};
+
         ImVec2 headerSize = ImVec2(m_size.x + paddingBR.x, headerH);
 
         // Background
@@ -196,8 +198,8 @@ namespace ImFlow
         if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
             destroy();
 
-        bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - paddingTL, offset + m_pos + headerSize);
-        if (onHeader && mouseClickState)
+        bool onNode = ImGui::IsMouseHoveringRect(m_rect);
+        if (onNode && mouseClickState)
         {
             m_inf->consumeSingleUseClick();
             m_dragged = true;
