@@ -67,7 +67,7 @@ namespace ImFlow {
         float titleW = ImGui::GetItemRectSize().x;
 
         // Inputs
-        if (!m_ins.empty() && !m_dynamicIns.empty()) {
+        if (!m_ins.empty() || !m_dynamicIns.empty()) {
             ImGui::BeginGroup();
             for (auto &p: m_ins) {
                 p->setPos(ImGui::GetCursorPos());
