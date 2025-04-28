@@ -1,17 +1,19 @@
+cmake_minimum_required(VERSION 3.14)
+project(example VERSION 1.0 LANGUAGES CXX)
+
 set(IMGUI_DIR ${CMAKE_CURRENT_LIST_DIR}/includes/imgui)
 set(IMNODEFLOW_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 
 include(FetchContent)
 
-FetchContent_Declare(imgui
-     GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
-     GIT_TAG "origin/master"
-     SOURCE_DIR ${IMGUI_DIR}
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY "https://github.com/ocornut/imgui.git"
+    GIT_TAG "v1.91.6"  # Update with future minimum compatibility
+    SOURCE_DIR ${IMGUI_DIR}
+    GIT_SHALLOW TRUE  # Limit history to download
 )
-FetchContent_GetProperties(imgui)
-if(NOT imgui_POPULATED)
-  FetchContent_Populate(imgui)
-endif()
+FetchContent_MakeAvailable(imgui)
 
 list(APPEND imgui_sources
   ${IMGUI_DIR}/imgui.cpp
