@@ -22,7 +22,31 @@ A simple example using SDL2 + OpenGL3 backend is provided in the /example folder
     > cmake ..
     > ./example
 ```
+To use system installed Imgui pass the `-DUSE_SYSTEM_IMGUI=ON` option while configuring CMake. Note that you should have the Findimgui.cmake script to find the Imgui libs and headers (to use `find_package(imgui)`).
 
+### Simple Node example
+```c++
+class SimpleSum : public BaseNode
+{
+public:
+    SimpleSum()
+    {
+        setTitle("Simple sum");
+        setStyle(NodeStyle::green());
+        addIN<int>("IN_VAL", 0, ConnectionFilter::SameType());
+        addOUT<int>("OUT_VAL", ConnectionFilter::SameType())
+                ->behaviour([this](){ return getInVal<int>("IN_VAL") + m_valB; });
+    }
+
+    void draw() override
+    {
+        ImGui::SetNextItemWidth(100.f);
+        ImGui::InputInt("##ValB", &m_valB);
+    }
+private:
+    int m_valB = 0;
+};
+```
 ![image](https://github.com/Fattorino/ImNodeFlow/assets/90210751/0ef78533-23f6-4cda-96aa-dabb121d1503)
 
 ## CMake for custom targets
