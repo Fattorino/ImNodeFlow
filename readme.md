@@ -51,7 +51,7 @@ private:
 
 ## CMake for custom targets
 Shown below is a simple CMake script to setup your own program to compile using Imgui and ImNodeFlow. You can adapt this to your needs.
-```
+```cmake
 set(IMGUI_DIR ${CMAKE_CURRENT_LIST_DIR}/includes/imgui)
 set(IMNODEFLOW_DIR ${CMAKE_CURRENT_LIST_DIR}/includes/ImNodeFlow)
 
@@ -96,7 +96,7 @@ target_compile_definitions(custom_exe PRIVATE IMGUI_DEFINE_MATH_OPERATORS)
 ```
 Depending on the backend you choose for Imgui you can set `target_link_libraries` to the correct sets. For example SDL2+OpenGL requires the following defintitions,
 
-```
+```cmake
 find_package(OpenGL REQUIRED)
 find_package(SDL2 REQUIRED)
 if (UNIX)
