@@ -5,6 +5,7 @@
 
 inline static void CopyIOEvents(ImGuiContext* src, ImGuiContext* dst, ImVec2 origin, float scale)
 {
+    dst->IO.DeltaTime = src->IO.DeltaTime;
     dst->InputEventsQueue = src->InputEventsTrail;
     for (ImGuiInputEvent& e : dst->InputEventsQueue) {
         if (e.Type == ImGuiInputEventType_MousePos) {
