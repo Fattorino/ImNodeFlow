@@ -122,6 +122,15 @@ inline void ContainedContext::begin()
 
     ImGui::GetIO().DisplaySize = m_size / m_scale;
     ImGui::GetIO().ConfigInputTrickleEventQueue = false;
+
+    // Copy the ImGuiBackendFlags_RendererHasTextures flag as they need to be matching.
+    // This will also copy the ImGuiBackendFlags_RendererHasVtxOffset flag which will be more optimal in case large draw calls are being made.
+    ImGui::GetIO().ConfigFlags = m_original_ctx->IO.ConfigFlags;
+    ImGui::GetIO().BackendFlags = m_original_ctx->IO.BackendFlags;
+#ifdef IMGUI_HAS_VIEWPORT
+    ImGui::GetIO().ConfigFlags &= ~(ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DockingEnable);
+#endif
+
     ImGui::NewFrame();
 
     if (!m_config.extra_window_wrapper)
