@@ -63,5 +63,3 @@ struct NodeEditor : ImFlow::BaseNode {
     }
 };
 
-/* Create a node editor with width and height */
-NodeEditor neditor(500, 1500);

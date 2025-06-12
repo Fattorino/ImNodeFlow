@@ -87,6 +87,9 @@ int main(int, char**)
     ImGui_ImplOpenGL3_Init(glsl_version);
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    // Create a node editor with width and height
+    NodeEditor* neditor = new(NodeEditor)(500, 500);
+
     // Main loop
     bool done = false;
 #ifdef __EMSCRIPTEN__
@@ -121,8 +124,8 @@ int main(int, char**)
         ImGui::SetNextWindowSize(window_size);
         ImGui::SetNextWindowPos(window_pos);
         ImGui::Begin("Node Editor", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
-        neditor.set_size(node_editor_size);
-        neditor.draw();
+        neditor->set_size(node_editor_size);
+        neditor->draw();
         ImGui::End();
 
         // Rendering
@@ -136,6 +139,9 @@ int main(int, char**)
 #ifdef __EMSCRIPTEN__
     EMSCRIPTEN_MAINLOOP_END;
 #endif
+
+    delete neditor;
+    neditor = nullptr;
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
