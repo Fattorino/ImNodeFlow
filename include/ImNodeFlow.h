@@ -310,6 +310,8 @@ namespace ImFlow
         template<typename T, typename... Params>
         std::shared_ptr<T> addNode(const ImVec2& pos, Params&&... args);
 
+        void emplaceNode(const ImVec2& pos, const std::shared_ptr<BaseNode>& node);
+
     private:
         /**
          * @brief <BR>Helper struct for creating a node struct from a lambda
@@ -384,6 +386,13 @@ namespace ImFlow
          * @param content Function or Lambda containing only the contents of the pop-up and the subsequent logic
          */
         void rightClickPopUpContent(std::function<void(BaseNode* node)> content) { m_rightClickPopUp = std::move(content); }
+
+        /**
+         * @brief <BR>Pop-up when drag_dropping
+         * @details Sets the node pos when drag dropping a node to the grid
+         * @param content Function or Lambda containing only the pos of the mouse when clicked
+         */
+        void dragDropTarget(std::function<void(const ImVec2 &)> content) { m_dragdropTarget = std::move(content); }
 
         /**
          * @brief <BR>Get mouse clicking status
@@ -522,6 +531,7 @@ namespace ImFlow
         ImGuiKey m_droppedLinkPupUpComboKey = ImGuiKey_None;
         Pin* m_droppedLinkLeft = nullptr;
         std::function<void(BaseNode* node)> m_rightClickPopUp;
+        std::function<void(const ImVec2 &)> m_dragdropTarget;
         BaseNode* m_hoveredNodeAux = nullptr;
 
         BaseNode* m_hoveredNode = nullptr;
