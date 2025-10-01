@@ -267,9 +267,12 @@ namespace ImFlow
         if (m_renderer)
         {
             ImGui::BeginGroup();
+            ImGui::SetCursorPos(m_pos);
+            ImGui::Text("%s", m_name.c_str());
+            m_size = ImGui::GetItemRectSize();
             m_renderer(this);
             ImGui::EndGroup();
-            m_size = ImGui::GetItemRectSize();
+      
             if (ImGui::IsItemHovered())
                 (*m_inf)->hovering(this);
             return;
