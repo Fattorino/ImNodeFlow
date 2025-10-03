@@ -1055,6 +1055,20 @@ namespace ImFlow
          * @param pos Position in screen coordinates
          */
         void setPos(ImVec2 pos) { m_pos = pos; }
+
+         /**
+          * @brief <BR>Get socket hit bounds for interaction
+          * @param expand_radius Optional radius to expand the socket hitbox (default uses socket_hovered_radius)
+          * @return Rectangle bounds for socket interaction
+          */
+        std::pair<ImVec2, ImVec2> getSocketHitBounds(float expand_radius = -1.0f);
+        
+        /**
+         * @brief <BR>Enable/disable automatic socket hitbox extension
+         * @param enabled If true, socket area will be included in pin hitbox
+         */
+        void setSocketHitboxEnabled(bool enabled) { m_socketHitboxEnabled = enabled; }
+
     protected:
         PinUID m_uid;
         std::string m_name;
@@ -1065,6 +1079,7 @@ namespace ImFlow
         ImNodeFlow** m_inf;
         std::shared_ptr<PinStyle> m_style;
         std::function<void(Pin* p)> m_renderer;
+        bool m_socketHitboxEnabled = true;
     };
 
     /**
