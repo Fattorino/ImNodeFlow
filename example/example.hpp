@@ -25,22 +25,35 @@ public:
     CollapsingNode() {
         setTitle("Collapsing node");
         setStyle(ImFlow::NodeStyle::red());
-        ImFlow::BaseNode::addIN<int>("In", 0, ImFlow::ConnectionFilter::SameType());
-        ImFlow::BaseNode::addIN<int>("Other", 0, ImFlow::ConnectionFilter::SameType());
-        ImFlow::BaseNode::addOUT<int>("Out", nullptr)->behaviour([this]() { return getInVal<int>("In") + m_valB; });
+        ImFlow::BaseNode::addIN<int>("A", 0, ImFlow::ConnectionFilter::SameType());
+        ImFlow::BaseNode::addIN<int>("B", 0, ImFlow::ConnectionFilter::SameType());
+        ImFlow::BaseNode::addOUT<int>("Out", nullptr)->behaviour([this]() { return getInVal<int>("A") + getInVal<int>("B"); });
     }
 
     void draw() override {
         if(ImFlow::BaseNode::isSelected()) {
-            ImGui::Text("You can only see me when the node is selected!");
             ImGui::SetNextItemWidth(100.f);
-            ImGui::InputInt("##ValB", &m_valB);
+            ImGui::Text("You can only see me when the node is selected!");
         }
     }
 
-private:
-    int m_valB = 0;
 };
+
+class ResultNode : public ImFlow::BaseNode {
+public:
+    ResultNode() {
+        setTitle("Result node");
+        setStyle(ImFlow::NodeStyle::brown());
+        ImFlow::BaseNode::addIN<int>("A", 0, ImFlow::ConnectionFilter::SameType());
+        ImFlow::BaseNode::addIN<int>("B", 0, ImFlow::ConnectionFilter::SameType());
+    }
+
+    void draw() override {
+        ImGui::Text("Result: %d", getInVal<int>("A") + getInVal<int>("B"));
+    }
+
+};
+
 
 /* Node editor that sets up the grid to place nodes */
 struct NodeEditor : ImFlow::BaseNode {
@@ -49,8 +62,18 @@ struct NodeEditor : ImFlow::BaseNode {
     NodeEditor(float d, std::size_t r) : BaseNode() {
         mINF.setSize({d, d});
         if (r > 0) {
-            mINF.addNode<SimpleSum>({0, 0});
-            mINF.addNode<SimpleSum>({10, 10});
+            auto n1 = mINF.addNode<SimpleSum>({40, 40});
+            auto n2 = mINF.addNode<SimpleSum>({40, 150});
+            auto result = mINF.addNode<ResultNode>({250, 80});
+
+            // Add links between nodes
+            n1->outPin("Out")->createLink(result->inPin("A"));
+            n2->outPin("Out")->createLink(result->inPin("B"));
+
+
+            // Add a collapsing node
+            auto collapsingNode = mINF.addNode<CollapsingNode>({300, 300});
+            
         }
     }
 
