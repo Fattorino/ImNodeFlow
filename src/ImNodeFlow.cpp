@@ -67,7 +67,7 @@ namespace ImFlow {
         float titleW = ImGui::GetItemRectSize().x;
 
         // Inputs
-        if (!m_ins.empty()) {
+        if (!m_ins.empty() || !m_dynamicIns.empty()) {
             ImGui::BeginGroup();
             for (auto &p: m_ins) {
                 p->setPos(ImGui::GetCursorPos());
@@ -140,7 +140,7 @@ namespace ImFlow {
                                  m_style->radius);
         draw_list->AddRectFilled(offset + m_pos - paddingTL, offset + m_pos + headerSize, m_style->header_bg,
                                  m_style->radius, ImDrawFlags_RoundCornersTop);
-
+        m_fullSize = m_size + paddingTL + paddingBR;
         ImU32 col = m_style->border_color;
         float thickness = m_style->border_thickness;
         ImVec2 ptl = paddingTL;
