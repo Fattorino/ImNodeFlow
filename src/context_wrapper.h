@@ -212,7 +212,7 @@ inline void ContainedContext::end()
     {
         m_scroll += ImGui::GetIO().MouseDelta / m_scale;
     }
-
+    this->m_ctx->IO.MousePos = (ImGui::GetMousePos() - m_origin) / m_scale;
     ImGui::EndChild();
     ImGui::PopID();
 }
