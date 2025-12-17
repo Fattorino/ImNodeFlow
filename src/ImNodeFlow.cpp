@@ -182,7 +182,7 @@ namespace ImFlow {
         }
         if (m_dragged || (m_selected && m_inf->isNodeDragged())) {
             float step = m_inf->getStyle().grid_size / m_inf->getStyle().grid_subdivisions;
-            m_posTarget += ImGui::GetIO().MouseDelta;
+            m_posTarget += m_inf->getScreenSpaceDelta();
             // "Slam" The position
             m_pos.x = round(m_posTarget.x / step) * step;
             m_pos.y = round(m_posTarget.y / step) * step;
