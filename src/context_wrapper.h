@@ -5,6 +5,7 @@
 
 inline static void CopyIOEvents(ImGuiContext* src, ImGuiContext* dst, ImVec2 origin, float scale)
 {
+    dst->PlatformImeData = src->PlatformImeData;
     dst->IO.DeltaTime = src->IO.DeltaTime;
     dst->InputEventsQueue = src->InputEventsTrail;
     for (ImGuiInputEvent& e : dst->InputEventsQueue) {
@@ -170,6 +171,7 @@ inline void ContainedContext::end()
 
     ImDrawData* draw_data = ImGui::GetDrawData();
 
+    m_original_ctx->PlatformImeData = m_ctx->PlatformImeData;
     ImGui::SetCurrentContext(m_original_ctx);
     m_original_ctx = nullptr;
 
