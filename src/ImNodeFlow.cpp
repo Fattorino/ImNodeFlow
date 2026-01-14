@@ -239,6 +239,18 @@ namespace ImFlow {
         m_links.push_back(link);
     }
 
+    void ImNodeFlow::emplaceNode(const ImVec2& pos, const std::shared_ptr<BaseNode>& n)
+    {
+        n->setPos(pos);
+        n->setHandler(this);
+        if (!n->getStyle())
+            n->setStyle(NodeStyle::cyan());
+
+        auto uid = reinterpret_cast<uintptr_t>(n.get());
+        n->setUID(uid);
+        m_nodes[uid] = n;
+    }
+
     void ImNodeFlow::update() {
         // Updating looping stuff
         m_hovering = nullptr;
@@ -335,5 +347,13 @@ namespace ImFlow {
         m_pinRecursionBlacklist.clear();
 
         m_context.end();
+
+        if (ImGui::BeginDragDropTarget())
+		{
+			if (m_dragdropTarget)
+				m_dragdropTarget(screen2grid(ImGui::GetMousePos()));
+
+			ImGui::EndDragDropTarget();
+		}
     }
 }
