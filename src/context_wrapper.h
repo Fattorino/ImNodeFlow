@@ -114,6 +114,8 @@ inline void ContainedContext::setFontDensity()
 
 inline void ContainedContext::begin()
 {
+	auto window = ImGui::GetCurrentWindow();
+	
     ImGui::PushID(this);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, m_config.color);
     ImGui::BeginChild("view_port", m_config.size, 0, ImGuiWindowFlags_NoMove);
@@ -145,19 +147,31 @@ inline void ContainedContext::begin()
 
     ImGui::NewFrame();
 
-    if (!m_config.extra_window_wrapper)
-        return;
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Appearing);
-    ImGui::SetNextWindowSize(ImGui::GetMainViewport()->WorkSize);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove
-                                                | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-    setFontDensity();
-    ImGui::PopStyleVar();
+    if (m_config.extra_window_wrapper)
+    {
+	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Appearing);
+	ImGui::SetNextWindowSize(ImGui::GetMainViewport()->WorkSize);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove
+							| ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+	setFontDensity();
+	ImGui::PopStyleVar();
+    }
+  
+
+	auto clip_rect = window->ClipRect;
+	ImVec2 canvas_p0 = clip_rect.Min;
+	ImVec2 canvas_p1 = clip_rect.Max;
+	canvas_p0 = (canvas_p0 - m_origin) / m_scale;
+	canvas_p1 = (canvas_p1 - m_origin) / m_scale;
+	
+	ImGui::PushClipRect(canvas_p0, canvas_p1, false);
 }
 
 inline void ContainedContext::end()
 {
+    ImGui::PopClipRect();
+    
     m_anyWindowHovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
     if (m_config.extra_window_wrapper && ImGui::IsWindowHovered())
         m_anyWindowHovered = false;
