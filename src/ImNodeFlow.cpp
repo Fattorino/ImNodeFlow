@@ -311,6 +311,48 @@ namespace ImFlow {
                 m_dragOut = nullptr;
         }
 
+        // Box selection
+        if (on_free_space() && !m_draggingNode && !m_dragOut && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::IsWindowHovered()) {
+            m_boxSelecting = true;
+            m_boxSelectStart = ImGui::GetMousePos();
+            // Deselect all nodes if not holding Ctrl
+            if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && !ImGui::IsKeyDown(ImGuiKey_RightCtrl)) {
+                for (auto& node : m_nodes) {
+                    node.second->selected(false);
+                }
+            }
+        }
+
+        if (m_boxSelecting) {
+            ImVec2 boxEnd = ImGui::GetMousePos();
+            ImVec2 boxMin = ImVec2(std::min(m_boxSelectStart.x, boxEnd.x), std::min(m_boxSelectStart.y, boxEnd.y));
+            ImVec2 boxMax = ImVec2(std::max(m_boxSelectStart.x, boxEnd.x), std::max(m_boxSelectStart.y, boxEnd.y));
+
+            // Draw selection rectangle
+            draw_list->AddRectFilled(boxMin, boxMax, m_boxSelectColor);
+            draw_list->AddRect(boxMin, boxMax, m_boxSelectBorderColor, 0.0f, 0, 1.5f);
+
+            // Select nodes that intersect with the box
+            for (auto& node : m_nodes) {
+                ImVec2 nodePos = grid2screen(node.second->getPos());
+                ImVec2 nodeSize = node.second->getSize() * m_context.scale();
+                ImVec2 nodeMin = nodePos;
+                ImVec2 nodeMax = nodePos + nodeSize;
+
+                // Check if node intersects with selection box
+                bool intersects = !(nodeMax.x < boxMin.x || nodeMin.x > boxMax.x ||
+                                   nodeMax.y < boxMin.y || nodeMin.y > boxMax.y);
+
+                if (intersects) {
+                    node.second->selected(true);
+                }
+            }
+
+            if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+                m_boxSelecting = false;
+            }
+        }
+
         // Right-click PopUp
         if (m_rightClickPopUp && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered()) {
             m_hoveredNodeAux = m_hoveredNode;

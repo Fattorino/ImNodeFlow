@@ -8,6 +8,7 @@
 #include <vector>
 #include <cmath>
 #include <memory>
+#include <cstdint>
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
@@ -530,6 +531,12 @@ namespace ImFlow
         Pin* m_dragOut = nullptr;
 
         InfStyler m_style;
+
+        // Box selection
+        bool m_boxSelecting = false;
+        ImVec2 m_boxSelectStart = ImVec2(0, 0);
+        ImU32 m_boxSelectColor = IM_COL32(100, 150, 255, 50);
+        ImU32 m_boxSelectBorderColor = IM_COL32(100, 150, 255, 200);
     };
 
     // -----------------------------------------------------------------------------------------------------------------
