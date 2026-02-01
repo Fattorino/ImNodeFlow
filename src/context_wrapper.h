@@ -5,6 +5,7 @@
 
 inline static void CopyIOEvents(ImGuiContext* src, ImGuiContext* dst, ImVec2 origin, float scale)
 {
+    dst->PlatformImeData = src->PlatformImeData;
     dst->IO.DeltaTime = src->IO.DeltaTime;
     dst->InputEventsQueue = src->InputEventsTrail;
     for (ImGuiInputEvent& e : dst->InputEventsQueue) {
@@ -78,6 +79,7 @@ public:
     [[nodiscard]] const ImVec2& origin() const { return m_origin; }
     [[nodiscard]] bool hovered() const { return m_hovered; }
     [[nodiscard]] const ImVec2& scroll() const { return m_scroll; }
+    [[nodiscard]] ImVec2 getScreenDelta() { return m_original_ctx->IO.MouseDelta / scale(); }
     ImGuiContext* getRawContext() { return m_ctx; }
     void setFontDensity();
 private:
@@ -169,6 +171,7 @@ inline void ContainedContext::end()
 
     ImDrawData* draw_data = ImGui::GetDrawData();
 
+    m_original_ctx->PlatformImeData = m_ctx->PlatformImeData;
     ImGui::SetCurrentContext(m_original_ctx);
     m_original_ctx = nullptr;
 
@@ -212,7 +215,7 @@ inline void ContainedContext::end()
     {
         m_scroll += ImGui::GetIO().MouseDelta / m_scale;
     }
-
+    this->m_ctx->IO.MousePos = (ImGui::GetMousePos() - m_origin) / m_scale;
     ImGui::EndChild();
     ImGui::PopID();
 }

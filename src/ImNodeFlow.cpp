@@ -32,6 +32,7 @@ namespace ImFlow {
     }
 
     Link::~Link() {
+        if (!m_left) return;
         m_left->deleteLink();
     }
 
@@ -67,7 +68,7 @@ namespace ImFlow {
         float titleW = ImGui::GetItemRectSize().x;
 
         // Inputs
-        if (!m_ins.empty()) {
+        if (!m_ins.empty() || !m_dynamicIns.empty()) {
             ImGui::BeginGroup();
             for (auto &p: m_ins) {
                 p->setPos(ImGui::GetCursorPos());
@@ -140,7 +141,7 @@ namespace ImFlow {
                                  m_style->radius);
         draw_list->AddRectFilled(offset + m_pos - paddingTL, offset + m_pos + headerSize, m_style->header_bg,
                                  m_style->radius, ImDrawFlags_RoundCornersTop);
-
+        m_fullSize = m_size + paddingTL + paddingBR;
         ImU32 col = m_style->border_color;
         float thickness = m_style->border_thickness;
         ImVec2 ptl = paddingTL;
@@ -182,7 +183,7 @@ namespace ImFlow {
         }
         if (m_dragged || (m_selected && m_inf->isNodeDragged())) {
             float step = m_inf->getStyle().grid_size / m_inf->getStyle().grid_subdivisions;
-            m_posTarget += ImGui::GetIO().MouseDelta;
+            m_posTarget += m_inf->getScreenSpaceDelta();
             // "Slam" The position
             m_pos.x = round(m_posTarget.x / step) * step;
             m_pos.y = round(m_posTarget.y / step) * step;
