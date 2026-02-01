@@ -230,34 +230,56 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // PIN
 
+    inline std::pair<ImVec2, ImVec2> Pin::getSocketHitBounds(float expand_radius)
+    {
+        if (expand_radius < 0.0f)
+            expand_radius = m_style->socket_hovered_radius;
+        
+        ImVec2 center = pinPoint();
+        ImVec2 tl = center - ImVec2(expand_radius, expand_radius);
+        ImVec2 br = center + ImVec2(expand_radius, expand_radius);
+        
+        return {tl, br};
+    }
+
     inline void Pin::drawSocket()
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImVec2 tl = pinPoint() - ImVec2(m_style->socket_radius, m_style->socket_radius);
-        ImVec2 br = pinPoint() + ImVec2(m_style->socket_radius, m_style->socket_radius);
+        auto [tl, br] = getSocketHitBounds();
+        
+        // Déterminer si on est en hover (vérifié maintenant dans update())
+        bool socketHovered = ImGui::IsMouseHoveringRect(tl, br);
 
         if (isConnected())
             draw_list->AddCircleFilled(pinPoint(), m_style->socket_connected_radius, m_style->color, m_style->socket_shape);
         else
         {
-            if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
+            if (socketHovered)
                 draw_list->AddCircle(pinPoint(), m_style->socket_hovered_radius, m_style->color, m_style->socket_shape, m_style->socket_thickness);
             else
                 draw_list->AddCircle(pinPoint(), m_style->socket_radius, m_style->color, m_style->socket_shape, m_style->socket_thickness);
         }
-
-        if (ImGui::IsMouseHoveringRect(tl, br))
-            (*m_inf)->hovering(this);
     }
 
     inline void Pin::drawDecoration()
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
-        if (ImGui::IsItemHovered())
+        // Vérifier hover sur le texte OU le socket
+        bool itemHovered = ImGui::IsItemHovered();
+        bool socketHovered = false;
+        
+        if (m_socketHitboxEnabled)
+        {
+            auto [socket_tl, socket_br] = getSocketHitBounds();
+            socketHovered = ImGui::IsMouseHoveringRect(socket_tl, socket_br);
+        }
+
+        if (itemHovered || socketHovered)
             draw_list->AddRectFilled(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.bg_hover_color, m_style->extra.bg_radius);
         else
             draw_list->AddRectFilled(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.bg_color, m_style->extra.bg_radius);
+        
         draw_list->AddRect(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.border_color, m_style->extra.bg_radius, 0, m_style->extra.border_thickness);
     }
 
@@ -270,11 +292,24 @@ namespace ImFlow
             m_renderer(this);
             ImGui::EndGroup();
             m_size = ImGui::GetItemRectSize();
-            if (ImGui::IsItemHovered())
+            
+            // Calculer la hitbox combinée si activée
+            bool itemHovered = ImGui::IsItemHovered();
+            bool socketHovered = false;
+            
+            if (m_socketHitboxEnabled)
+            {
+                auto [socket_tl, socket_br] = getSocketHitBounds();
+                socketHovered = ImGui::IsMouseHoveringRect(socket_tl, socket_br);
+            }
+            
+            if (itemHovered || socketHovered)
                 (*m_inf)->hovering(this);
+            
             return;
         }
 
+        // Rendu standard
         ImGui::SetCursorPos(m_pos);
         ImGui::Text("%s", m_name.c_str());
         m_size = ImGui::GetItemRectSize();
@@ -282,7 +317,17 @@ namespace ImFlow
         drawDecoration();
         drawSocket();
 
-        if (ImGui::IsItemHovered())
+        // Vérifier le hover sur texte + socket
+        bool itemHovered = ImGui::IsItemHovered();
+        bool socketHovered = false;
+        
+        if (m_socketHitboxEnabled)
+        {
+            auto [socket_tl, socket_br] = getSocketHitBounds();
+            socketHovered = ImGui::IsMouseHoveringRect(socket_tl, socket_br);
+        }
+        
+        if (itemHovered || socketHovered)
             (*m_inf)->hovering(this);
     }
 
