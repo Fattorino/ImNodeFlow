@@ -230,34 +230,56 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // PIN
 
+    inline std::pair<ImVec2, ImVec2> Pin::getSocketHitBounds(float expand_radius)
+    {
+        if (expand_radius < 0.0f)
+            expand_radius = m_style->socket_hovered_radius;
+        
+        ImVec2 center = pinPoint();
+        ImVec2 tl = center - ImVec2(expand_radius, expand_radius);
+        ImVec2 br = center + ImVec2(expand_radius, expand_radius);
+        
+        return {tl, br};
+    }
+
     inline void Pin::drawSocket()
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImVec2 tl = pinPoint() - ImVec2(m_style->socket_radius, m_style->socket_radius);
-        ImVec2 br = pinPoint() + ImVec2(m_style->socket_radius, m_style->socket_radius);
+        auto [tl, br] = getSocketHitBounds();
+        
+        // Déterminer si on est en hover (vérifié maintenant dans update())
+        bool socketHovered = ImGui::IsMouseHoveringRect(tl, br);
 
         if (isConnected())
             draw_list->AddCircleFilled(pinPoint(), m_style->socket_connected_radius, m_style->color, m_style->socket_shape);
         else
         {
-            if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
+            if (socketHovered)
                 draw_list->AddCircle(pinPoint(), m_style->socket_hovered_radius, m_style->color, m_style->socket_shape, m_style->socket_thickness);
             else
                 draw_list->AddCircle(pinPoint(), m_style->socket_radius, m_style->color, m_style->socket_shape, m_style->socket_thickness);
         }
-
-        if (ImGui::IsMouseHoveringRect(tl, br))
-            (*m_inf)->hovering(this);
     }
 
     inline void Pin::drawDecoration()
     {
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
-        if (ImGui::IsItemHovered())
+        // Vérifier hover sur le texte OU le socket
+        bool itemHovered = ImGui::IsItemHovered();
+        bool socketHovered = false;
+        
+        if (m_socketHitboxEnabled)
+        {
+            auto [socket_tl, socket_br] = getSocketHitBounds();
+            socketHovered = ImGui::IsMouseHoveringRect(socket_tl, socket_br);
+        }
+
+        if (itemHovered || socketHovered)
             draw_list->AddRectFilled(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.bg_hover_color, m_style->extra.bg_radius);
         else
             draw_list->AddRectFilled(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.bg_color, m_style->extra.bg_radius);
+        
         draw_list->AddRect(m_pos - m_style->extra.padding, m_pos + m_size + m_style->extra.padding, m_style->extra.border_color, m_style->extra.bg_radius, 0, m_style->extra.border_thickness);
     }
 
@@ -270,11 +292,24 @@ namespace ImFlow
             m_renderer(this);
             ImGui::EndGroup();
             m_size = ImGui::GetItemRectSize();
-            if (ImGui::IsItemHovered())
+            
+            // Calculer la hitbox combinée si activée
+            bool itemHovered = ImGui::IsItemHovered();
+            bool socketHovered = false;
+            
+            if (m_socketHitboxEnabled)
+            {
+                auto [socket_tl, socket_br] = getSocketHitBounds();
+                socketHovered = ImGui::IsMouseHoveringRect(socket_tl, socket_br);
+            }
+            
+            if (itemHovered || socketHovered)
                 (*m_inf)->hovering(this);
+            
             return;
         }
 
+        // Rendu standard
         ImGui::SetCursorPos(m_pos);
         ImGui::Text("%s", m_name.c_str());
         m_size = ImGui::GetItemRectSize();
@@ -282,7 +317,17 @@ namespace ImFlow
         drawDecoration();
         drawSocket();
 
-        if (ImGui::IsItemHovered())
+        // Vérifier le hover sur texte + socket
+        bool itemHovered = ImGui::IsItemHovered();
+        bool socketHovered = false;
+        
+        if (m_socketHitboxEnabled)
+        {
+            auto [socket_tl, socket_br] = getSocketHitBounds();
+            socketHovered = ImGui::IsMouseHoveringRect(socket_tl, socket_br);
+        }
+        
+        if (itemHovered || socketHovered)
             (*m_inf)->hovering(this);
     }
 
@@ -299,6 +344,33 @@ namespace ImFlow
     }
 
     template<class T>
+    void InPin<T>::deleteLink()
+    {
+        if (m_allowMultipleLinks)
+        {
+            m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
+                [](const std::shared_ptr<Link>& l) { return !l || !l->left(); }), m_links.end());
+        }
+        else
+        {
+            m_link.reset();
+        }
+    }
+
+    template<class T>
+    void InPin<T>::setLink(std::shared_ptr<Link>& link)
+    {
+        if (m_allowMultipleLinks)
+        {
+            m_links.emplace_back(link);
+        }
+        else
+        {
+            m_link = link;
+        }
+    }
+
+    template<class T>
     void InPin<T>::createLink(Pin *other)
     {
         if (other == this || other->getType() == PinType_Input)
@@ -307,18 +379,45 @@ namespace ImFlow
         if (m_parent == other->getParent() && !m_allowSelfConnection)
             return;
 
-        if (m_link && m_link->left() == other)
+        if (m_allowMultipleLinks)
         {
-            m_link.reset();
-            return;
+            // Check if already connected to this output
+            for (auto& link : m_links)
+            {
+                if (link && link->left() == other)
+                {
+                    // Remove this specific link
+                    link.reset();
+                    m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
+                        [](const std::shared_ptr<Link>& l) { return !l; }), m_links.end());
+                    return;
+                }
+            }
+
+            if (!m_filter(other, this)) // Check Filter
+                return;
+
+            auto link = std::make_shared<Link>(other, this, (*m_inf));
+            m_links.emplace_back(link);
+            other->setLink(link);
+            (*m_inf)->addLink(link);
         }
+        else
+        {
+            // Original single-link behavior
+            if (m_link && m_link->left() == other)
+            {
+                m_link.reset();
+                return;
+            }
 
-        if (!m_filter(other, this)) // Check Filter
-            return;
+            if (!m_filter(other, this)) // Check Filter
+                return;
 
-        m_link = std::make_shared<Link>(other, this, (*m_inf));
-        other->setLink(m_link);
-        (*m_inf)->addLink(m_link);
+            m_link = std::make_shared<Link>(other, this, (*m_inf));
+            other->setLink(m_link);
+            (*m_inf)->addLink(m_link);
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
