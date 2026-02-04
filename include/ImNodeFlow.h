@@ -12,7 +12,8 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
-#include <cstdint>
+#include <set>
+#include <cfloat>
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
 #include "../src/context_wrapper.h"
@@ -175,6 +176,27 @@ namespace ImFlow
         static std::shared_ptr<NodeStyle> red() { return std::make_shared<NodeStyle>(IM_COL32(191,90,90,255), ImColor(233,241,244,255), 11.f); }
         /// @brief <BR>Default brown style
         static std::shared_ptr<NodeStyle> brown() { return std::make_shared<NodeStyle>(IM_COL32(191,134,90,255), ImColor(233,241,244,255), 6.5f); }
+        
+        // Category-specific styles
+        /// @brief <BR>Control flow (branch, if/else) - orange/amber
+        static std::shared_ptr<NodeStyle> controlFlow() { return std::make_shared<NodeStyle>(IM_COL32(230,150,50,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>Loops (for, while) - purple
+        static std::shared_ptr<NodeStyle> loop() { return std::make_shared<NodeStyle>(IM_COL32(150,90,180,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>Variables - teal/cyan
+        static std::shared_ptr<NodeStyle> variable() { return std::make_shared<NodeStyle>(IM_COL32(60,160,160,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>Operators - blue
+        static std::shared_ptr<NodeStyle> operation() { return std::make_shared<NodeStyle>(IM_COL32(70,130,200,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>System calls (print, play media, etc.) - pink/magenta
+        static std::shared_ptr<NodeStyle> syscall() { return std::make_shared<NodeStyle>(IM_COL32(200,80,150,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>Functions/Modules - indigo
+        static std::shared_ptr<NodeStyle> function() { return std::make_shared<NodeStyle>(IM_COL32(100,80,180,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>Events/Signals - yellow-green
+        static std::shared_ptr<NodeStyle> event() { return std::make_shared<NodeStyle>(IM_COL32(180,200,60,255), ImColor(40,40,40,255), 4.f); }
+        /// @brief <BR>Comments - soft yellow
+        static std::shared_ptr<NodeStyle> comment() { return std::make_shared<NodeStyle>(IM_COL32(220,200,100,255), ImColor(60,60,60,255), 4.f); }
+        
+        /// @brief <BR>Create custom style from header color
+        static std::shared_ptr<NodeStyle> fromColor(ImU32 headerColor) { return std::make_shared<NodeStyle>(headerColor, ImColor(255,255,255,255), 4.f); }
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -221,6 +243,18 @@ namespace ImFlow
          * @details Call this before destroying the link when pins are already destroyed
          */
         void disableCleanup() { m_cleanupEnabled = false; }
+        
+        /**
+         * @brief <BR>Mark link as invalid (pins are being destroyed)
+         * @details Call this before destroying pins to prevent access to dangling pointers
+         */
+        void invalidate() { m_valid = false; m_cleanupEnabled = false; }
+        
+        /**
+         * @brief <BR>Check if link is still valid
+         * @return [TRUE] if link pins are still valid
+         */
+        [[nodiscard]] bool isValid() const { return m_valid; }
 
         /**
          * @brief <BR>Looping function to update the Link
@@ -289,6 +323,7 @@ namespace ImFlow
         bool m_hovered = false;
         bool m_selected = false;
         bool m_cleanupEnabled = true;
+        bool m_valid = true;
         std::vector<Waypoint> m_waypoints;
         int m_draggedWaypointIndex = -1;
     };
@@ -320,6 +355,27 @@ namespace ImFlow
         float grid_subdivisions = 5.f;
         /// @brief ImNodeFlow colors
         InfColors colors;
+    };
+
+    /**
+     * @brief A group of nodes that can be moved together
+     */
+    struct NodeGroup
+    {
+        using GroupUID = uint64_t;
+        
+        GroupUID uid{0};
+        std::string name{"Group"};
+        std::string comment;
+        ImU32 color{IM_COL32(100, 100, 200, 60)};
+        ImU32 borderColor{IM_COL32(100, 100, 200, 200)};
+        std::set<NodeUID> members;
+        float padding{20.0f};
+        
+        bool dragging{false};
+        bool hovered{false};
+        bool selected{false};
+        ImVec2 dragOffset{0, 0};
     };
 
     /**
@@ -606,6 +662,55 @@ namespace ImFlow
          * @return Reference to blacklist
          */
         std::vector<std::string>& get_recursion_blacklist() { return m_pinRecursionBlacklist; }
+
+        // ===== GROUP MANAGEMENT =====
+        
+        /**
+         * @brief Create a new group from currently selected nodes
+         * @param name Name of the group
+         * @return UID of the created group, or 0 if no nodes selected
+         */
+        NodeGroup::GroupUID createGroupFromSelection(const std::string& name = "Group");
+        
+        /**
+         * @brief Add a node to an existing group
+         * @param groupUid UID of the group
+         * @param nodeUid UID of the node to add
+         */
+        void addNodeToGroup(NodeGroup::GroupUID groupUid, NodeUID nodeUid);
+        
+        /**
+         * @brief Remove a node from its group
+         * @param nodeUid UID of the node to remove
+         */
+        void removeNodeFromGroup(NodeUID nodeUid);
+        
+        /**
+         * @brief Delete a group (nodes remain)
+         * @param groupUid UID of the group to delete
+         */
+        void deleteGroup(NodeGroup::GroupUID groupUid);
+        
+        /**
+         * @brief Get all groups
+         * @return Reference to map of groups
+         */
+        std::unordered_map<NodeGroup::GroupUID, NodeGroup>& getGroups() { return m_groups; }
+        const std::unordered_map<NodeGroup::GroupUID, NodeGroup>& getGroups() const { return m_groups; }
+        
+        /**
+         * @brief Find which group a node belongs to
+         * @param nodeUid UID of the node
+         * @return Pointer to group, or nullptr if not in any group
+         */
+        NodeGroup* findGroupForNode(NodeUID nodeUid);
+        
+        /**
+         * @brief Get selected group
+         * @return Pointer to selected group or nullptr
+         */
+        NodeGroup* getSelectedGroup() { return m_selectedGroup; }
+        
     private:
         std::string m_name;
         ContainedContext m_context;
@@ -637,6 +742,12 @@ namespace ImFlow
         ImVec2 m_boxSelectStart = ImVec2(0, 0);
         ImU32 m_boxSelectColor = IM_COL32(100, 150, 255, 50);
         ImU32 m_boxSelectBorderColor = IM_COL32(100, 150, 255, 200);
+        
+        // Groups
+        std::unordered_map<NodeGroup::GroupUID, NodeGroup> m_groups;
+        NodeGroup::GroupUID m_nextGroupUid = 1;
+        NodeGroup* m_selectedGroup = nullptr;
+        NodeGroup* m_hoveredGroup = nullptr;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -994,6 +1105,18 @@ namespace ImFlow
          * @brief <BR>Update the isSelected status of the node
          */
         void updatePublicStatus() { m_selected = m_selectedNext; }
+
+        /**
+         * @brief <BR>Set node's flipped status (horizontal flip of inputs/outputs)
+         * @param flipped If true, inputs will be on the right and outputs on the left
+         */
+        BaseNode* setFlipped(bool flipped) { m_flipped = flipped; return this; }
+
+        /**
+         * @brief <BR>Get node's flipped status
+         * @return [TRUE] if the node is flipped horizontally
+         */
+        [[nodiscard]] bool isFlipped() const { return m_flipped; }
     private:
         NodeUID m_uid = 0;
         std::string m_title;
@@ -1005,6 +1128,7 @@ namespace ImFlow
         bool m_selected = false, m_selectedNext = false;
         bool m_dragged = false;
         bool m_destroyed = false;
+        bool m_flipped = false;
 
         std::vector<std::shared_ptr<Pin>> m_ins;
         std::vector<std::pair<int, std::shared_ptr<Pin>>> m_dynamicIns;
@@ -1091,6 +1215,12 @@ namespace ImFlow
          * @brief <BR>Delete link reference
          */
         virtual void deleteLink() = 0;
+        
+        /**
+         * @brief <BR>Invalidate all links connected to this pin
+         * @details Called before pin destruction to prevent dangling pointer access
+         */
+        virtual void invalidateAllLinks() = 0;
 
         /**
          * @brief <BR>Get connected status
@@ -1237,6 +1367,20 @@ namespace ImFlow
         * @brief <BR>Delete the link connected to the pin
         */
         void deleteLink() override;
+        
+        /**
+         * @brief <BR>Invalidate all links connected to this pin
+         */
+        void invalidateAllLinks() override {
+            if (m_link) {
+                m_link->invalidate();
+            }
+            for (auto& l : m_links) {
+                if (l) {
+                    l->invalidate();
+                }
+            }
+        }
 
         /**
          * @brief Specify if connections from an output on the same node are allowed
@@ -1290,7 +1434,13 @@ namespace ImFlow
          * @brief <BR>Get pin's link attachment point (socket)
          * @return Grid coordinates to the attachment point between the link and the pin's socket
          */
-        ImVec2 pinPoint() override { return m_pos + ImVec2(-m_style->extra.socket_padding, m_size.y / 2); }
+        ImVec2 pinPoint() override { 
+            // If parent is flipped, socket is on the right; otherwise on the left
+            float x = m_parent->isFlipped() 
+                ? m_size.x + m_style->extra.socket_padding   // RIGHT side
+                : -m_style->extra.socket_padding;            // LEFT side
+            return m_pos + ImVec2(x, m_size.y / 2); 
+        }
 
         /**
          * @brief <BR>Get value carried by the connected link
@@ -1372,6 +1522,17 @@ namespace ImFlow
          * @brief <BR>Delete any expired weak pointers to a (now deleted) link
          */
         void deleteLink() override;
+        
+        /**
+         * @brief <BR>Invalidate all links connected to this pin
+         */
+        void invalidateAllLinks() override {
+            for (auto& l : m_links) {
+                if (!l.expired()) {
+                    l.lock()->invalidate();
+                }
+            }
+        }
 
         /**
          * @brief <BR>Get connected status
@@ -1383,7 +1544,13 @@ namespace ImFlow
          * @brief <BR>Get pin's link attachment point (socket)
          * @return Grid coordinates to the attachment point between the link and the pin's socket
          */
-        ImVec2 pinPoint() override { return m_pos + ImVec2(m_size.x + m_style->extra.socket_padding, m_size.y / 2); }
+        ImVec2 pinPoint() override { 
+            // If parent is flipped, socket is on the left; otherwise on the right
+            float x = m_parent->isFlipped() 
+                ? -m_style->extra.socket_padding                // LEFT side
+                : m_size.x + m_style->extra.socket_padding;     // RIGHT side
+            return m_pos + ImVec2(x, m_size.y / 2); 
+        }
 
         /**
          * @brief <BR>Get output value

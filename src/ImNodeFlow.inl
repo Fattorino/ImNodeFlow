@@ -4,30 +4,80 @@
 
 namespace ImFlow
 {
-    inline void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness)
+    // Helper to calculate bezier control points for pin-to-pin or simple segments
+    inline void calc_smart_bezier_controls(const ImVec2& p1, const ImVec2& p2, ImVec2& p11, ImVec2& p22)
     {
-        ImDrawList* dl = ImGui::GetWindowDrawList();
         float distance = sqrt(pow((p2.x - p1.x), 2.f) + pow((p2.y - p1.y), 2.f));
         float delta = distance * 0.45f;
         if (p2.x < p1.x) delta += 0.2f * (p1.x - p2.x);
-        // float vert = (p2.x < p1.x - 20.f) ? 0.062f * distance * (p2.y - p1.y) * 0.005f : 0.f;
         float vert = 0.f;
-        ImVec2 p22 = p2 - ImVec2(delta, vert);
+        p22 = p2 - ImVec2(delta, vert);
         if (p2.x < p1.x - 50.f) delta *= -1.f;
-        ImVec2 p11 = p1 + ImVec2(delta, vert);
+        p11 = p1 + ImVec2(delta, vert);
+    }
+    
+    inline void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness)
+    {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImVec2 p11, p22;
+        calc_smart_bezier_controls(p1, p2, p11, p22);
         dl->AddBezierCubic(p1, p11, p22, p2, color, thickness);
     }
 
     inline bool smart_bezier_collider(const ImVec2& p, const ImVec2& p1, const ImVec2& p2, float radius)
     {
+        ImVec2 p11, p22;
+        calc_smart_bezier_controls(p1, p2, p11, p22);
+        return ImProjectOnCubicBezier(p, p1, p11, p22, p2).Distance < radius;
+    }
+    
+    // Bezier with explicit tangent directions for waypoint segments
+    // tangent1: direction vector for outgoing tangent at p1 (normalized or zero)
+    // tangent2: direction vector for incoming tangent at p2 (normalized or zero)
+    inline void smart_bezier_with_tangents(const ImVec2& p1, const ImVec2& p2, 
+                                            const ImVec2& tangent1, const ImVec2& tangent2,
+                                            ImU32 color, float thickness)
+    {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
         float distance = sqrt(pow((p2.x - p1.x), 2.f) + pow((p2.y - p1.y), 2.f));
-        float delta = distance * 0.45f;
-        if (p2.x < p1.x) delta += 0.2f * (p1.x - p2.x);
-        // float vert = (p2.x < p1.x - 20.f) ? 0.062f * distance * (p2.y - p1.y) * 0.005f : 0.f;
-        float vert = 0.f;
-        ImVec2 p22 = p2 - ImVec2(delta, vert);
-        if (p2.x < p1.x - 50.f) delta *= -1.f;
-        ImVec2 p11 = p1 + ImVec2(delta, vert);
+        float controlLen = distance * 0.4f;
+        
+        // If tangents are provided, use them; otherwise fall back to horizontal
+        ImVec2 p11, p22;
+        if (tangent1.x != 0.f || tangent1.y != 0.f) {
+            p11 = p1 + ImVec2(tangent1.x * controlLen, tangent1.y * controlLen);
+        } else {
+            p11 = p1 + ImVec2(controlLen, 0.f);
+        }
+        
+        if (tangent2.x != 0.f || tangent2.y != 0.f) {
+            p22 = p2 - ImVec2(tangent2.x * controlLen, tangent2.y * controlLen);
+        } else {
+            p22 = p2 - ImVec2(controlLen, 0.f);
+        }
+        
+        dl->AddBezierCubic(p1, p11, p22, p2, color, thickness);
+    }
+    
+    inline bool smart_bezier_collider_with_tangents(const ImVec2& p, const ImVec2& p1, const ImVec2& p2,
+                                                     const ImVec2& tangent1, const ImVec2& tangent2, float radius)
+    {
+        float distance = sqrt(pow((p2.x - p1.x), 2.f) + pow((p2.y - p1.y), 2.f));
+        float controlLen = distance * 0.4f;
+        
+        ImVec2 p11, p22;
+        if (tangent1.x != 0.f || tangent1.y != 0.f) {
+            p11 = p1 + ImVec2(tangent1.x * controlLen, tangent1.y * controlLen);
+        } else {
+            p11 = p1 + ImVec2(controlLen, 0.f);
+        }
+        
+        if (tangent2.x != 0.f || tangent2.y != 0.f) {
+            p22 = p2 - ImVec2(tangent2.x * controlLen, tangent2.y * controlLen);
+        } else {
+            p22 = p2 - ImVec2(controlLen, 0.f);
+        }
+        
         return ImProjectOnCubicBezier(p, p1, p11, p22, p2).Distance < radius;
     }
 
@@ -89,6 +139,8 @@ namespace ImFlow
         {
             if (it->get()->getUid() == h)
             {
+                // Invalidate ALL links before removing the pin to prevent dangling pointer access
+                it->get()->invalidateAllLinks();
                 m_ins.erase(it);
                 return;
             }
@@ -146,6 +198,8 @@ namespace ImFlow
         {
             if (it->get()->getUid() == h)
             {
+                // Invalidate ALL links before removing the pin to prevent dangling pointer access
+                it->get()->invalidateAllLinks();
                 m_outs.erase(it);
                 return;
             }

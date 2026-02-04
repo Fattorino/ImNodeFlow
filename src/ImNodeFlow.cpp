@@ -95,6 +95,9 @@ namespace ImFlow {
     }
 
     void Link::update() {
+        // Skip update if link has been invalidated (pins destroyed)
+        if (!m_valid) return;
+        
         // start/end from pinPoint() are in screen coordinates - convert to grid
         ImVec2 startScreen = m_left->pinPoint();
         ImVec2 endScreen = m_right->pinPoint();
@@ -114,10 +117,56 @@ namespace ImFlow {
         }
         points.push_back(end);
 
+        // Helper to normalize a vector
+        auto normalize = [](const ImVec2& v) -> ImVec2 {
+            float len = sqrt(v.x * v.x + v.y * v.y);
+            if (len < 0.001f) return ImVec2(0, 0);
+            return ImVec2(v.x / len, v.y / len);
+        };
+        
+        // Calculate tangents for each segment based on neighboring points
+        // tangent1[i] = outgoing tangent at points[i]
+        // tangent2[i] = incoming tangent at points[i+1]
+        std::vector<ImVec2> tangent1(points.size() - 1);
+        std::vector<ImVec2> tangent2(points.size() - 1);
+        
+        for (size_t i = 0; i < points.size() - 1; i++) {
+            ImVec2 curr = points[i];
+            ImVec2 next = points[i + 1];
+            
+            // For the first point (output pin), always go right
+            if (i == 0) {
+                tangent1[i] = ImVec2(1.0f, 0.0f);
+            } else {
+                // For waypoints, use direction from previous to next point for smooth curves
+                ImVec2 prev = points[i - 1];
+                tangent1[i] = normalize(ImVec2(next.x - prev.x, next.y - prev.y));
+            }
+            
+            // For the last point (input pin), always come from left
+            if (i == points.size() - 2) {
+                tangent2[i] = ImVec2(1.0f, 0.0f);  // incoming from left means tangent points right
+            } else {
+                // For waypoints, use direction from current to next-next point
+                ImVec2 nextnext = points[i + 2];
+                tangent2[i] = normalize(ImVec2(nextnext.x - curr.x, nextnext.y - curr.y));
+            }
+        }
+
         // Check if link is hovered (any segment) - use screen coordinates for collision
         m_hovered = false;
         for (size_t i = 0; i < points.size() - 1; i++) {
-            if (smart_bezier_collider(mousePos, m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]), 2.5)) {
+            bool hit = false;
+            if (m_waypoints.empty()) {
+                // No waypoints: use original smart_bezier
+                hit = smart_bezier_collider(mousePos, m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]), 2.5);
+            } else {
+                // With waypoints: use tangent-aware collision
+                hit = smart_bezier_collider_with_tangents(mousePos, 
+                    m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]),
+                    tangent1[i], tangent2[i], 2.5);
+            }
+            if (hit) {
                 m_hovered = true;
                 thickness = m_left->getStyle()->extra.link_hovered_thickness;
                 if (mouseClickState && getHoveredWaypoint() < 0) {
@@ -185,18 +234,51 @@ namespace ImFlow {
             points.push_back(wp.pos);
         }
         points.push_back(end);
+        
+        // Recalculate tangents after points rebuild
+        tangent1.resize(points.size() - 1);
+        tangent2.resize(points.size() - 1);
+        for (size_t i = 0; i < points.size() - 1; i++) {
+            ImVec2 curr = points[i];
+            ImVec2 next = points[i + 1];
+            
+            if (i == 0) {
+                tangent1[i] = ImVec2(1.0f, 0.0f);
+            } else {
+                ImVec2 prev = points[i - 1];
+                tangent1[i] = normalize(ImVec2(next.x - prev.x, next.y - prev.y));
+            }
+            
+            if (i == points.size() - 2) {
+                tangent2[i] = ImVec2(1.0f, 0.0f);
+            } else {
+                ImVec2 nextnext = points[i + 2];
+                tangent2[i] = normalize(ImVec2(nextnext.x - curr.x, nextnext.y - curr.y));
+            }
+        }
 
         // Draw outline if selected - convert to screen for drawing
         if (m_selected) {
             for (size_t i = 0; i < points.size() - 1; i++) {
-                smart_bezier(m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]), outlineColor,
-                             thickness + m_left->getStyle()->extra.link_selected_outline_thickness);
+                if (m_waypoints.empty()) {
+                    smart_bezier(m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]), outlineColor,
+                                 thickness + m_left->getStyle()->extra.link_selected_outline_thickness);
+                } else {
+                    smart_bezier_with_tangents(m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]),
+                                 tangent1[i], tangent2[i], outlineColor,
+                                 thickness + m_left->getStyle()->extra.link_selected_outline_thickness);
+                }
             }
         }
 
         // Draw segments - convert to screen for drawing
         for (size_t i = 0; i < points.size() - 1; i++) {
-            smart_bezier(m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]), color, thickness);
+            if (m_waypoints.empty()) {
+                smart_bezier(m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]), color, thickness);
+            } else {
+                smart_bezier_with_tangents(m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]),
+                             tangent1[i], tangent2[i], color, thickness);
+            }
         }
 
         // Draw waypoints - convert to screen for drawing
@@ -250,69 +332,135 @@ namespace ImFlow {
         float headerH = ImGui::GetItemRectSize().y;
         float titleW = ImGui::GetItemRectSize().x;
 
-        // Inputs
-        if (!m_ins.empty() || !m_dynamicIns.empty()) {
+        // Render order depends on flipped state
+        if (m_flipped) {
+            // FLIPPED: Outputs on LEFT, Content, Inputs on RIGHT
+
+            // Outputs (left side when flipped)
+            float maxW = 0.0f;
+            for (auto &p: m_outs) {
+                float w = p->calcWidth();
+                if (w > maxW)
+                    maxW = w;
+            }
+            for (auto &p: m_dynamicOuts) {
+                float w = p.second->calcWidth();
+                if (w > maxW)
+                    maxW = w;
+            }
             ImGui::BeginGroup();
-            for (auto &p: m_ins) {
-                p->setPos(ImGui::GetCursorPos());
+            for (auto &p: m_outs) {
+                if ((m_pos + ImVec2(titleW, 0) + m_inf->getGrid().scroll()).x <
+                    ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
+                    p->setPos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p->calcWidth(), 0.f));
+                else
+                    p->setPos(ImVec2((m_pos + ImVec2(titleW - p->calcWidth(), 0) + m_inf->getGrid().scroll()).x,
+                                     ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
                 p->update();
             }
-            for (auto &p: m_dynamicIns) {
-                if (p.first == 1) {
-                    p.second->setPos(ImGui::GetCursorPos());
-                    p.second->update();
-                    p.first = 0;
-                }
+            for (auto &p: m_dynamicOuts) {
+                if ((m_pos + ImVec2(titleW, 0) + m_inf->getGrid().scroll()).x <
+                    ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
+                    p.second->setPos(
+                            ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p.second->calcWidth(), 0.f));
+                else
+                    p.second->setPos(
+                            ImVec2((m_pos + ImVec2(titleW - p.second->calcWidth(), 0) + m_inf->getGrid().scroll()).x,
+                                   ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
+                p.second->update();
+                p.first -= 1;
             }
             ImGui::EndGroup();
             ImGui::SameLine();
-        }
 
-        // Content
-        ImGui::BeginGroup();
-        draw();
-        ImGui::Dummy(ImVec2(0.f, 0.f));
-        ImGui::EndGroup();
-        ImGui::SameLine();
+            // Content (center)
+            ImGui::BeginGroup();
+            draw();
+            ImGui::Dummy(ImVec2(0.f, 0.f));
+            ImGui::EndGroup();
+            ImGui::SameLine();
 
-        // Outputs
-        float maxW = 0.0f;
-        for (auto &p: m_outs) {
-            float w = p->calcWidth();
-            if (w > maxW)
-                maxW = w;
-        }
-        for (auto &p: m_dynamicOuts) {
-            float w = p.second->calcWidth();
-            if (w > maxW)
-                maxW = w;
-        }
-        ImGui::BeginGroup();
-        for (auto &p: m_outs) {
-            // FIXME: This looks horrible
-            if ((m_pos + ImVec2(titleW, 0) + m_inf->getGrid().scroll()).x <
-                ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
-                p->setPos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p->calcWidth(), 0.f));
-            else
-                p->setPos(ImVec2((m_pos + ImVec2(titleW - p->calcWidth(), 0) + m_inf->getGrid().scroll()).x,
-                                 ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
-            p->update();
-        }
-        for (auto &p: m_dynamicOuts) {
-            // FIXME: This looks horrible
-            if ((m_pos + ImVec2(titleW, 0) + m_inf->getGrid().scroll()).x <
-                ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
-                p.second->setPos(
-                        ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p.second->calcWidth(), 0.f));
-            else
-                p.second->setPos(
-                        ImVec2((m_pos + ImVec2(titleW - p.second->calcWidth(), 0) + m_inf->getGrid().scroll()).x,
-                               ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
-            p.second->update();
-            p.first -= 1;
-        }
+            // Inputs (right side when flipped)
+            if (!m_ins.empty() || !m_dynamicIns.empty()) {
+                ImGui::BeginGroup();
+                for (auto &p: m_ins) {
+                    p->setPos(ImGui::GetCursorPos());
+                    p->update();
+                }
+                for (auto &p: m_dynamicIns) {
+                    if (p.first == 1) {
+                        p.second->setPos(ImGui::GetCursorPos());
+                        p.second->update();
+                        p.first = 0;
+                    }
+                }
+                ImGui::EndGroup();
+            }
 
-        ImGui::EndGroup();
+        } else {
+            // NORMAL: Inputs on LEFT, Content, Outputs on RIGHT
+
+            // Inputs
+            if (!m_ins.empty() || !m_dynamicIns.empty()) {
+                ImGui::BeginGroup();
+                for (auto &p: m_ins) {
+                    p->setPos(ImGui::GetCursorPos());
+                    p->update();
+                }
+                for (auto &p: m_dynamicIns) {
+                    if (p.first == 1) {
+                        p.second->setPos(ImGui::GetCursorPos());
+                        p.second->update();
+                        p.first = 0;
+                    }
+                }
+                ImGui::EndGroup();
+                ImGui::SameLine();
+            }
+
+            // Content
+            ImGui::BeginGroup();
+            draw();
+            ImGui::Dummy(ImVec2(0.f, 0.f));
+            ImGui::EndGroup();
+            ImGui::SameLine();
+
+            // Outputs
+            float maxW = 0.0f;
+            for (auto &p: m_outs) {
+                float w = p->calcWidth();
+                if (w > maxW)
+                    maxW = w;
+            }
+            for (auto &p: m_dynamicOuts) {
+                float w = p.second->calcWidth();
+                if (w > maxW)
+                    maxW = w;
+            }
+            ImGui::BeginGroup();
+            for (auto &p: m_outs) {
+                if ((m_pos + ImVec2(titleW, 0) + m_inf->getGrid().scroll()).x <
+                    ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
+                    p->setPos(ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p->calcWidth(), 0.f));
+                else
+                    p->setPos(ImVec2((m_pos + ImVec2(titleW - p->calcWidth(), 0) + m_inf->getGrid().scroll()).x,
+                                     ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
+                p->update();
+            }
+            for (auto &p: m_dynamicOuts) {
+                if ((m_pos + ImVec2(titleW, 0) + m_inf->getGrid().scroll()).x <
+                    ImGui::GetCursorPos().x + ImGui::GetWindowPos().x + maxW)
+                    p.second->setPos(
+                            ImGui::GetCursorPos() + ImGui::GetWindowPos() + ImVec2(maxW - p.second->calcWidth(), 0.f));
+                else
+                    p.second->setPos(
+                            ImVec2((m_pos + ImVec2(titleW - p.second->calcWidth(), 0) + m_inf->getGrid().scroll()).x,
+                                   ImGui::GetCursorPos().y + ImGui::GetWindowPos().y));
+                p.second->update();
+                p.first -= 1;
+            }
+            ImGui::EndGroup();
+        }
 
         ImGui::EndGroup();
         m_size = ImGui::GetItemRectSize();
@@ -472,14 +620,124 @@ namespace ImFlow {
                 draw_list->AddLine(ImVec2(0.0f, y), ImVec2(gridSize.x, y), m_style.colors.subGrid);
         }
 
+        // Update and draw groups (background)
+        m_hoveredGroup = nullptr;
+        for (auto& [gid, group] : m_groups) {
+            if (group.members.empty()) continue;
+            
+            // Calculate bounding box of all member nodes
+            ImVec2 minPos(FLT_MAX, FLT_MAX);
+            ImVec2 maxPos(-FLT_MAX, -FLT_MAX);
+            bool hasValidNodes = false;
+            
+            for (NodeUID nodeUid : group.members) {
+                auto it = m_nodes.find(nodeUid);
+                if (it == m_nodes.end()) continue;
+                
+                hasValidNodes = true;
+                ImVec2 nodePos = it->second->getPos();
+                ImVec2 nodeSize = it->second->getSize();
+                
+                minPos.x = std::min(minPos.x, nodePos.x);
+                minPos.y = std::min(minPos.y, nodePos.y);
+                maxPos.x = std::max(maxPos.x, nodePos.x + nodeSize.x);
+                maxPos.y = std::max(maxPos.y, nodePos.y + nodeSize.y);
+            }
+            
+            if (!hasValidNodes) continue;
+            
+            // Add padding
+            minPos.x -= group.padding;
+            minPos.y -= group.padding + 20; // Extra space for title
+            maxPos.x += group.padding;
+            maxPos.y += group.padding;
+            
+            // Convert to screen coordinates
+            ImVec2 screenMin = grid2screen(minPos);
+            ImVec2 screenMax = grid2screen(maxPos);
+            
+            // Check if hovered
+            ImVec2 mousePos = ImGui::GetMousePos();
+            group.hovered = (mousePos.x >= screenMin.x && mousePos.x <= screenMax.x &&
+                            mousePos.y >= screenMin.y && mousePos.y <= screenMax.y);
+            if (group.hovered) {
+                m_hoveredGroup = &group;
+            }
+            
+            // Draw group background
+            ImU32 bgColor = group.color;
+            ImU32 borderCol = group.borderColor;
+            if (group.selected) {
+                borderCol = IM_COL32(255, 200, 100, 255);
+            } else if (group.hovered) {
+                bgColor = IM_COL32(
+                    (group.color & 0xFF),
+                    ((group.color >> 8) & 0xFF),
+                    ((group.color >> 16) & 0xFF),
+                    std::min(255, (int)((group.color >> 24) & 0xFF) + 30)
+                );
+            }
+            
+            draw_list->AddRectFilled(screenMin, screenMax, bgColor, 8.0f);
+            draw_list->AddRect(screenMin, screenMax, borderCol, 8.0f, 0, 2.0f);
+            
+            // Draw group name
+            ImVec2 textPos(screenMin.x + 8, screenMin.y + 4);
+            draw_list->AddText(textPos, IM_COL32(255, 255, 255, 200), group.name.c_str());
+            
+            // Handle group dragging
+            if (group.hovered && !m_hoveredNode && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                group.dragging = true;
+                group.dragOffset = ImVec2(mousePos.x - screenMin.x, mousePos.y - screenMin.y);
+                m_selectedGroup = &group;
+                // Deselect other groups
+                for (auto& [oid, other] : m_groups) {
+                    if (oid != gid) other.selected = false;
+                }
+                group.selected = true;
+            }
+            
+            if (group.dragging) {
+                if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                    // Calculate delta in grid coordinates
+                    ImVec2 delta = getScreenSpaceDelta();
+                    
+                    // Move all member nodes
+                    for (NodeUID nodeUid : group.members) {
+                        auto it = m_nodes.find(nodeUid);
+                        if (it != m_nodes.end()) {
+                            ImVec2 nodePos = it->second->getPos();
+                            it->second->setPos(nodePos + screen2grid(delta) - screen2grid(ImVec2(0,0)));
+                        }
+                    }
+                } else {
+                    group.dragging = false;
+                }
+            }
+        }
+        
+        // Delete selected group on Delete key
+        if (m_selectedGroup && ImGui::IsKeyPressed(ImGuiKey_Delete, false) && !m_hoveredNode) {
+            deleteGroup(m_selectedGroup->uid);
+        }
+
         // Update and draw nodes
         // TODO: I don't like this
         draw_list->ChannelsSplit(2);
         for (auto &node: m_nodes) { node.second->update(); }
         // Remove "toDelete" nodes
         for (auto iter = m_nodes.begin(); iter != m_nodes.end();) {
-            if (iter->second->toDestroy())
+            if (iter->second->toDestroy()) {
+                // Invalidate all links on all pins BEFORE destroying the node
+                // to prevent dangling pointer access in Link::update()
+                for (auto& pin : iter->second->getIns()) {
+                    pin->invalidateAllLinks();
+                }
+                for (auto& pin : iter->second->getOuts()) {
+                    pin->invalidateAllLinks();
+                }
                 iter = m_nodes.erase(iter);
+            }
             else
                 ++iter;
         }
@@ -584,6 +842,87 @@ namespace ImFlow {
         // Clearing recursion blacklist
         m_pinRecursionBlacklist.clear();
 
+        // Ctrl+G to create group from selection
+        if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsKeyPressed(ImGuiKey_G, false) && ImGui::IsWindowFocused()) {
+            createGroupFromSelection();
+        }
+
         m_context.end();
+    }
+
+    // ===== GROUP MANAGEMENT IMPLEMENTATION =====
+
+    NodeGroup::GroupUID ImNodeFlow::createGroupFromSelection(const std::string& name)
+    {
+        std::set<NodeUID> selectedNodes;
+        for (auto& [uid, node] : m_nodes) {
+            if (node->isSelected()) {
+                selectedNodes.insert(uid);
+            }
+        }
+        
+        if (selectedNodes.empty()) {
+            return 0;
+        }
+        
+        // Remove nodes from any existing groups
+        for (NodeUID nodeUid : selectedNodes) {
+            removeNodeFromGroup(nodeUid);
+        }
+        
+        NodeGroup group;
+        group.uid = m_nextGroupUid++;
+        group.name = name;
+        group.members = selectedNodes;
+        
+        m_groups[group.uid] = group;
+        return group.uid;
+    }
+
+    void ImNodeFlow::addNodeToGroup(NodeGroup::GroupUID groupUid, NodeUID nodeUid)
+    {
+        auto it = m_groups.find(groupUid);
+        if (it == m_groups.end()) return;
+        
+        // Remove from any existing group first
+        removeNodeFromGroup(nodeUid);
+        
+        it->second.members.insert(nodeUid);
+    }
+
+    void ImNodeFlow::removeNodeFromGroup(NodeUID nodeUid)
+    {
+        for (auto& [gid, group] : m_groups) {
+            group.members.erase(nodeUid);
+        }
+        // Clean up empty groups
+        for (auto it = m_groups.begin(); it != m_groups.end();) {
+            if (it->second.members.empty()) {
+                it = m_groups.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    void ImNodeFlow::deleteGroup(NodeGroup::GroupUID groupUid)
+    {
+        m_groups.erase(groupUid);
+        if (m_selectedGroup && m_selectedGroup->uid == groupUid) {
+            m_selectedGroup = nullptr;
+        }
+        if (m_hoveredGroup && m_hoveredGroup->uid == groupUid) {
+            m_hoveredGroup = nullptr;
+        }
+    }
+
+    NodeGroup* ImNodeFlow::findGroupForNode(NodeUID nodeUid)
+    {
+        for (auto& [gid, group] : m_groups) {
+            if (group.members.count(nodeUid) > 0) {
+                return &group;
+            }
+        }
+        return nullptr;
     }
 }
