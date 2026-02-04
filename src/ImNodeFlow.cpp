@@ -4,35 +4,218 @@ namespace ImFlow {
     // -----------------------------------------------------------------------------------------------------------------
     // LINK
 
+    // Helper function to check if a point is near a line segment
+    static bool pointNearLineSegment(const ImVec2& p, const ImVec2& a, const ImVec2& b, float threshold) {
+        ImVec2 ab = ImVec2(b.x - a.x, b.y - a.y);
+        ImVec2 ap = ImVec2(p.x - a.x, p.y - a.y);
+        float ab_len_sq = ab.x * ab.x + ab.y * ab.y;
+        if (ab_len_sq < 0.001f) return false;
+        float t = (ap.x * ab.x + ap.y * ab.y) / ab_len_sq;
+        t = ImClamp(t, 0.0f, 1.0f);
+        ImVec2 closest = ImVec2(a.x + t * ab.x, a.y + t * ab.y);
+        float dist_sq = (p.x - closest.x) * (p.x - closest.x) + (p.y - closest.y) * (p.y - closest.y);
+        return dist_sq < (threshold * threshold);
+    }
+
+    int Link::addWaypoint(const ImVec2& pos) {
+        // pos is in grid coordinates
+        // start/end from pinPoint() are in screen coordinates - convert to grid
+        ImVec2 startScreen = m_left->pinPoint();
+        ImVec2 endScreen = m_right->pinPoint();
+        ImVec2 start = m_inf->screen2grid(startScreen);
+        ImVec2 end = m_inf->screen2grid(endScreen);
+        
+        // Build list of all points in grid coordinates
+        std::vector<ImVec2> points;
+        points.push_back(start);
+        for (const auto& wp : m_waypoints) {
+            points.push_back(wp.pos);
+        }
+        points.push_back(end);
+
+        // Find which segment the position is closest to
+        int bestSegment = -1;
+        float bestDist = FLT_MAX;
+        for (size_t i = 0; i < points.size() - 1; i++) {
+            ImVec2 a = points[i];
+            ImVec2 b = points[i + 1];
+            // Project pos onto segment [a, b]
+            ImVec2 ab = ImVec2(b.x - a.x, b.y - a.y);
+            ImVec2 ap = ImVec2(pos.x - a.x, pos.y - a.y);
+            float ab_len_sq = ab.x * ab.x + ab.y * ab.y;
+            if (ab_len_sq < 0.001f) continue;
+            float t = (ap.x * ab.x + ap.y * ab.y) / ab_len_sq;
+            t = ImClamp(t, 0.0f, 1.0f);
+            ImVec2 closest = ImVec2(a.x + t * ab.x, a.y + t * ab.y);
+            float dist = sqrtf((pos.x - closest.x) * (pos.x - closest.x) + (pos.y - closest.y) * (pos.y - closest.y));
+            if (dist < bestDist) {
+                bestDist = dist;
+                bestSegment = i;
+            }
+        }
+
+        Waypoint wp;
+        wp.pos = pos;
+        wp.posTarget = pos;  // Initialize target to same position
+        if (bestSegment >= 0 && bestSegment < (int)m_waypoints.size()) {
+            m_waypoints.insert(m_waypoints.begin() + bestSegment + 1, wp);
+            return bestSegment + 1;
+        } else {
+            m_waypoints.push_back(wp);
+            return (int)m_waypoints.size() - 1;
+        }
+    }
+
+    void Link::removeWaypoint(int index) {
+        if (index >= 0 && index < (int)m_waypoints.size()) {
+            m_waypoints.erase(m_waypoints.begin() + index);
+        }
+    }
+
+    void Link::setWaypoints(const std::vector<ImVec2>& positions) {
+        m_waypoints.clear();
+        for (const auto& pos : positions) {
+            Waypoint wp;
+            wp.pos = pos;
+            wp.posTarget = pos;  // Initialize target to same position
+            m_waypoints.push_back(wp);
+        }
+    }
+
+    int Link::getHoveredWaypoint() const {
+        ImVec2 mousePos = m_inf->screen2grid(ImGui::GetMousePos());
+        for (int i = 0; i < (int)m_waypoints.size(); i++) {
+            float dist = sqrtf((mousePos.x - m_waypoints[i].pos.x) * (mousePos.x - m_waypoints[i].pos.x) +
+                               (mousePos.y - m_waypoints[i].pos.y) * (mousePos.y - m_waypoints[i].pos.y));
+            if (dist < Waypoint::HOVER_RADIUS) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     void Link::update() {
-        ImVec2 start = m_left->pinPoint();
-        ImVec2 end = m_right->pinPoint();
+        // start/end from pinPoint() are in screen coordinates - convert to grid
+        ImVec2 startScreen = m_left->pinPoint();
+        ImVec2 endScreen = m_right->pinPoint();
+        ImVec2 start = m_inf->screen2grid(startScreen);
+        ImVec2 end = m_inf->screen2grid(endScreen);
+        
         float thickness = m_left->getStyle()->extra.link_thickness;
         bool mouseClickState = m_inf->getSingleUseClick();
+        ImVec2 mousePos = ImGui::GetMousePos();
+        ImVec2 mouseGridPos = m_inf->screen2grid(mousePos);
 
-        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-            m_selected = false;
+        // Build list of all points (start, waypoints, end) - all in GRID coordinates
+        std::vector<ImVec2> points;
+        points.push_back(start);
+        for (auto& wp : m_waypoints) {
+            points.push_back(wp.pos);
+        }
+        points.push_back(end);
 
-        if (smart_bezier_collider(ImGui::GetMousePos(), start, end, 2.5)) {
-            m_hovered = true;
-            thickness = m_left->getStyle()->extra.link_hovered_thickness;
-            if (mouseClickState) {
-                m_inf->consumeSingleUseClick();
-                m_selected = true;
+        // Check if link is hovered (any segment) - use screen coordinates for collision
+        m_hovered = false;
+        for (size_t i = 0; i < points.size() - 1; i++) {
+            if (smart_bezier_collider(mousePos, m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]), 2.5)) {
+                m_hovered = true;
+                thickness = m_left->getStyle()->extra.link_hovered_thickness;
+                if (mouseClickState && getHoveredWaypoint() < 0) {
+                    m_inf->consumeSingleUseClick();
+                    m_selected = true;
+                }
+                break;
             }
-        } else { m_hovered = false; }
+        }
 
-        if (m_selected)
-            smart_bezier(start, end, m_left->getStyle()->extra.outline_color,
-                         thickness + m_left->getStyle()->extra.link_selected_outline_thickness);
-        smart_bezier(start, end, m_left->getStyle()->color, thickness);
+        // Handle waypoint interactions
+        int hoveredWp = getHoveredWaypoint();
+        
+        // Update hovered waypoint
+        for (size_t i = 0; i < m_waypoints.size(); i++) {
+            m_waypoints[i].hovered = (i == hoveredWp);
+        }
 
-        if (m_selected && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+        // Start dragging waypoint
+        if (hoveredWp >= 0 && mouseClickState) {
+            m_draggedWaypointIndex = hoveredWp;
+            m_waypoints[hoveredWp].dragged = true;
+            m_waypoints[hoveredWp].posTarget = m_waypoints[hoveredWp].pos;  // Initialize target
+            m_inf->consumeSingleUseClick();
+        }
+
+        // Drag waypoint
+        if (m_draggedWaypointIndex >= 0) {
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                float step = m_inf->getStyle().grid_size / m_inf->getStyle().grid_subdivisions;
+                // Apply delta to target position (not snapped)
+                m_waypoints[m_draggedWaypointIndex].posTarget += m_inf->getScreenSpaceDelta();
+                // Snap to grid for display
+                m_waypoints[m_draggedWaypointIndex].pos.x = round(m_waypoints[m_draggedWaypointIndex].posTarget.x / step) * step;
+                m_waypoints[m_draggedWaypointIndex].pos.y = round(m_waypoints[m_draggedWaypointIndex].posTarget.y / step) * step;
+            } else {
+                m_waypoints[m_draggedWaypointIndex].dragged = false;
+                m_waypoints[m_draggedWaypointIndex].posTarget = m_waypoints[m_draggedWaypointIndex].pos;  // Sync target
+                m_draggedWaypointIndex = -1;
+            }
+        }
+
+        // Delete waypoint on Delete key when hovered
+        if (hoveredWp >= 0 && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+            removeWaypoint(hoveredWp);
+        }
+        // Delete selected link on Delete key (only if no waypoint is hovered)
+        else if (m_selected && hoveredWp < 0 && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
             m_right->deleteLink();
+        }
+
+        // Deselect on click elsewhere
+        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !m_hovered && m_draggedWaypointIndex < 0) {
+            m_selected = false;
+        }
+
+        // Draw the link segments
+        ImU32 color = m_left->getStyle()->color;
+        ImU32 outlineColor = m_left->getStyle()->extra.outline_color;
+
+        // Rebuild points in case waypoints moved (still in GRID coords)
+        points.clear();
+        points.push_back(start);
+        for (auto& wp : m_waypoints) {
+            points.push_back(wp.pos);
+        }
+        points.push_back(end);
+
+        // Draw outline if selected - convert to screen for drawing
+        if (m_selected) {
+            for (size_t i = 0; i < points.size() - 1; i++) {
+                smart_bezier(m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]), outlineColor,
+                             thickness + m_left->getStyle()->extra.link_selected_outline_thickness);
+            }
+        }
+
+        // Draw segments - convert to screen for drawing
+        for (size_t i = 0; i < points.size() - 1; i++) {
+            smart_bezier(m_inf->grid2screen(points[i]), m_inf->grid2screen(points[i + 1]), color, thickness);
+        }
+
+        // Draw waypoints - convert to screen for drawing
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
+        for (auto& wp : m_waypoints) {
+            ImVec2 screenPos = m_inf->grid2screen(wp.pos);
+            float radius = Waypoint::RADIUS;
+            if (wp.hovered || wp.dragged) {
+                radius = Waypoint::HOVER_RADIUS;
+            }
+            draw_list->AddCircleFilled(screenPos, radius, color);
+            if (wp.hovered || wp.dragged) {
+                draw_list->AddCircle(screenPos, radius, outlineColor, 12, 2.0f);
+            }
+        }
     }
 
     Link::~Link() {
-        if (!m_left) return;
+        if (!m_cleanupEnabled || !m_left) return;
         m_left->deleteLink();
     }
 
@@ -219,7 +402,27 @@ namespace ImFlow {
         return std::all_of(m_nodes.begin(), m_nodes.end(),
                            [](const auto &n) { return !n.second->isHovered(); })
                && std::all_of(m_links.begin(), m_links.end(),
-                              [](const auto &l) { return !l.lock()->isHovered(); });
+                              [](const auto &l) { 
+                                  auto link = l.lock();
+                                  return !link || (!link->isHovered() && link->getHoveredWaypoint() < 0);
+                              });
+    }
+
+    std::weak_ptr<Link> ImNodeFlow::getHoveredLink() {
+        for (auto& l : m_links) {
+            auto link = l.lock();
+            if (link && link->isHovered()) {
+                return l;
+            }
+        }
+        return std::weak_ptr<Link>();
+    }
+
+    int ImNodeFlow::addWaypointToLink(std::shared_ptr<Link> link, const ImVec2& pos) {
+        if (link) {
+            return link->addWaypoint(pos);
+        }
+        return -1;
     }
 
     ImVec2 ImNodeFlow::screen2grid( const ImVec2 & p )
@@ -244,8 +447,10 @@ namespace ImFlow {
         // Updating looping stuff
         m_hovering = nullptr;
         m_hoveredNode = nullptr;
+        m_hoveredLink.reset();  // Reset hovered link each frame
         m_draggingNode = m_draggingNodeNext;
         m_singleUseClick = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+        m_doubleUseClick = ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left);
 
         // Create child canvas
         m_context.begin();
@@ -357,6 +562,8 @@ namespace ImFlow {
         // Right-click PopUp
         if (m_rightClickPopUp && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered()) {
             m_hoveredNodeAux = m_hoveredNode;
+            // Capture hovered link at the moment of right-click
+            m_hoveredLinkAux = getHoveredLink().lock();
             ImGui::OpenPopup("RightClickPopUp");
         }
         if (ImGui::BeginPopup("RightClickPopUp")) {

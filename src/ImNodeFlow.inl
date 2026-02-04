@@ -344,6 +344,33 @@ namespace ImFlow
     }
 
     template<class T>
+    void InPin<T>::deleteLink()
+    {
+        if (m_allowMultipleLinks)
+        {
+            m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
+                [](const std::shared_ptr<Link>& l) { return !l || !l->left(); }), m_links.end());
+        }
+        else
+        {
+            m_link.reset();
+        }
+    }
+
+    template<class T>
+    void InPin<T>::setLink(std::shared_ptr<Link>& link)
+    {
+        if (m_allowMultipleLinks)
+        {
+            m_links.emplace_back(link);
+        }
+        else
+        {
+            m_link = link;
+        }
+    }
+
+    template<class T>
     void InPin<T>::createLink(Pin *other)
     {
         if (other == this || other->getType() == PinType_Input)
@@ -352,18 +379,45 @@ namespace ImFlow
         if (m_parent == other->getParent() && !m_allowSelfConnection)
             return;
 
-        if (m_link && m_link->left() == other)
+        if (m_allowMultipleLinks)
         {
-            m_link.reset();
-            return;
+            // Check if already connected to this output
+            for (auto& link : m_links)
+            {
+                if (link && link->left() == other)
+                {
+                    // Remove this specific link
+                    link.reset();
+                    m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
+                        [](const std::shared_ptr<Link>& l) { return !l; }), m_links.end());
+                    return;
+                }
+            }
+
+            if (!m_filter(other, this)) // Check Filter
+                return;
+
+            auto link = std::make_shared<Link>(other, this, (*m_inf));
+            m_links.emplace_back(link);
+            other->setLink(link);
+            (*m_inf)->addLink(link);
         }
+        else
+        {
+            // Original single-link behavior
+            if (m_link && m_link->left() == other)
+            {
+                m_link.reset();
+                return;
+            }
 
-        if (!m_filter(other, this)) // Check Filter
-            return;
+            if (!m_filter(other, this)) // Check Filter
+                return;
 
-        m_link = std::make_shared<Link>(other, this, (*m_inf));
-        other->setLink(m_link);
-        (*m_inf)->addLink(m_link);
+            m_link = std::make_shared<Link>(other, this, (*m_inf));
+            other->setLink(m_link);
+            (*m_inf)->addLink(m_link);
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
