@@ -710,6 +710,15 @@ namespace ImFlow
          * @return Pointer to selected group or nullptr
          */
         NodeGroup* getSelectedGroup() { return m_selectedGroup; }
+
+        void clearGroupSelection()
+        {
+            if (m_selectedGroup)
+            {
+                m_selectedGroup->selected = false;
+                m_selectedGroup = nullptr;
+            }
+        }
         
     private:
         std::string m_name;
@@ -1295,6 +1304,12 @@ namespace ImFlow
         float calcWidth() { return ImGui::CalcTextSize(m_name.c_str()).x; }
 
         /**
+         * @brief <BR>Get tangent direction for link rendering
+         * @return Normalized direction vector for bezier tangent (accounts for flip)
+         */
+        ImVec2 getTangentDirection();
+
+        /**
          * @brief <BR>Set pin's position
          * @param pos Position in screen coordinates
          */
@@ -1435,11 +1450,13 @@ namespace ImFlow
          * @return Grid coordinates to the attachment point between the link and the pin's socket
          */
         ImVec2 pinPoint() override { 
-            // If parent is flipped, socket is on the right; otherwise on the left
-            float x = m_parent->isFlipped() 
-                ? m_size.x + m_style->extra.socket_padding   // RIGHT side
-                : -m_style->extra.socket_padding;            // LEFT side
-            return m_pos + ImVec2(x, m_size.y / 2); 
+            if (m_parent->isFlipped()) {
+                // Flipped: socket on right side of pin (pin is right-aligned to node edge)
+                return m_pos + ImVec2(m_size.x + m_style->extra.socket_padding, m_size.y / 2);
+            } else {
+                // Normal: socket on left side of pin
+                return m_pos + ImVec2(-m_style->extra.socket_padding, m_size.y / 2);
+            }
         }
 
         /**

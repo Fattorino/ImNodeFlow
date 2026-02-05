@@ -284,14 +284,42 @@ namespace ImFlow
     // -----------------------------------------------------------------------------------------------------------------
     // PIN
 
+    inline ImVec2 Pin::getTangentDirection()
+    {
+        // Output pins: link goes OUT from the pin
+        // Input pins: link comes IN to the pin
+        // The tangent direction indicates where the bezier curve should go
+        bool isFlipped = m_parent->isFlipped();
+        bool isOutput = (m_type == PinType_Output);
+        
+        // Normal mode:
+        //   Output socket on RIGHT -> link goes right -> tangent (1,0)
+        //   Input socket on LEFT -> link comes from left -> tangent (1,0)
+        // Flipped mode:
+        //   Output socket on LEFT -> link goes left -> tangent (-1,0)
+        //   Input socket on RIGHT -> link comes from right -> tangent (-1,0)
+        // For bezier control points: p22 = p2 - (tangent * controlLen)
+        // So for input in flipped mode, tangent (-1,0) gives p22 = p2 - (-controlLen, 0) = p2 + (controlLen, 0)
+        // This places control point to the RIGHT of input, making curve enter from outside
+        if (isOutput) {
+            return isFlipped ? ImVec2(-1.0f, 0.0f) : ImVec2(1.0f, 0.0f);
+        } else {
+            // Input: tangent points in direction link arrives from
+            return isFlipped ? ImVec2(-1.0f, 0.0f) : ImVec2(1.0f, 0.0f);
+        }
+    }
+
     inline std::pair<ImVec2, ImVec2> Pin::getSocketHitBounds(float expand_radius)
     {
         if (expand_radius < 0.0f)
             expand_radius = m_style->socket_hovered_radius;
         
         ImVec2 center = pinPoint();
-        ImVec2 tl = center - ImVec2(expand_radius, expand_radius);
-        ImVec2 br = center + ImVec2(expand_radius, expand_radius);
+        // Use a wider hitbox horizontally to cover the full arrow/socket shape
+        float hitW = expand_radius * 2.0f;
+        float hitH = expand_radius;
+        ImVec2 tl = center - ImVec2(hitW, hitH);
+        ImVec2 br = center + ImVec2(hitW, hitH);
         
         return {tl, br};
     }
@@ -347,8 +375,8 @@ namespace ImFlow
             ImGui::EndGroup();
             m_size = ImGui::GetItemRectSize();
             
-            // Calculer la hitbox combinée si activée
-            bool itemHovered = ImGui::IsItemHovered();
+            // For custom-rendered pins, only use socket hitbox for drop detection
+            // (the rendered widget is just a layout spacer, not the interactive area)
             bool socketHovered = false;
             
             if (m_socketHitboxEnabled)
@@ -357,7 +385,7 @@ namespace ImFlow
                 socketHovered = ImGui::IsMouseHoveringRect(socket_tl, socket_br);
             }
             
-            if (itemHovered || socketHovered)
+            if (socketHovered)
                 (*m_inf)->hovering(this);
             
             return;
@@ -403,7 +431,7 @@ namespace ImFlow
         if (m_allowMultipleLinks)
         {
             m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
-                [](const std::shared_ptr<Link>& l) { return !l || !l->left(); }), m_links.end());
+                [](const std::shared_ptr<Link>& l) { return !l || !l->left() || !l->isValid(); }), m_links.end());
         }
         else
         {
