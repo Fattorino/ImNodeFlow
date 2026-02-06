@@ -698,6 +698,9 @@ namespace ImFlow
         std::unordered_map<NodeGroup::GroupUID, NodeGroup>& getGroups() { return m_groups; }
         const std::unordered_map<NodeGroup::GroupUID, NodeGroup>& getGroups() const { return m_groups; }
         
+        NodeGroup::GroupUID getNextGroupUid() const { return m_nextGroupUid; }
+        void setNextGroupUid(NodeGroup::GroupUID uid) { m_nextGroupUid = uid; }
+        
         /**
          * @brief Find which group a node belongs to
          * @param nodeUid UID of the node
