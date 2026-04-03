@@ -17,7 +17,7 @@
 //------------------------------------------------------------------------------
 # include "imgui_extra_math.h"
 
-
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
 //------------------------------------------------------------------------------
 # if IMGUI_VERSION_NUM < 19002
 inline bool operator==(const ImVec2& lhs, const ImVec2& rhs)
@@ -42,6 +42,7 @@ inline ImVec2 operator-(const ImVec2& lhs)
     return ImVec2(-lhs.x, -lhs.y);
 }
 # endif
+#endif
 
 
 //------------------------------------------------------------------------------

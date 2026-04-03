@@ -28,7 +28,7 @@ struct ImLine
     ImVec2 A, B;
 };
 
-
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
 //------------------------------------------------------------------------------
 # if IMGUI_VERSION_NUM < 19002
 inline bool operator==(const ImVec2& lhs, const ImVec2& rhs);
@@ -38,7 +38,7 @@ inline ImVec2 operator*(const float lhs, const ImVec2& rhs);
 # if IMGUI_VERSION_NUM < 18955
 inline ImVec2 operator-(const ImVec2& lhs);
 # endif
-
+#endif
 
 //------------------------------------------------------------------------------
 inline float  ImLength(float v);
