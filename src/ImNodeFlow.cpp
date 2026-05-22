@@ -28,12 +28,12 @@ namespace ImFlow {
         smart_bezier(start, end, m_left->getStyle()->color, thickness);
 
         if (m_selected && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
-            m_right->deleteLink();
+            m_right->deleteLink(m_left);
     }
 
     Link::~Link() {
         if (!m_left) return;
-        m_left->deleteLink();
+        m_left->deleteLink(m_left);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -274,7 +274,9 @@ namespace ImFlow {
         // Remove "toDelete" nodes
         for (auto iter = m_nodes.begin(); iter != m_nodes.end();) {
             if (iter->second->toDestroy())
-                iter = m_nodes.erase(iter);
+                {
+                    iter = m_nodes.erase(iter);
+                }
             else
                 ++iter;
         }

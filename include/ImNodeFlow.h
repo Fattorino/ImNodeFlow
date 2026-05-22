@@ -87,9 +87,9 @@ namespace ImFlow
         /// @brief Link thickness when hovered
         float link_hovered_thickness = 3.5f;
         /// @brief Thickness of the outline of a selected link
-        float link_selected_outline_thickness = 0.5f;
+        float link_selected_outline_thickness = 1.5f;
         /// @brief Color of the outline of a selected link
-        ImU32 outline_color = IM_COL32(80, 20, 255, 200);
+        ImU32 outline_color =(0xb6f4ffff);// ImColor(80, 20, 255, 200);
 
         /// @brief Spacing between pin content and socket
         float socket_padding = 6.6f;
@@ -992,7 +992,7 @@ namespace ImFlow
         /**
          * @brief <BR>Delete link reference
          */
-        virtual void deleteLink() = 0;
+        virtual void deleteLink(Pin *pin) = 0;
 
         /**
          * @brief <BR>Get connected status
@@ -1123,7 +1123,16 @@ namespace ImFlow
         /**
         * @brief <BR>Delete the link connected to the pin
         */
-        void deleteLink() override { m_link.clear(); }
+        void deleteLink(Pin *pin) override { 
+            if(!pin) return;
+            if(m_link.find(pin)!=m_link.end()){
+                if(m_link.find(pin)->second.get()){
+                    m_link.find(pin)->second.reset();
+                }
+                m_link.erase(pin);
+            }
+
+         }
 
         /**
          * @brief Specify if connections from an output on the same node are allowed
@@ -1197,7 +1206,7 @@ namespace ImFlow
          */
         ~OutPin() override {
             std::vector<std::weak_ptr<Link>> links = std::move(m_links);
-            for (auto &l: links) if (!l.expired()) l.lock()->right()->deleteLink();
+            for (auto &l: links) if (!l.expired()) l.lock()->right()->deleteLink(l.lock()->left());
         }
 
         /**
@@ -1215,7 +1224,7 @@ namespace ImFlow
         /**
          * @brief <BR>Delete any expired weak pointers to a (now deleted) link
          */
-        void deleteLink() override;
+        void deleteLink(Pin *pin) override;
 
         /**
          * @brief <BR>Get connected status

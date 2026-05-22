@@ -307,12 +307,17 @@ namespace ImFlow
         if (m_parent == other->getParent() && !m_allowSelfConnection)
             return;
 
-        
-        // if (m_link && m_link->left() == other)
-        // {
-        //     m_link.reset();
-        //     return;
-        // }
+        if (m_link.find(other)!=m_link.end())
+        {
+            if(m_link.find(other)->second.get()){
+                if(m_link.find(other)->second->left() == other){
+                    m_link.find(other)->second.reset();
+                    m_link.erase(other);
+                    return;
+                }
+            }
+            m_link.erase(other);
+        }
 
         if (!m_filter(other, this)) // Check Filter
             return;
@@ -354,7 +359,7 @@ namespace ImFlow
     }
 
     template<class T>
-    void OutPin<T>::deleteLink()
+    void OutPin<T>::deleteLink(Pin *pin)
     {
         m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
                                      [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
