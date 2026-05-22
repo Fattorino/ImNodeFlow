@@ -896,6 +896,10 @@ namespace ImFlow
          * @brief <BR>Update the isSelected status of the node
          */
         void updatePublicStatus() { m_selected = m_selectedNext; }
+
+        void destroyLinks();
+       
+
     private:
         NodeUID m_uid = 0;
         std::string m_title;
@@ -1004,8 +1008,9 @@ namespace ImFlow
          * @brief <BR>Get pin's link
          * @return Weak_ptr reference to pin's link
          */
-        // virtual std::weak_ptr<Link> getLink() { return std::weak_ptr<Link>{}; }
-
+        virtual std::map<Pin*,std::shared_ptr<Link>> *getLink(){ return nullptr ;};
+        
+        virtual std::vector<std::weak_ptr<Link>> *getWeakLink(){ return nullptr;};
         /**
          * @brief <BR>Get pin's UID
          * @return Unique identifier of the pin
@@ -1124,6 +1129,7 @@ namespace ImFlow
         * @brief <BR>Delete the link connected to the pin
         */
         void deleteLink(Pin *pin) override { 
+            printf("%s %d\n",__FILE__,__LINE__);
             if(!pin) return;
             if(m_link.find(pin)!=m_link.end()){
                 if(m_link.find(pin)->second.get()){
@@ -1150,7 +1156,7 @@ namespace ImFlow
          * @brief <BR>Get pin's link
          * @return Weak_ptr reference to the link connected to the pin
          */
-        // std::weak_ptr<Link> getLink() override { return m_link; }
+        std::map<Pin*,std::shared_ptr<Link>> *getLink() override { return &m_link; }
 
         /**
          * @brief <BR>Get InPin's connection filter
@@ -1256,6 +1262,8 @@ namespace ImFlow
          * @return String containing unique information identifying the data type
          */
         [[nodiscard]] const std::type_info& getDataType() const override { return typeid(T); };
+
+        virtual std::vector<std::weak_ptr<Link>> *getWeakLink() override {  return &m_links; };
     private:
         std::vector<std::weak_ptr<Link>> m_links;
         std::function<T()> m_behaviour;
