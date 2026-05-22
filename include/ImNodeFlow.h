@@ -12,6 +12,7 @@
 #include <functional>
 #include <unordered_map>
 #include <cstdint>
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
 #include "../src/context_wrapper.h"
@@ -439,7 +440,7 @@ namespace ImFlow
          * @brief <BR>Get editor's list of links
          * @return Const reference to editor's internal links list
          */
-        const std::vector<std::weak_ptr<Link>>& getLinks() { return m_links; }
+        // const std::vector<std::weak_ptr<Link>>& getLinks() { return m_links; }
 
         /**
          * @brief <BR>Get zooming viewport
@@ -1003,7 +1004,7 @@ namespace ImFlow
          * @brief <BR>Get pin's link
          * @return Weak_ptr reference to pin's link
          */
-        virtual std::weak_ptr<Link> getLink() { return std::weak_ptr<Link>{}; }
+        // virtual std::weak_ptr<Link> getLink() { return std::weak_ptr<Link>{}; }
 
         /**
          * @brief <BR>Get pin's UID
@@ -1122,7 +1123,7 @@ namespace ImFlow
         /**
         * @brief <BR>Delete the link connected to the pin
         */
-        void deleteLink() override { m_link.reset(); }
+        void deleteLink() override { m_link.clear(); }
 
         /**
          * @brief Specify if connections from an output on the same node are allowed
@@ -1134,13 +1135,13 @@ namespace ImFlow
          * @brief <BR>Get connected status
          * @return [TRUE] is pin is connected to a link
          */
-        bool isConnected() override { return m_link != nullptr; }
+        bool isConnected() override { return !m_link .empty(); }
 
         /**
          * @brief <BR>Get pin's link
          * @return Weak_ptr reference to the link connected to the pin
          */
-        std::weak_ptr<Link> getLink() override { return m_link; }
+        // std::weak_ptr<Link> getLink() override { return m_link; }
 
         /**
          * @brief <BR>Get InPin's connection filter
@@ -1166,7 +1167,7 @@ namespace ImFlow
          */
         const T& val();
     private:
-        std::shared_ptr<Link> m_link;
+        std::map<Pin*,std::shared_ptr<Link>> m_link;
         T m_emptyVal;
         std::function<bool(Pin*, Pin*)> m_filter;
         bool m_allowSelfConnection = false;

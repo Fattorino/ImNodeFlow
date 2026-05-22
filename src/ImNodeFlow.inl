@@ -292,10 +292,10 @@ namespace ImFlow
     template<class T>
     const T& InPin<T>::val()
     {
-        if(!m_link)
+        if(!m_link.empty())
             return m_emptyVal;
 
-        return reinterpret_cast<OutPin<T>*>(m_link->left())->val();
+        return reinterpret_cast<OutPin<T>*>(m_link.begin()->second->left())->val();
     }
 
     template<class T>
@@ -307,18 +307,19 @@ namespace ImFlow
         if (m_parent == other->getParent() && !m_allowSelfConnection)
             return;
 
-        if (m_link && m_link->left() == other)
-        {
-            m_link.reset();
-            return;
-        }
+        
+        // if (m_link && m_link->left() == other)
+        // {
+        //     m_link.reset();
+        //     return;
+        // }
 
         if (!m_filter(other, this)) // Check Filter
             return;
-
-        m_link = std::make_shared<Link>(other, this, (*m_inf));
-        other->setLink(m_link);
-        (*m_inf)->addLink(m_link);
+        std::shared_ptr<Link> link = std::make_shared<Link>(other, this, (*m_inf));
+        m_link.insert(std::make_pair(other, link));
+        other->setLink(link);
+        (*m_inf)->addLink(link);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

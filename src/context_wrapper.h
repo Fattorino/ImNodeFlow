@@ -207,9 +207,11 @@ inline void ContainedContext::end()
     }
 
     // Zoom reset
-    if (ImGui::IsKeyPressed(m_config.reset_zoom_key, false))
+    if (ImGui::IsKeyPressed(m_config.reset_zoom_key, false)){
+        m_scroll=ImVec2(0.f, 0.f);
         m_scaleTarget = m_config.default_zoom;
-
+        
+    }
     // Scrolling
     if (m_hovered && !m_anyItemActive && ImGui::IsMouseDragging(m_config.scroll_button, 0.f))
     {
