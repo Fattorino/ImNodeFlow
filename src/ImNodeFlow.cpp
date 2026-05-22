@@ -240,6 +240,86 @@ namespace ImFlow {
         m_links.push_back(link);
     }
 
+            void BaseNode::destroyLinks()
+        {
+            auto eraseLinksOfInPin = [](Pin *pin)
+            {
+                if (!pin)
+                    return;
+
+                std::map<Pin*,std::shared_ptr<Link>> *links = pin->getLink();
+                for (auto it = links->begin(); it != links->end();)
+                {
+                    std::shared_ptr<Link> link = it->second;
+
+                    if (!link)
+                    {
+                        it = links->erase(it);
+                        continue;
+                    }
+
+                    Pin *leftPin = link->left();
+                    Pin *rightPin = link->right();
+                    leftPin->deleteLink(rightPin);
+                    // Pin *otherPin = nullptr;
+                    // if (leftPin == pin)
+                    //     otherPin = rightPin;
+                    // else if (rightPin == pin)
+                    //     otherPin = leftPin;
+
+                    // if (otherPin)
+                    // {
+                    //     otherPin->deleteLink(pin);
+                    // }
+                    
+                    it = links->erase(it);
+                }
+                
+            };
+
+            auto eraseLinksOfOutPin = [](Pin *pin){
+                if(!pin) return;
+                std::vector<std::weak_ptr<Link>> *links = pin->getWeakLink();
+                for (auto it = links->begin(); it != links->end();)
+                {
+                   
+
+                    if (!it->lock().get())
+                    {
+                        it = links->erase(it);
+                        continue;
+                    }
+
+                    Pin *leftPin = it->lock().get()->left();
+                    Pin *rightPin = it->lock().get()->right();
+                    // if(rightPin)
+                        rightPin->deleteLink(leftPin);
+                    // Pin *otherPin = nullptr;
+                    // if (leftPin == pin)
+                    //     otherPin = rightPin;
+                    // else if (rightPin == pin)
+                    //     otherPin = leftPin;
+
+                    // if (otherPin)
+                    // {
+                    //     otherPin->deleteLink(pin);
+                    // }
+                    
+                    // it = links->erase(it);
+                }
+            };
+
+            for (auto &p : m_ins)
+            {
+                eraseLinksOfInPin(p.get());
+            }
+
+            for (auto &p : m_outs)
+            {
+                eraseLinksOfOutPin(p.get());
+            }
+        }
+
     void ImNodeFlow::update() {
         // Updating looping stuff
         m_hovering = nullptr;
@@ -275,6 +355,7 @@ namespace ImFlow {
         for (auto iter = m_nodes.begin(); iter != m_nodes.end();) {
             if (iter->second->toDestroy())
                 {
+                    iter->second->destroyLinks();
                     iter = m_nodes.erase(iter);
                 }
             else

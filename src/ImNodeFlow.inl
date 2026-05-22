@@ -361,6 +361,7 @@ namespace ImFlow
     template<class T>
     void OutPin<T>::deleteLink(Pin *pin)
     {
+        printf("%s %d\n",__FILE__,__LINE__);
         m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
                                      [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
     }
