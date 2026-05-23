@@ -8,10 +8,12 @@
 #include <vector>
 #include <cmath>
 #include <memory>
+#include <cstdint>
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
-#include <cstdint>
+#include <set>
+#include <cfloat>
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
 #include "../src/context_wrapper.h"
@@ -174,6 +176,43 @@ namespace ImFlow
         static std::shared_ptr<NodeStyle> red() { return std::make_shared<NodeStyle>(IM_COL32(191,90,90,255), ImColor(233,241,244,255), 11.f); }
         /// @brief <BR>Default brown style
         static std::shared_ptr<NodeStyle> brown() { return std::make_shared<NodeStyle>(IM_COL32(191,134,90,255), ImColor(233,241,244,255), 6.5f); }
+        
+        // Category-specific styles
+        /// @brief <BR>Control flow (branch, if/else) - orange/amber
+        static std::shared_ptr<NodeStyle> controlFlow() { return std::make_shared<NodeStyle>(IM_COL32(230,150,50,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>Loops (for, while) - purple
+        static std::shared_ptr<NodeStyle> loop() { return std::make_shared<NodeStyle>(IM_COL32(150,90,180,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>Variables - teal/cyan
+        static std::shared_ptr<NodeStyle> variable() { return std::make_shared<NodeStyle>(IM_COL32(60,160,160,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>Operators - blue
+        static std::shared_ptr<NodeStyle> operation() { return std::make_shared<NodeStyle>(IM_COL32(70,130,200,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>System calls (print, play media, etc.) - pink/magenta
+        static std::shared_ptr<NodeStyle> syscall() { return std::make_shared<NodeStyle>(IM_COL32(200,80,150,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>Functions/Modules - indigo
+        static std::shared_ptr<NodeStyle> function() { return std::make_shared<NodeStyle>(IM_COL32(100,80,180,255), ImColor(255,255,255,255), 4.f); }
+        /// @brief <BR>Events/Signals - yellow-green
+        static std::shared_ptr<NodeStyle> event() { return std::make_shared<NodeStyle>(IM_COL32(180,200,60,255), ImColor(40,40,40,255), 4.f); }
+        /// @brief <BR>Comments - soft yellow
+        static std::shared_ptr<NodeStyle> comment() { return std::make_shared<NodeStyle>(IM_COL32(220,200,100,255), ImColor(60,60,60,255), 4.f); }
+        
+        /// @brief <BR>Create custom style from header color
+        static std::shared_ptr<NodeStyle> fromColor(ImU32 headerColor) { return std::make_shared<NodeStyle>(headerColor, ImColor(255,255,255,255), 4.f); }
+    };
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // WAYPOINT
+
+    /**
+     * @brief A point on a link that can be moved to organize connections
+     */
+    struct Waypoint
+    {
+        ImVec2 pos;           // Position in grid coordinates (snapped)
+        ImVec2 posTarget;     // Target position for dragging (not snapped)
+        bool hovered = false;
+        bool dragged = false;
+        static constexpr float RADIUS = 6.0f;
+        static constexpr float HOVER_RADIUS = 10.0f;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -198,12 +237,61 @@ namespace ImFlow
          * @details Deletes references of this links form connected pins
          */
         ~Link();
+        
+        /**
+         * @brief <BR>Disable cleanup on destruction
+         * @details Call this before destroying the link when pins are already destroyed
+         */
+        void disableCleanup() { m_cleanupEnabled = false; }
+        
+        /**
+         * @brief <BR>Mark link as invalid (pins are being destroyed)
+         * @details Call this before destroying pins to prevent access to dangling pointers
+         */
+        void invalidate() { m_valid = false; m_cleanupEnabled = false; }
+        
+        /**
+         * @brief <BR>Check if link is still valid
+         * @return [TRUE] if link pins are still valid
+         */
+        [[nodiscard]] bool isValid() const { return m_valid; }
 
         /**
          * @brief <BR>Looping function to update the Link
          * @details Draws the Link and updates Hovering and Selected status.
          */
         void update();
+
+        /**
+         * @brief <BR>Add a waypoint at the given position
+         * @param pos Position in grid coordinates
+         * @return Index of the newly added waypoint
+         */
+        int addWaypoint(const ImVec2& pos);
+
+        /**
+         * @brief <BR>Remove a waypoint by index
+         * @param index Index of the waypoint to remove
+         */
+        void removeWaypoint(int index);
+
+        /**
+         * @brief <BR>Get all waypoints
+         * @return Reference to the vector of waypoints
+         */
+        std::vector<Waypoint>& getWaypoints() { return m_waypoints; }
+
+        /**
+         * @brief <BR>Set all waypoints at once (useful for deserialization)
+         * @param waypoints Vector of positions in grid coordinates
+         */
+        void setWaypoints(const std::vector<ImVec2>& positions);
+
+        /**
+         * @brief <BR>Check if mouse is hovering any waypoint
+         * @return Index of hovered waypoint or -1 if none
+         */
+        int getHoveredWaypoint() const;
 
         /**
          * @brief <BR>Get Left pin of the link
@@ -234,6 +322,10 @@ namespace ImFlow
         ImNodeFlow* m_inf;
         bool m_hovered = false;
         bool m_selected = false;
+        bool m_cleanupEnabled = true;
+        bool m_valid = true;
+        std::vector<Waypoint> m_waypoints;
+        int m_draggedWaypointIndex = -1;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -263,6 +355,27 @@ namespace ImFlow
         float grid_subdivisions = 5.f;
         /// @brief ImNodeFlow colors
         InfColors colors;
+    };
+
+    /**
+     * @brief A group of nodes that can be moved together
+     */
+    struct NodeGroup
+    {
+        using GroupUID = uint64_t;
+        
+        GroupUID uid{0};
+        std::string name{"Group"};
+        std::string comment;
+        ImU32 color{IM_COL32(100, 100, 200, 60)};
+        ImU32 borderColor{IM_COL32(100, 100, 200, 200)};
+        std::set<NodeUID> members;
+        float padding{20.0f};
+        
+        bool dragging{false};
+        bool hovered{false};
+        bool selected{false};
+        ImVec2 dragOffset{0, 0};
     };
 
     /**
@@ -398,6 +511,13 @@ namespace ImFlow
         void consumeSingleUseClick() { m_singleUseClick = false; }
 
         /**
+         * @brief <BR>Get mouse double-clicking status
+         * @return [TRUE] if mouse is double-clicked and double-click hasn't been consumed
+         */
+        [[nodiscard]] bool getDoubleUseClick() const { return m_doubleUseClick; }
+        void consumeDoubleUseClick() { m_doubleUseClick = false; }
+
+        /**
          * @brief <BR>Get editor's name
          * @return Const reference to editor's name
          */
@@ -486,6 +606,12 @@ namespace ImFlow
         void hoveredNode(BaseNode* hovering) { m_hoveredNode = hovering; }
 
         /**
+         * @brief <BR>Set what link is being hovered
+         * @param link Shared pointer to the hovered link
+         */
+        void hoveredLink(std::shared_ptr<Link> link) { m_hoveredLink = link; }
+
+        /**
          * @brief <BR>Convert coordinates from screen to grid
          * @param p Point in screen coordinates to be converted
          * @return Point in grid's coordinates
@@ -512,15 +638,97 @@ namespace ImFlow
         bool on_free_space();
 
         /**
+         * @brief <BR>Get the link currently being hovered by the mouse
+         * @return Weak pointer to the hovered link, or empty weak_ptr if none
+         */
+        std::weak_ptr<Link> getHoveredLink();
+
+        /**
+         * @brief <BR>Add a waypoint to a link at the given position
+         * @param link The link to add the waypoint to
+         * @param pos Position in grid coordinates
+         * @return Index of the newly created waypoint
+         */
+        int addWaypointToLink(std::shared_ptr<Link> link, const ImVec2& pos);
+
+        /**
+         * @brief <BR>Get the link that was hovered when right-click menu opened
+         * @return Shared pointer to the captured hovered link
+         */
+        std::shared_ptr<Link> getRightClickHoveredLink() { return m_hoveredLinkAux; }
+
+        /**
          * @brief <BR>Get recursion blacklist for nodes
          * @return Reference to blacklist
          */
         std::vector<std::string>& get_recursion_blacklist() { return m_pinRecursionBlacklist; }
+
+        // ===== GROUP MANAGEMENT =====
+        
+        /**
+         * @brief Create a new group from currently selected nodes
+         * @param name Name of the group
+         * @return UID of the created group, or 0 if no nodes selected
+         */
+        NodeGroup::GroupUID createGroupFromSelection(const std::string& name = "Group");
+        
+        /**
+         * @brief Add a node to an existing group
+         * @param groupUid UID of the group
+         * @param nodeUid UID of the node to add
+         */
+        void addNodeToGroup(NodeGroup::GroupUID groupUid, NodeUID nodeUid);
+        
+        /**
+         * @brief Remove a node from its group
+         * @param nodeUid UID of the node to remove
+         */
+        void removeNodeFromGroup(NodeUID nodeUid);
+        
+        /**
+         * @brief Delete a group (nodes remain)
+         * @param groupUid UID of the group to delete
+         */
+        void deleteGroup(NodeGroup::GroupUID groupUid);
+        
+        /**
+         * @brief Get all groups
+         * @return Reference to map of groups
+         */
+        std::unordered_map<NodeGroup::GroupUID, NodeGroup>& getGroups() { return m_groups; }
+        const std::unordered_map<NodeGroup::GroupUID, NodeGroup>& getGroups() const { return m_groups; }
+        
+        NodeGroup::GroupUID getNextGroupUid() const { return m_nextGroupUid; }
+        void setNextGroupUid(NodeGroup::GroupUID uid) { m_nextGroupUid = uid; }
+        
+        /**
+         * @brief Find which group a node belongs to
+         * @param nodeUid UID of the node
+         * @return Pointer to group, or nullptr if not in any group
+         */
+        NodeGroup* findGroupForNode(NodeUID nodeUid);
+        
+        /**
+         * @brief Get selected group
+         * @return Pointer to selected group or nullptr
+         */
+        NodeGroup* getSelectedGroup() { return m_selectedGroup; }
+
+        void clearGroupSelection()
+        {
+            if (m_selectedGroup)
+            {
+                m_selectedGroup->selected = false;
+                m_selectedGroup = nullptr;
+            }
+        }
+        
     private:
         std::string m_name;
         ContainedContext m_context;
 
         bool m_singleUseClick = false;
+        bool m_doubleUseClick = false;
 
         std::unordered_map<NodeUID, std::shared_ptr<BaseNode>> m_nodes;
         std::vector<std::string> m_pinRecursionBlacklist;
@@ -531,13 +739,27 @@ namespace ImFlow
         Pin* m_droppedLinkLeft = nullptr;
         std::function<void(BaseNode* node)> m_rightClickPopUp;
         BaseNode* m_hoveredNodeAux = nullptr;
+        std::shared_ptr<Link> m_hoveredLinkAux;  // Captured hovered link when right-click menu opens
 
         BaseNode* m_hoveredNode = nullptr;
         bool m_draggingNode = false, m_draggingNodeNext = false;
         Pin* m_hovering = nullptr;
         Pin* m_dragOut = nullptr;
+        std::weak_ptr<Link> m_hoveredLink;  // Currently hovered link for waypoint creation
 
         InfStyler m_style;
+
+        // Box selection
+        bool m_boxSelecting = false;
+        ImVec2 m_boxSelectStart = ImVec2(0, 0);
+        ImU32 m_boxSelectColor = IM_COL32(100, 150, 255, 50);
+        ImU32 m_boxSelectBorderColor = IM_COL32(100, 150, 255, 200);
+        
+        // Groups
+        std::unordered_map<NodeGroup::GroupUID, NodeGroup> m_groups;
+        NodeGroup::GroupUID m_nextGroupUid = 1;
+        NodeGroup* m_selectedGroup = nullptr;
+        NodeGroup* m_hoveredGroup = nullptr;
     };
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -895,6 +1117,18 @@ namespace ImFlow
          * @brief <BR>Update the isSelected status of the node
          */
         void updatePublicStatus() { m_selected = m_selectedNext; }
+
+        /**
+         * @brief <BR>Set node's flipped status (horizontal flip of inputs/outputs)
+         * @param flipped If true, inputs will be on the right and outputs on the left
+         */
+        BaseNode* setFlipped(bool flipped) { m_flipped = flipped; return this; }
+
+        /**
+         * @brief <BR>Get node's flipped status
+         * @return [TRUE] if the node is flipped horizontally
+         */
+        [[nodiscard]] bool isFlipped() const { return m_flipped; }
     private:
         NodeUID m_uid = 0;
         std::string m_title;
@@ -906,6 +1140,7 @@ namespace ImFlow
         bool m_selected = false, m_selectedNext = false;
         bool m_dragged = false;
         bool m_destroyed = false;
+        bool m_flipped = false;
 
         std::vector<std::shared_ptr<Pin>> m_ins;
         std::vector<std::pair<int, std::shared_ptr<Pin>>> m_dynamicIns;
@@ -992,6 +1227,12 @@ namespace ImFlow
          * @brief <BR>Delete link reference
          */
         virtual void deleteLink() = 0;
+        
+        /**
+         * @brief <BR>Invalidate all links connected to this pin
+         * @details Called before pin destruction to prevent dangling pointer access
+         */
+        virtual void invalidateAllLinks() = 0;
 
         /**
          * @brief <BR>Get connected status
@@ -1066,10 +1307,30 @@ namespace ImFlow
         float calcWidth() { return ImGui::CalcTextSize(m_name.c_str()).x; }
 
         /**
+         * @brief <BR>Get tangent direction for link rendering
+         * @return Normalized direction vector for bezier tangent (accounts for flip)
+         */
+        ImVec2 getTangentDirection();
+
+        /**
          * @brief <BR>Set pin's position
          * @param pos Position in screen coordinates
          */
         void setPos(ImVec2 pos) { m_pos = pos; }
+
+         /**
+          * @brief <BR>Get socket hit bounds for interaction
+          * @param expand_radius Optional radius to expand the socket hitbox (default uses socket_hovered_radius)
+          * @return Rectangle bounds for socket interaction
+          */
+        std::pair<ImVec2, ImVec2> getSocketHitBounds(float expand_radius = -1.0f);
+        
+        /**
+         * @brief <BR>Enable/disable automatic socket hitbox extension
+         * @param enabled If true, socket area will be included in pin hitbox
+         */
+        void setSocketHitboxEnabled(bool enabled) { m_socketHitboxEnabled = enabled; }
+
     protected:
         PinUID m_uid;
         std::string m_name;
@@ -1080,6 +1341,7 @@ namespace ImFlow
         ImNodeFlow** m_inf;
         std::shared_ptr<PinStyle> m_style;
         std::function<void(Pin* p)> m_renderer;
+        bool m_socketHitboxEnabled = true;
     };
 
     /**
@@ -1122,7 +1384,21 @@ namespace ImFlow
         /**
         * @brief <BR>Delete the link connected to the pin
         */
-        void deleteLink() override { m_link.reset(); }
+        void deleteLink() override;
+        
+        /**
+         * @brief <BR>Invalidate all links connected to this pin
+         */
+        void invalidateAllLinks() override {
+            if (m_link) {
+                m_link->invalidate();
+            }
+            for (auto& l : m_links) {
+                if (l) {
+                    l->invalidate();
+                }
+            }
+        }
 
         /**
          * @brief Specify if connections from an output on the same node are allowed
@@ -1131,16 +1407,34 @@ namespace ImFlow
         void allowSameNodeConnections(bool state) { m_allowSelfConnection = state; }
 
         /**
+         * @brief <BR>Allow multiple incoming links on this input pin
+         * @param state New state of the flag
+         */
+        void allowMultipleLinks(bool state) { m_allowMultipleLinks = state; }
+
+        /**
          * @brief <BR>Get connected status
          * @return [TRUE] is pin is connected to a link
          */
-        bool isConnected() override { return m_link != nullptr; }
+        bool isConnected() override { return m_allowMultipleLinks ? !m_links.empty() : m_link != nullptr; }
 
         /**
-         * @brief <BR>Get pin's link
+         * @brief <BR>Get pin's link (first link if multiple)
          * @return Weak_ptr reference to the link connected to the pin
          */
-        std::weak_ptr<Link> getLink() override { return m_link; }
+        std::weak_ptr<Link> getLink() override { return m_allowMultipleLinks ? (m_links.empty() ? std::weak_ptr<Link>{} : m_links.front()) : m_link; }
+
+        /**
+         * @brief <BR>Get all links connected to this pin
+         * @return Vector of weak_ptr references to all links
+         */
+        const std::vector<std::shared_ptr<Link>>& getLinks() const { return m_links; }
+
+        /**
+         * @brief <BR>Set link reference (used internally for multi-link support)
+         * @param link Smart pointer to the link
+         */
+        void setLink(std::shared_ptr<Link>& link) override;
 
         /**
          * @brief <BR>Get InPin's connection filter
@@ -1158,18 +1452,45 @@ namespace ImFlow
          * @brief <BR>Get pin's link attachment point (socket)
          * @return Grid coordinates to the attachment point between the link and the pin's socket
          */
-        ImVec2 pinPoint() override { return m_pos + ImVec2(-m_style->extra.socket_padding, m_size.y / 2); }
+        ImVec2 pinPoint() override { 
+            if (m_parent->isFlipped()) {
+                // Flipped: socket on right side of pin (pin is right-aligned to node edge)
+                return m_pos + ImVec2(m_size.x + m_style->extra.socket_padding, m_size.y / 2);
+            } else {
+                // Normal: socket on left side of pin
+                return m_pos + ImVec2(-m_style->extra.socket_padding, m_size.y / 2);
+            }
+        }
 
         /**
          * @brief <BR>Get value carried by the connected link
          * @return Reference to the value of the connected OutPin. Or the default value if not connected
          */
         const T& val();
+        
+        /**
+         * @brief <BR>Destructor - disable cleanup on links before destroying
+         */
+        ~InPin() override {
+            // Disable cleanup on all links before destroying them
+            if (m_link) {
+                m_link->disableCleanup();
+                m_link.reset();
+            }
+            for (auto& l : m_links) {
+                if (l) {
+                    l->disableCleanup();
+                }
+            }
+            m_links.clear();
+        }
     private:
-        std::shared_ptr<Link> m_link;
+        std::shared_ptr<Link> m_link;  // Single link mode
+        std::vector<std::shared_ptr<Link>> m_links;  // Multiple links mode
         T m_emptyVal;
         std::function<bool(Pin*, Pin*)> m_filter;
         bool m_allowSelfConnection = false;
+        bool m_allowMultipleLinks = false;
     };
 
     /**
@@ -1195,8 +1516,14 @@ namespace ImFlow
          * @brief <BR>When parent gets deleted, remove the links
          */
         ~OutPin() override {
-            std::vector<std::weak_ptr<Link>> links = std::move(m_links);
-            for (auto &l: links) if (!l.expired()) l.lock()->right()->deleteLink();
+            // Disable cleanup on all links before destroying them
+            // to avoid calling deleteLink() on already-destroyed pins
+            for (auto &l: m_links) {
+                if (!l.expired()) {
+                    l.lock()->disableCleanup();
+                }
+            }
+            m_links.clear();
         }
 
         /**
@@ -1215,6 +1542,17 @@ namespace ImFlow
          * @brief <BR>Delete any expired weak pointers to a (now deleted) link
          */
         void deleteLink() override;
+        
+        /**
+         * @brief <BR>Invalidate all links connected to this pin
+         */
+        void invalidateAllLinks() override {
+            for (auto& l : m_links) {
+                if (!l.expired()) {
+                    l.lock()->invalidate();
+                }
+            }
+        }
 
         /**
          * @brief <BR>Get connected status
@@ -1226,7 +1564,13 @@ namespace ImFlow
          * @brief <BR>Get pin's link attachment point (socket)
          * @return Grid coordinates to the attachment point between the link and the pin's socket
          */
-        ImVec2 pinPoint() override { return m_pos + ImVec2(m_size.x + m_style->extra.socket_padding, m_size.y / 2); }
+        ImVec2 pinPoint() override { 
+            // If parent is flipped, socket is on the left; otherwise on the right
+            float x = m_parent->isFlipped() 
+                ? -m_style->extra.socket_padding                // LEFT side
+                : m_size.x + m_style->extra.socket_padding;     // RIGHT side
+            return m_pos + ImVec2(x, m_size.y / 2); 
+        }
 
         /**
          * @brief <BR>Get output value
