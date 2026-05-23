@@ -298,8 +298,17 @@ namespace ImFlow
         return reinterpret_cast<OutPin<T>*>(m_link.begin()->second->left())->val();
     }
 
+    /**
+     * @brief 为一个连接点添加一个连线  / Add a link to an anchor-point(pin)
+     * @param[in] Pin*  另一个蓝图节点的Outpin的指针 / The pointer to the Outpin of another blueprint node
+     * @author  author , fgfxf
+     * @date  x ,  2026-05-23
+     * @note 原先一个pin只支持一个连线，现在改成支持多条 。
+     * Originally, one pin only supported one connection, 
+     * but now it has been changed to support multiple connections
+     */
     template<class T>
-    void InPin<T>::createLink(Pin *other)
+    void InPin<T>::createLink(Pin *other)  // wrong ! it means add a link for a pin
     {
         if (other == this || other->getType() == PinType_Input)
             return;
@@ -311,8 +320,13 @@ namespace ImFlow
         {
             if(m_link.find(other)->second.get()){
                 if(m_link.find(other)->second->left() == other){
-                    m_link.find(other)->second.reset();
-                    m_link.erase(other);
+                    /**
+                     * @brief 重复连线==删除？ / Should this line be deleted when it is placed repeatedly
+                     * @author fgfxf
+                     * @date 2026-05-23
+                     */
+                    // m_link.find(other)->second.reset();
+                    // m_link.erase(other);
                     return;
                 }
             }
@@ -358,10 +372,18 @@ namespace ImFlow
         m_links.emplace_back(link);
     }
 
+    /**
+     * @authors original author , fgfxf
+     * @param[in] Pin*  ,The input parameters of OutPin are meaningless
+     * @date  x  ,  2026-05-23
+     * @brief 重载父类的Pin， 在Outpin中，只是起weak_ptr 的作用，实际删除要对端删除
+     * The overloaded Pin of the parent class, in Outpin, only serves as a weak_ptr. 
+     * The actual deletion should be performed on the peer
+     * @note OutPin的传入参数没有用 / The input parameters for OutPin are not being utilized
+     */
     template<class T>
     void OutPin<T>::deleteLink(Pin *pin)
     {
-        printf("%s %d\n",__FILE__,__LINE__);
         m_links.erase(std::remove_if(m_links.begin(), m_links.end(),
                                      [](const std::weak_ptr<Link>& l) { return l.expired(); }), m_links.end());
     }
