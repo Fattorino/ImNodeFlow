@@ -333,7 +333,8 @@ namespace ImFlow {
                 // {
                 //     otherPin->deleteLink(pin);
                 // }
-                */ it = links->erase(it);
+                 it = links->erase(it);
+                */
             }
         };
 
