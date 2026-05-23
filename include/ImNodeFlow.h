@@ -80,15 +80,16 @@ namespace ImFlow
         /// @brief Border color
         ImU32 border_color = IM_COL32(255, 255, 255, 0);
 
-        /// @brief Link thickness
+        /// @brief 线条粗细 / Link thickness
         float link_thickness = 2.6f;
-        /// @brief Link thickness when dragged
+        /// @brief 拖动时的线条粗细 / Link thickness when dragged
         float link_dragged_thickness = 2.2f;
-        /// @brief Link thickness when hovered
+        /// @brief 指针悬浮时的线条粗细 / Link thickness when hovered
         float link_hovered_thickness = 3.5f;
-        /// @brief Thickness of the outline of a selected link
+        /// @brief 选中线条时的边缘羽化厚度 / Thickness of the outline of a selected link
         float link_selected_outline_thickness = 1.5f;
-        /// @brief Color of the outline of a selected link
+        /// @brief 选中线条时边缘羽化的颜色 / Color of the outline of a selected link
+        /// @fgfxf 0xb6f4ffff 是偏向于白色的蓝色。The modification is biased towards white, making it more prominent
         ImU32 outline_color =(0xb6f4ffff);// ImColor(80, 20, 255, 200);
 
         /// @brief Spacing between pin content and socket
@@ -897,6 +898,12 @@ namespace ImFlow
          */
         void updatePublicStatus() { m_selected = m_selectedNext; }
 
+        /**
+         * @brief 删除一个蓝图节点的所有对外对内连线。 / Delete all external and internal connections of a blueprint node。
+         * @author fgfxf
+         * @date 2026-05-23
+         * @note new added for multi-link support.
+         */
         void destroyLinks();
        
 
@@ -995,6 +1002,9 @@ namespace ImFlow
 
         /**
          * @brief <BR>Delete link reference
+         * @authors 原作者 original author , fgfxf
+         * @date 2026-05-23
+         * @note change the virtual function param[in] to support muliti-link
          */
         virtual void deleteLink(Pin *pin) = 0;
 
@@ -1127,9 +1137,12 @@ namespace ImFlow
 
         /**
         * @brief <BR>Delete the link connected to the pin
+        * @authors original author , fgfxf
+        * @param[in] Pin*  want to delete. 对端是weak_ptr, 不用管理.
+        * @note changed by fgfxf, to support multi-link delete
+        * @date 2026-05-23
         */
         void deleteLink(Pin *pin) override { 
-            printf("%s %d\n",__FILE__,__LINE__);
             if(!pin) return;
             if(m_link.find(pin)!=m_link.end()){
                 if(m_link.find(pin)->second.get()){
@@ -1209,6 +1222,8 @@ namespace ImFlow
 
         /**
          * @brief <BR>When parent gets deleted, remove the links
+         * @author changed by fgfxf
+         * @date 2026-05-23
          */
         ~OutPin() override {
             std::vector<std::weak_ptr<Link>> links = std::move(m_links);
@@ -1229,6 +1244,9 @@ namespace ImFlow
 
         /**
          * @brief <BR>Delete any expired weak pointers to a (now deleted) link
+         * @author fgfxf
+         * @param[in] Pin*  meaningless
+         * @note support multi-link delete.  and param meaningless for Outpin
          */
         void deleteLink(Pin *pin) override;
 
