@@ -1,5 +1,6 @@
 #ifndef IM_NODE_FLOW
 #define IM_NODE_FLOW
+#include <type_traits>
 #pragma once
 
 #include <iostream>
@@ -1088,9 +1089,9 @@ namespace ImFlow
     class ConnectionFilter
     {
     public:
-        static std::function<bool(Pin*, Pin*)> None() { return [](Pin* out, Pin* in){ return true; }; }
-        static std::function<bool(Pin*, Pin*)> SameType() { return [](Pin* out, Pin* in) { return out->getDataType() == in->getDataType(); }; }
-        static std::function<bool(Pin*, Pin*)> Numbers() { return [](Pin* out, Pin* in){ return out->getDataType() == typeid(double) || out->getDataType() == typeid(float) || out->getDataType() == typeid(int); }; }
+        static auto None() { return [](auto*, auto*){ return true; }; }
+        static auto SameType() { return [](auto* out, auto* in) { return std::is_same_v<decltype(out->val()),decltype(in->val())>; }; }
+        static auto Numbers() { return [](auto* out, auto*){ return std::is_arithmetic_v<decltype(out->val())>; }; }
     };
 
     /**
@@ -1152,7 +1153,7 @@ namespace ImFlow
          * @brief <BR>Get pin's data type (aka: \<T>)
          * @return String containing unique information identifying the data type
          */
-        [[nodiscard]] const std::type_info& getDataType() const override { return typeid(T); };
+        // [[nodiscard]] const std::type_info& getDataType() const override { return typeid(T); };
 
         /**
          * @brief <BR>Get pin's link attachment point (socket)
@@ -1245,7 +1246,7 @@ namespace ImFlow
          * @brief <BR>Get pin's data type (aka: \<T>)
          * @return String containing unique information identifying the data type
          */
-        [[nodiscard]] const std::type_info& getDataType() const override { return typeid(T); };
+        // [[nodiscard]] const std::type_info& getDataType() const override { return typeid(T); };
     private:
         std::vector<std::weak_ptr<Link>> m_links;
         std::function<T()> m_behaviour;
