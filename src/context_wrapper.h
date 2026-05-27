@@ -2,11 +2,18 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <limits>
 
 inline static void CopyIOEvents(ImGuiContext* src, ImGuiContext* dst, ImVec2 origin, float scale)
 {
     dst->PlatformImeData = src->PlatformImeData;
     dst->IO.DeltaTime = src->IO.DeltaTime;
+
+    // Intentionally copy InputEventsTrail (last frame's already-processed events)
+    // rather than InputEventsQueue (this frame's pending events). Copying the queue
+    // would cause every event to be processed twice — once by the outer context,
+    // once here — resulting in duplicated inputs. The trade-off is exactly one
+    // frame of input latency inside the inner context.
     dst->InputEventsQueue = src->InputEventsTrail;
     for (ImGuiInputEvent& e : dst->InputEventsQueue) {
         if (e.Type == ImGuiInputEventType_MousePos) {
@@ -16,40 +23,152 @@ inline static void CopyIOEvents(ImGuiContext* src, ImGuiContext* dst, ImVec2 ori
     }
 }
 
+// ---------------------------------------------------------------------------
+// AppendDrawData
+//
+// Blits one inner-context draw list into the outer window's draw list,
+// transforming vertex positions by (scale, origin) and adjusting all offsets
+// so the appended commands are valid in the outer buffer's index space.
+//
+// Must be called with the outer context active — ImGui::GetIO() inside this
+// function reads the OUTER context's BackendFlags, which is correct because
+// ContainedContext::end() restores the outer context before calling this.
+//
+// The caller (end()) pre-reserves VtxBuffer and IdxBuffer on the outer draw
+// list using draw_data->TotalVtxCount / TotalIdxCount before the loop, so
+// the resize() calls here will not trigger reallocs.
+//
+// _VtxCurrentIdx semantics (critical):
+//   ImGui asserts _VtxCurrentIdx < (1<<16) after every primitive when using
+//   16-bit indices. This value tracks vertices in the CURRENT segment only
+//   (since the last VtxOffset boundary), NOT the total outer buffer size.
+//   It must be set to the segment-relative vertex count, not an absolute
+//   outer-buffer position, which could exceed 65535.
+// ---------------------------------------------------------------------------
 inline static void AppendDrawData(ImDrawList* src, ImVec2 origin, float scale)
 {
-    // TODO optimize if vtx_start == 0 || if idx_start == 0
     ImDrawList* dl = ImGui::GetWindowDrawList();
-    const int vtx_start = dl->VtxBuffer.size();
-    const int idx_start = dl->IdxBuffer.size();
-    dl->VtxBuffer.resize(dl->VtxBuffer.size() + src->VtxBuffer.size());
-    dl->IdxBuffer.resize(dl->IdxBuffer.size() + src->IdxBuffer.size());
-    dl->CmdBuffer.reserve(dl->CmdBuffer.size() + src->CmdBuffer.size());
-    dl->_VtxWritePtr = dl->VtxBuffer.Data + vtx_start;
-    dl->_IdxWritePtr = dl->IdxBuffer.Data + idx_start;
-    const ImDrawVert* vtx_read = src->VtxBuffer.Data;
-    const ImDrawIdx* idx_read = src->IdxBuffer.Data;
-    for (int i = 0, c = src->VtxBuffer.size(); i < c; ++i) {
-        dl->_VtxWritePtr[i].uv = vtx_read[i].uv;
-        dl->_VtxWritePtr[i].col = vtx_read[i].col;
-        dl->_VtxWritePtr[i].pos = vtx_read[i].pos * scale + origin;
-    }
-    for (int i = 0, c = src->IdxBuffer.size(); i < c; ++i) {
-        dl->_IdxWritePtr[i] = idx_read[i] + vtx_start;
-    }
-    for (auto cmd : src->CmdBuffer) {
-        cmd.IdxOffset += idx_start;
-        IM_ASSERT(cmd.VtxOffset == 0);
-        cmd.ClipRect.x = cmd.ClipRect.x * scale + origin.x;
-        cmd.ClipRect.y = cmd.ClipRect.y * scale + origin.y;
-        cmd.ClipRect.z = cmd.ClipRect.z * scale + origin.x;
-        cmd.ClipRect.w = cmd.ClipRect.w * scale + origin.y;
-        dl->CmdBuffer.push_back(cmd);
+
+    // Early exit if buffers empty
+    if (src->VtxBuffer.empty() || src->CmdBuffer.empty()) {
+        return;
     }
 
-    dl->_VtxCurrentIdx += src->VtxBuffer.size();
-    dl->_VtxWritePtr = dl->VtxBuffer.Data + dl->VtxBuffer.size();
-    dl->_IdxWritePtr = dl->IdxBuffer.Data + dl->IdxBuffer.size();
+    const bool hasVtxOffset = (ImGui::GetIO().BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset) != 0;
+
+    // Extend destination buffers and transform vertices into place.
+    //   VtxBuffer and IdxBuffer were pre-reserved in end() so these resize()
+    //   calls should not realloc in the common case.
+    const unsigned int vtx_start = static_cast<unsigned int>(dl->VtxBuffer.Size);
+    const unsigned int idx_start = static_cast<unsigned int>(dl->IdxBuffer.Size);
+
+    dl->VtxBuffer.resize(dl->VtxBuffer.Size + src->VtxBuffer.Size);
+    dl->IdxBuffer.resize(dl->IdxBuffer.Size + src->IdxBuffer.Size);
+    dl->CmdBuffer.reserve(dl->CmdBuffer.Size + src->CmdBuffer.Size);
+
+    {
+        ImDrawVert*       dst_v = dl->VtxBuffer.Data + vtx_start;
+        const ImDrawVert* src_v = src->VtxBuffer.Data;
+        for (int i = 0; i < src->VtxBuffer.Size; ++i) {
+            dst_v[i].uv  = src_v[i].uv;
+            dst_v[i].col = src_v[i].col;
+            dst_v[i].pos = src_v[i].pos * scale + origin;
+        }
+    }
+
+    // Copy indices and fixup commands.
+    ImDrawIdx* dst_idx_base = dl->IdxBuffer.Data + idx_start;
+
+    if (hasVtxOffset)
+    {
+        // Hot path: all modern backends (DX11/12, Vulkan, Metal, GL3+).
+
+        // Indices are segment-relative and require no per-index arithmetic —
+        // bulk copy the entire index buffer in one shot, then fix up cmd
+        // offsets in the command loop. This uses a single SIMD-optimised memcpy
+        // instead of a scalar loop.
+        memcpy(dst_idx_base, src->IdxBuffer.Data, src->IdxBuffer.Size * sizeof(ImDrawIdx));
+
+        // Cache for segment boundary scan: ImGui emits commands in non-decreasing
+        // VtxOffset order, so consecutive commands often share the same segment.
+        // Recomputing the forward scan per command would be O(n^2); caching the
+        // result per unique VtxOffset keeps it O(n).
+        unsigned int cached_vtx_offset    = UINT_MAX;
+        unsigned int cached_seg_vtx_count = 0;
+
+        for (int ci = 0; ci < src->CmdBuffer.Size; ++ci) {
+            ImDrawCmd cmd = src->CmdBuffer[ci];
+
+            cmd.ClipRect.x = cmd.ClipRect.x * scale + origin.x;
+            cmd.ClipRect.y = cmd.ClipRect.y * scale + origin.y;
+            cmd.ClipRect.z = cmd.ClipRect.z * scale + origin.x;
+            cmd.ClipRect.w = cmd.ClipRect.w * scale + origin.y;
+
+            // Compute the vertex count for this segment so _VtxCurrentIdx
+            // stays segment-relative (never exceeds 65535 with 16-bit indices).
+            // Skip the scan when this command shares a VtxOffset with the
+            // previous one — same segment, boundary already known.
+            if (cmd.VtxOffset != cached_vtx_offset) {
+                cached_vtx_offset = cmd.VtxOffset;
+                unsigned int next_vtx_offset = static_cast<unsigned int>(src->VtxBuffer.Size);
+                for (int ni = ci + 1; ni < src->CmdBuffer.Size; ++ni) {
+                    if (src->CmdBuffer[ni].VtxOffset > cmd.VtxOffset) {
+                        next_vtx_offset = src->CmdBuffer[ni].VtxOffset;
+                        break;
+                    }
+                }
+                cached_seg_vtx_count = next_vtx_offset - cmd.VtxOffset;
+            }
+
+            // Segment-relative count keeps the ImGui 16-bit index assert happy.
+            dl->_VtxCurrentIdx = cached_seg_vtx_count;
+
+            cmd.VtxOffset += vtx_start;
+            cmd.IdxOffset += idx_start;
+            dl->CmdBuffer.push_back(cmd);
+        }
+    }
+    else {
+        // Cold path: Legacy backends without RendererHasVtxOffset (OpenGL 2.x / ES2).
+
+        // Bake the vertex offset into each index to produce absolute outer-buffer
+        // indices, since these backends cannot use cmd.VtxOffset to shift the base.
+        const ImDrawIdx* src_idx_base = src->IdxBuffer.Data;
+
+        for (auto cmd : src->CmdBuffer) { // Note: cmd is a local copy
+            IM_ASSERT(cmd.VtxOffset == 0 && "Non-zero VtxOffset in legacy path; backend flag mismatch. Should not happen.");
+
+            // Adjust clipping
+            cmd.ClipRect.x = cmd.ClipRect.x * scale + origin.x;
+            cmd.ClipRect.y = cmd.ClipRect.y * scale + origin.y;
+            cmd.ClipRect.z = cmd.ClipRect.z * scale + origin.x;
+            cmd.ClipRect.w = cmd.ClipRect.w * scale + origin.y;
+
+            const unsigned int base = vtx_start + cmd.VtxOffset;
+            // Verify the baked indices will fit in ImDrawIdx, handles both 16 and 32-bit indices.
+            IM_ASSERT(  (sizeof(ImDrawIdx) >= 4 ||
+                        base + static_cast<unsigned int>(src->VtxBuffer.Size) - 1u
+                        <= static_cast<unsigned int>(std::numeric_limits<ImDrawIdx>::max()))
+                        && "Vertex count exceeds ImDrawIdx range; enable RendererHasVtxOffset or use 32-bit indices");
+
+            const ImDrawIdx* si = src_idx_base + cmd.IdxOffset;
+            ImDrawIdx*       di = dst_idx_base  + cmd.IdxOffset;
+            for (unsigned int ii = 0; ii < cmd.ElemCount; ++ii) {
+                di[ii] = static_cast<ImDrawIdx>(si[ii] + base);
+            }
+            cmd.VtxOffset  = 0;
+            cmd.IdxOffset += idx_start;
+            dl->CmdBuffer.push_back(cmd);
+        }
+
+        // Guaranteed safe by the IM_ASSERT above.
+        dl->_VtxCurrentIdx = vtx_start + static_cast<unsigned int>(src->VtxBuffer.Size);
+    }
+
+    // Advance write pointers to the new buffer ends.
+    // _VtxCurrentIdx was already set inside each path above.
+    dl->_VtxWritePtr = dl->VtxBuffer.Data + dl->VtxBuffer.Size;
+    dl->_IdxWritePtr = dl->IdxBuffer.Data + dl->IdxBuffer.Size;
 }
 
 struct ContainedContextConfig
@@ -104,7 +223,10 @@ inline ContainedContext::~ContainedContext()
     if (m_ctx) ImGui::DestroyContext(m_ctx);
 }
 
-// Call after Begin()
+// Targets whichever context is current at call time.
+// In begin(), this is called twice: once for the outer context's child window
+// (so the outer renderer rasterizes at the correct density), and once inside
+// the inner context's Begin() when extra_window_wrapper is enabled.
 inline void ContainedContext::setFontDensity()
 {
 #if IMGUI_VERSION_NUM >= 19198
@@ -117,6 +239,8 @@ inline void ContainedContext::begin()
     ImGui::PushID(this);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, m_config.color);
     ImGui::BeginChild("view_port", m_config.size, 0, ImGuiWindowFlags_NoMove);
+    // Set font density on the OUTER context's child window so the outer renderer
+    // rasterizes fonts at the correct scale before we switch context below.
     setFontDensity();
     ImGui::PopStyleColor();
     m_pos = ImGui::GetWindowPos();
@@ -135,11 +259,15 @@ inline void ContainedContext::begin()
     ImGui::GetIO().DisplaySize = m_size / m_scale;
     ImGui::GetIO().ConfigInputTrickleEventQueue = false;
 
-    // Copy the ImGuiBackendFlags_RendererHasTextures flag as they need to be matching.
-    // This will also copy the ImGuiBackendFlags_RendererHasVtxOffset flag which will be more optimal in case large draw calls are being made.
-    ImGui::GetIO().ConfigFlags = m_original_ctx->IO.ConfigFlags;
+    // Copy backend flags so the inner context matches the outer renderer's
+    // capabilities. This includes RendererHasVtxOffset (enables the optimised
+    // AppendDrawData path) and RendererHasTextures (must match for texture IDs
+    // to be interpreted correctly).
+    ImGui::GetIO().ConfigFlags  = m_original_ctx->IO.ConfigFlags;
     ImGui::GetIO().BackendFlags = m_original_ctx->IO.BackendFlags;
 #ifdef IMGUI_HAS_VIEWPORT
+    // Viewport and docking features require the platform backend to cooperate;
+    // strip them from the inner context which has no platform window of its own.
     ImGui::GetIO().ConfigFlags &= ~(ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DockingEnable);
 #endif
 
@@ -152,6 +280,7 @@ inline void ContainedContext::begin()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("viewport_container", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove
                                                 | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    // Set font density again now inside the inner context.
     setFontDensity();
     ImGui::PopStyleVar();
 }
@@ -175,6 +304,17 @@ inline void ContainedContext::end()
     ImGui::SetCurrentContext(m_original_ctx);
     m_original_ctx = nullptr;
 
+    // Pre-reserve outer draw list buffers using the total counts from the inner
+    // draw data. This prevents repeated reallocs inside AppendDrawData when
+    // there are multiple CmdLists to blit.
+    {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        dl->VtxBuffer.reserve(dl->VtxBuffer.Size + draw_data->TotalVtxCount);
+        dl->IdxBuffer.reserve(dl->IdxBuffer.Size + draw_data->TotalIdxCount);
+    }
+
+    // AppendDrawData is called with the outer context active, so ImGui::GetIO()
+    // inside it correctly reads the outer context's BackendFlags.
     for (int i = 0; i < draw_data->CmdListsCount; ++i)
         AppendDrawData(draw_data->CmdLists[i], m_origin, m_scale);
 
@@ -193,7 +333,10 @@ inline void ContainedContext::end()
             m_scale = m_scaleTarget;
         }
     }
-    if (abs(m_scaleTarget - m_scale) >= 0.015f / m_config.zoom_smoothness)
+    // Guard against zoom_smoothness == 0: dividing by zero yields +inf, making
+    // the threshold comparison always false — correct by accident but fragile.
+    if (m_config.zoom_smoothness > 0.f &&
+        abs(m_scaleTarget - m_scale) >= 0.015f / m_config.zoom_smoothness)
     {
         float cs = (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
         m_scroll += (ImGui::GetMousePos() - m_pos) / (m_scale + cs) - (ImGui::GetMousePos() - m_pos) / m_scale;
@@ -221,6 +364,9 @@ inline void ContainedContext::end()
     {
         m_scroll += ImGui::GetIO().MouseDelta / m_scale;
     }
+
+    // Update inner context MousePos for the NEXT frame's input. ImGui reads
+    // MousePos at NewFrame(), so writing it here (end of this frame) is correct.
     this->m_ctx->IO.MousePos = (ImGui::GetMousePos() - m_origin) / m_scale;
     ImGui::EndChild();
     ImGui::PopID();
