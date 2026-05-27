@@ -12,7 +12,9 @@ namespace ImFlow {
 
         if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
             m_selected = false;
-
+        /**
+         * @brief 贝塞尔曲线计算鼠标位置是否悬浮在线条上。
+         */
         if (smart_bezier_collider(ImGui::GetMousePos(), start, end, 2.5)) {
             m_hovered = true;
             thickness = m_left->getStyle()->extra.link_hovered_thickness;
@@ -27,13 +29,23 @@ namespace ImFlow {
                          thickness + m_left->getStyle()->extra.link_selected_outline_thickness);
         smart_bezier(start, end, m_left->getStyle()->color, thickness);
 
+        /**
+         * @author fgfxf
+         * @date 2026-05-23
+         * @brief delete selected link
+         * @note InPin删除Outpin，因为InPin的map是真正管理的，OutPin只是weak_ptr
+         */
         if (m_selected && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
-            m_right->deleteLink();
+            m_right->deleteLink(m_left);
     }
 
     Link::~Link() {
+        /**
+         * @brief outpin清理一下 
+         * @note 传入参数无意义 / param meaningless
+         */
         if (!m_left) return;
-        m_left->deleteLink();
+            m_left->deleteLink(m_left);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -240,6 +252,103 @@ namespace ImFlow {
         m_links.push_back(link);
     }
 
+    /**
+     * @brief 删除一个蓝图节点的所有对外对内连线。 / Delete all external and internal connections of a blueprint node。
+     * @author fgfxf
+     * @date 2026-05-23
+     * @note new added for multi-link support.
+     */
+    void BaseNode::destroyLinks()
+    {
+        /**
+         * @brief lambda function, 删除所有的InPin , delete all inpin
+         * @author fgfxf
+         * @date 2026-05-23
+         * @param[in] Pin* 连接到这个node的线的左侧pin，当前节点的InPIn. 
+         * The left pin of the line connected to this node, which is the InPin of the current node.
+         */
+        auto eraseLinksOfInPin = [](Pin *pin)
+        {
+            if (!pin)
+                return;
+            /**
+             * @brief 遍历当前InPin的所有连线，一个pin可以有多条线。
+             * Traverse all the connections of the current InPin, as one pin can have multiple lines.
+             */
+            std::map<Pin *, std::shared_ptr<Link>> *links = pin->getLink();
+            for (auto it = links->begin(); it != links->end();)
+            {
+                std::shared_ptr<Link> link = it->second;
+
+                if (!link)
+                {
+                    it = links->erase(it);
+                    continue;
+                }
+                // 当前连线的左侧节点
+                Pin *leftPin = link->left();
+                Pin *rightPin = link->right();
+
+                leftPin->deleteLink(rightPin);
+                it = links->erase(it);
+            }
+        };
+
+        /**
+         * @brief lambda function, 删除所有的OutPin , delete all Outpin
+         * @author fgfxf
+         * @date 2026-05-23
+         * @param[in] Pin* 连接到这个node的线的右侧pin，当前节点的OutPIn. 
+         * The right pin of the line connected to this node, which is the OutPin of the current node.
+         */
+        auto eraseLinksOfOutPin = [](Pin *pin)
+        {
+            if (!pin)
+                return;
+            // OutPin保存的是weak_ptr 所以要获取对端的InPIn，让对端Node删除。
+            // OutPin stores a weak_ptr, so we need to obtain the InPIn of the peer and ask the peer Node to delete it.
+            std::vector<std::weak_ptr<Link>> *links = pin->getWeakLink();
+            for (auto it = links->begin(); it != links->end();)
+            {
+
+                if (!it->lock().get())
+                {
+                    it = links->erase(it);
+                    continue;
+                }
+
+                Pin *leftPin = it->lock().get()->left();
+                Pin *rightPin = it->lock().get()->right();
+                rightPin->deleteLink(leftPin);
+                // 让对端删除，本端不删除，不然会崩溃。
+                // Let the peer delete it, and do not delete it on this side, otherwise it will crash.
+
+                /** Pin *otherPin = nullptr;
+                // if (leftPin == pin)
+                //     otherPin = rightPin;
+                // else if (rightPin == pin)
+                //     otherPin = leftPin;
+
+                // if (otherPin)
+                // {
+                //     otherPin->deleteLink(pin);
+                // }
+                 it = links->erase(it);
+                */
+            }
+        };
+
+        for (auto &p : m_ins)
+        {
+            eraseLinksOfInPin(p.get());
+        }
+
+        for (auto &p : m_outs)
+        {
+            eraseLinksOfOutPin(p.get());
+        }
+    }
+
     void ImNodeFlow::update() {
         // Updating looping stuff
         m_hovering = nullptr;
@@ -274,7 +383,10 @@ namespace ImFlow {
         // Remove "toDelete" nodes
         for (auto iter = m_nodes.begin(); iter != m_nodes.end();) {
             if (iter->second->toDestroy())
-                iter = m_nodes.erase(iter);
+                {
+                    iter->second->destroyLinks(); // delete all links linked this node
+                    iter = m_nodes.erase(iter);
+                }
             else
                 ++iter;
         }

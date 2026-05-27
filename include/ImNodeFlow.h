@@ -12,6 +12,7 @@
 #include <functional>
 #include <unordered_map>
 #include <cstdint>
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 #include "../src/imgui_bezier_math.h"
 #include "../src/context_wrapper.h"
@@ -79,16 +80,17 @@ namespace ImFlow
         /// @brief Border color
         ImU32 border_color = IM_COL32(255, 255, 255, 0);
 
-        /// @brief Link thickness
+        /// @brief 线条粗细 / Link thickness
         float link_thickness = 2.6f;
-        /// @brief Link thickness when dragged
+        /// @brief 拖动时的线条粗细 / Link thickness when dragged
         float link_dragged_thickness = 2.2f;
-        /// @brief Link thickness when hovered
+        /// @brief 指针悬浮时的线条粗细 / Link thickness when hovered
         float link_hovered_thickness = 3.5f;
-        /// @brief Thickness of the outline of a selected link
-        float link_selected_outline_thickness = 0.5f;
-        /// @brief Color of the outline of a selected link
-        ImU32 outline_color = IM_COL32(80, 20, 255, 200);
+        /// @brief 选中线条时的边缘羽化厚度 / Thickness of the outline of a selected link
+        float link_selected_outline_thickness = 1.5f;
+        /// @brief 选中线条时边缘羽化的颜色 / Color of the outline of a selected link
+        /// @fgfxf 0xb6f4ffff 是偏向于白色的蓝色。The modification is biased towards white, making it more prominent
+        ImU32 outline_color =(0xb6f4ffff);// ImColor(80, 20, 255, 200);
 
         /// @brief Spacing between pin content and socket
         float socket_padding = 6.6f;
@@ -439,7 +441,7 @@ namespace ImFlow
          * @brief <BR>Get editor's list of links
          * @return Const reference to editor's internal links list
          */
-        const std::vector<std::weak_ptr<Link>>& getLinks() { return m_links; }
+        // const std::vector<std::weak_ptr<Link>>& getLinks() { return m_links; }
 
         /**
          * @brief <BR>Get zooming viewport
@@ -895,6 +897,16 @@ namespace ImFlow
          * @brief <BR>Update the isSelected status of the node
          */
         void updatePublicStatus() { m_selected = m_selectedNext; }
+
+        /**
+         * @brief 删除一个蓝图节点的所有对外对内连线。 / Delete all external and internal connections of a blueprint node。
+         * @author fgfxf
+         * @date 2026-05-23
+         * @note new added for multi-link support.
+         */
+        void destroyLinks();
+       
+
     private:
         NodeUID m_uid = 0;
         std::string m_title;
@@ -990,8 +1002,11 @@ namespace ImFlow
 
         /**
          * @brief <BR>Delete link reference
+         * @authors 原作者 original author , fgfxf
+         * @date 2026-05-23
+         * @note change the virtual function param[in] to support muliti-link
          */
-        virtual void deleteLink() = 0;
+        virtual void deleteLink(Pin *pin) = 0;
 
         /**
          * @brief <BR>Get connected status
@@ -1003,8 +1018,9 @@ namespace ImFlow
          * @brief <BR>Get pin's link
          * @return Weak_ptr reference to pin's link
          */
-        virtual std::weak_ptr<Link> getLink() { return std::weak_ptr<Link>{}; }
-
+        virtual std::map<Pin*,std::shared_ptr<Link>> *getLink(){ return nullptr ;};
+        
+        virtual std::vector<std::weak_ptr<Link>> *getWeakLink(){ return nullptr;};
         /**
          * @brief <BR>Get pin's UID
          * @return Unique identifier of the pin
@@ -1121,8 +1137,21 @@ namespace ImFlow
 
         /**
         * @brief <BR>Delete the link connected to the pin
+        * @authors original author , fgfxf
+        * @param[in] Pin*  want to delete. 对端是weak_ptr, 不用管理.
+        * @note changed by fgfxf, to support multi-link delete
+        * @date 2026-05-23
         */
-        void deleteLink() override { m_link.reset(); }
+        void deleteLink(Pin *pin) override { 
+            if(!pin) return;
+            if(m_link.find(pin)!=m_link.end()){
+                if(m_link.find(pin)->second.get()){
+                    m_link.find(pin)->second.reset();
+                }
+                m_link.erase(pin);
+            }
+
+         }
 
         /**
          * @brief Specify if connections from an output on the same node are allowed
@@ -1134,13 +1163,13 @@ namespace ImFlow
          * @brief <BR>Get connected status
          * @return [TRUE] is pin is connected to a link
          */
-        bool isConnected() override { return m_link != nullptr; }
+        bool isConnected() override { return !m_link .empty(); }
 
         /**
          * @brief <BR>Get pin's link
          * @return Weak_ptr reference to the link connected to the pin
          */
-        std::weak_ptr<Link> getLink() override { return m_link; }
+        std::map<Pin*,std::shared_ptr<Link>> *getLink() override { return &m_link; }
 
         /**
          * @brief <BR>Get InPin's connection filter
@@ -1166,7 +1195,7 @@ namespace ImFlow
          */
         const T& val();
     private:
-        std::shared_ptr<Link> m_link;
+        std::map<Pin*,std::shared_ptr<Link>> m_link;
         T m_emptyVal;
         std::function<bool(Pin*, Pin*)> m_filter;
         bool m_allowSelfConnection = false;
@@ -1193,10 +1222,12 @@ namespace ImFlow
 
         /**
          * @brief <BR>When parent gets deleted, remove the links
+         * @author changed by fgfxf
+         * @date 2026-05-23
          */
         ~OutPin() override {
             std::vector<std::weak_ptr<Link>> links = std::move(m_links);
-            for (auto &l: links) if (!l.expired()) l.lock()->right()->deleteLink();
+            for (auto &l: links) if (!l.expired()) l.lock()->right()->deleteLink(l.lock()->left());
         }
 
         /**
@@ -1213,8 +1244,11 @@ namespace ImFlow
 
         /**
          * @brief <BR>Delete any expired weak pointers to a (now deleted) link
+         * @author fgfxf
+         * @param[in] Pin*  meaningless
+         * @note support multi-link delete.  and param meaningless for Outpin
          */
-        void deleteLink() override;
+        void deleteLink(Pin *pin) override;
 
         /**
          * @brief <BR>Get connected status
@@ -1246,6 +1280,8 @@ namespace ImFlow
          * @return String containing unique information identifying the data type
          */
         [[nodiscard]] const std::type_info& getDataType() const override { return typeid(T); };
+
+        virtual std::vector<std::weak_ptr<Link>> *getWeakLink() override {  return &m_links; };
     private:
         std::vector<std::weak_ptr<Link>> m_links;
         std::function<T()> m_behaviour;

@@ -1,4 +1,21 @@
 # ImNodeFlow
+
+**fgfxf highly customized**
+![IMG_fgfxf](./example/IMG_202605141914.png)
+
+个人定制化
+- 蓝图的里的一个方框是节点，节点的Inpin和另一个节点的OutPin连线连接起来。原版Pin不支持多个连线，本仓库修改后支持多个连线。
+- 删除节点时，对应的连线也会消失。原版有点问题。
+- 对于新版imgui，原版编译存在一些小问题。
+
+personal customization
+
+- A square box in the blueprint represents a node, and the InPin of one node is connected to the OutPin of another node through a line. The original Pin does not support multiple connections, but this repository has been modified to support multiple connections.
+- When a node is deleted, the corresponding connection will also disappear. There is a slight issue with the original version.
+- For the new version of imgui, there are some minor issues with the original compilation.
+
+
+
 **Node-based editor/blueprints for ImGui**
 
 Create your custom nodes and their logic... ImNodeFlow will handle connections, editor logic, and rendering.
