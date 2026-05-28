@@ -35,6 +35,17 @@ namespace ImFlow
     inline static void smart_bezier(const ImVec2& p1, const ImVec2& p2, ImU32 color, float thickness);
 
     /**
+     * @brief <BR>Draw a sensible bezier whose color blends from one end to the other
+     * @param p1 Starting point
+     * @param p2 Ending point
+     * @param color1 Color at the starting point
+     * @param color2 Color at the ending point
+     * @param thickness Thickness of the curve
+     * @param blend Tightness of the color transition. 1 = linear, >1 concentrates it toward the middle, <1 spreads it
+     */
+    inline static void smart_bezier_gradient(const ImVec2& p1, const ImVec2& p2, ImU32 color1, ImU32 color2, float thickness, float blend = 1.f);
+
+    /**
      * @brief <BR>Collider checker for smart_bezier
      * @details Projects the point "p" orthogonally onto the bezier curve and
      *          checks if the distance is less than the given radius.
@@ -261,6 +272,8 @@ namespace ImFlow
         float grid_size = 50.f;
         /// @brief Sub-grid divisions for Node snapping
         float grid_subdivisions = 5.f;
+        /// @brief Tightness of gradient links. 1 = linear, >1 concentrates the color transition toward the middle, <1 spreads it out
+        float link_gradient_blend = 1.f;
         /// @brief ImNodeFlow colors
         InfColors colors;
     };

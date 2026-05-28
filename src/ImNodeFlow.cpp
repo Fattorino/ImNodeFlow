@@ -25,7 +25,8 @@ namespace ImFlow {
         if (m_selected)
             smart_bezier(start, end, m_left->getStyle()->extra.outline_color,
                          thickness + m_left->getStyle()->extra.link_selected_outline_thickness);
-        smart_bezier(start, end, m_left->getStyle()->color, thickness);
+        smart_bezier_gradient(start, end, m_left->getStyle()->color, m_right->getStyle()->color, thickness,
+                              m_inf->getStyle().link_gradient_blend);
 
         if (m_selected && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
             m_right->deleteLink();
