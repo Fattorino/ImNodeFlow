@@ -229,7 +229,9 @@ inline ContainedContext::~ContainedContext()
 // the inner context's Begin() when extra_window_wrapper is enabled.
 inline void ContainedContext::setFontDensity()
 {
-#if IMGUI_VERSION_NUM >= 19198
+#if IMGUI_VERSION_NUM >= 19297
+    ImGui::SetPixelDensity(roundf(m_scale * 100.0f) / 100.0f); // Round density to two digits.
+#elif IMGUI_VERSION_NUM >= 19198
     ImGui::SetFontRasterizerDensity(roundf(m_scale * 100.0f) / 100.0f); // Round density to two digits.
 #endif
 }
