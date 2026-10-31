@@ -247,15 +247,24 @@ NodeEditor::NodeEditor(float width, float height)
     mINF.rightClickPopUpContent([this](std::optional<ImFlow::NodeRef> node) -> void {
         if (node.has_value()) {
             auto selected_nodes = mINF.getSelectedNodes();
+            uint64_t selected_nodes_except_active
+                = selected_nodes.size()
+                - (node->isSelected() ? 1 : 0);
             ImGui::Text(
                 "you have right-clicked on [%s] (%zu total nodes selected)",
                 node->getName().c_str(),
                 selected_nodes.size());
-            if (!selected_nodes.empty()) {
+            if (selected_nodes_except_active > 0) {
                 if (ImGui::Button("Make parent")) {
                     for (auto& selected_node : selected_nodes) {
                         selected_node.setParentNode(*node);
                     }
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (node->getParentNode().has_value()) {
+                if (ImGui::Button("Detach from parent")) {
+                    node->detachFromParent();
                     ImGui::CloseCurrentPopup();
                 }
             }

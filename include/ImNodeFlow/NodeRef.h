@@ -336,6 +336,9 @@ public:
 
     std::optional<NodeRefImpl<TIsConst>> getParentNode() const;
 
+    void detachFromParent()
+        requires(!TIsConst);
+
     void setParentNode(std::optional<NodeRef> new_parent_node)
         requires(!TIsConst);
 

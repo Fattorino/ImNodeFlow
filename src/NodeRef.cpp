@@ -253,6 +253,17 @@ NodeRefImpl<TIsConst>::getParentNode() const
 }
 
 template <bool TIsConst>
+void NodeRefImpl<TIsConst>::detachFromParent()
+    requires(!TIsConst)
+{
+    auto grandparent_node = this->getParentNode();
+    if (grandparent_node.has_value()) {
+        grandparent_node = grandparent_node->getParentNode();
+    }
+    return this->setParentNode(grandparent_node);
+}
+
+template <bool TIsConst>
 void NodeRefImpl<TIsConst>::setParentNode(std::optional<NodeRef> newParentNode)
     requires(!TIsConst)
 {
