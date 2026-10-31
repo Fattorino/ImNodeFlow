@@ -30,10 +30,18 @@ void NodeGroupArenaRef<TIsConst>::destroy()
     requires(!TIsConst)
 {
     detail::node_group_arena_t& arena = m_arena.get();
-    for (auto& node : arena.nodes) {
-        NodeRef { m_ctx, *node }.destroy();
+    std::vector<std::unique_ptr<detail::node_t>> live_nodes;
+    live_nodes.reserve(arena.nodes.size());
+    while (!arena.nodes.empty()) {
+        NodeRef node { m_ctx, *arena.nodes.back() };
+        if (!node.isIndestructable()) {
+            node.destroy();
+        } else {
+            live_nodes.emplace_back(std::move(arena.nodes.back()));
+        }
+        arena.nodes.pop_back();
     }
-    arena.nodes.clear();
+    arena.nodes = std::move(live_nodes);
 }
 
 template <bool TIsConst>

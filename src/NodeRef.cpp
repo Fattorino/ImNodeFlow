@@ -2,6 +2,7 @@
 
 #include "ImNodeFlow/Context.h"
 #include "ImNodeFlow/NodeGroupArenaRef.h"
+#include "ImNodeFlow/NodeRef.h"
 #include "ImNodeFlow/NodeStyle.h"
 #include "ImNodeFlow/NodeUID.h"
 #include "ImNodeFlow/PinInfo.h"
@@ -44,6 +45,11 @@ void NodeRefImpl<TIsConst>::destroy()
     requires(!TIsConst)
 {
     detail::node_t& node = m_node.get();
+
+    if (node.indestructable) {
+        return;
+    }
+
     if (node.behaviour) {
         node.behaviour.reset();
     }
@@ -63,6 +69,10 @@ void NodeRefImpl<TIsConst>::destroy()
     auto child_arena = this->getChildArena();
     if (child_arena.has_value()) {
         child_arena->destroy();
+        while (!node.child_arena->nodes.empty()) {
+            NodeRef { m_ctx, *node.child_arena->nodes.back() }
+                .setParentNode(this->getParentNode());
+        }
         node.child_arena.reset();
     }
     node.destroyed = true;
