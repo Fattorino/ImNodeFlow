@@ -909,10 +909,7 @@ void NodeRefImpl<TIsConst>::update()
             node.wantsDeselect = false;
         }
 
-        // "Slam" The position
-        float step = ctx.getStyle().grid_size / ctx.getStyle().grid_subdivisions;
-        node.pos.x = round(node.posTarget.x / step) * step;
-        node.pos.y = round(node.posTarget.y / step) * step;
+        node.pos = ctx.slamPosition(node.posTarget);
 
         if (should_apply_drag) {
             node.dragging = false;

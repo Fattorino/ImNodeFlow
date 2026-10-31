@@ -287,6 +287,8 @@ public:
      */
     bool mouse_on_selected_node() const;
 
+    ImVec2 slamPosition(ImVec2 grid_position) const;
+
     /**
      * FIXME: Remove all internal use methods from the public API
      * @internal For internal use only

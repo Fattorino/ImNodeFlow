@@ -31,11 +31,12 @@ NodeRef ImNodeFlow::addNode(const ImVec2& grid_coords, NodeInfo node_info)
 {
     auto uid = detail::generate_node_uid();
 
+    auto node_pos = this->slamPosition(grid_coords);
     auto new_node = std::make_unique<detail::node_t>(
         detail::node_t {
             .uid = uid,
-            .pos = grid_coords,
-            .posTarget = grid_coords,
+            .pos = node_pos,
+            .posTarget = node_pos,
             .style = std::move(node_info.style),
             .behaviour = std::move(node_info.behaviour),
         });
@@ -94,6 +95,16 @@ ImNodeFlow::~ImNodeFlow() = default;
 bool ImNodeFlow::mouse_on_selected_node() const
 {
     return m_impl->mouseOnSelectedNode;
+}
+
+ImVec2 ImNodeFlow::slamPosition(ImVec2 grid_position) const
+{
+    auto const& style = this->getStyle();
+    float step = style.grid_size / style.grid_subdivisions;
+    return ImVec2 {
+        round(grid_position.x / step) * step,
+        round(grid_position.y / step) * step,
+    };
 }
 
 detail::editor_context_t& ImNodeFlow::getDetail()
