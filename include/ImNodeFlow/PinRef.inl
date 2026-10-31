@@ -9,7 +9,7 @@ namespace ImFlow {
 template <bool TIsConst>
 template <typename T>
 InPinRef<T, TIsConst>
-PinRef<TIsConst>::toIn()
+PinRefImpl<TIsConst>::toIn()
 {
     assert(this->getType() == PinType::Input && this->getTypeID() == detail::get_type_id<T>());
 
@@ -22,7 +22,7 @@ PinRef<TIsConst>::toIn()
 template <bool TIsConst>
 template <typename T>
 OutPinRef<T, TIsConst>
-PinRef<TIsConst>::toOut()
+PinRefImpl<TIsConst>::toOut()
 {
     assert(this->getType() == PinType::Output && this->getTypeID() == detail::get_type_id<T>());
 

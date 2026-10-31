@@ -38,9 +38,9 @@ void DynamicPinRef<TIsConst>::update()
 }
 
 template <bool TIsConst>
-PinRef<TIsConst> DynamicPinRef<TIsConst>::pin() const
+PinRefImpl<TIsConst> DynamicPinRef<TIsConst>::pin() const
 {
-    return PinRef<TIsConst> { m_ctx, m_pin.get().pin };
+    return PinRefImpl<TIsConst> { m_ctx, m_pin.get().pin };
 }
 
 template <bool TIsConst>

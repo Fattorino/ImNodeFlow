@@ -5,12 +5,15 @@
 #include "ImNodeFlow/PinRef.h"
 #include "ImNodeFlow/fwd.h"
 
+#include "./NodeLinkRef.h"
 #include "./NodeWrapper.h"
 #include "./PinLinkRef.h"
 #include "./editor_context.h"
 #include "./imgui_button_flags_helper.h"
 #include "./node.h"
+#include "./node_link.h"
 #include "./pin_drawing_utils.h"
+#include "./pin_link.h"
 #include "./uid_helpers.h"
 
 #include "imgui.h"
@@ -128,7 +131,7 @@ ImNodeFlow::grid2screen(const ImVec2& p) const
     return (p + m_impl->context.scroll()) * m_impl->context.scale() + m_impl->context.origin();
 }
 
-bool ImNodeFlow::canLink(PinRef<true> source_pin, PinRef<true> target_pin) const
+bool ImNodeFlow::canLink(ConstPinRef source_pin, ConstPinRef target_pin) const
 {
     if (source_pin == target_pin) {
         return false;
@@ -172,17 +175,42 @@ bool ImNodeFlow::canLink(PinRef<true> source_pin, PinRef<true> target_pin) const
     return source_pin.getTypeID() == target_pin.getTypeID();
 }
 
-void ImNodeFlow::createLink(PinRef<> source_pin, PinRef<> target_pin)
+bool ImNodeFlow::canLink(ConstNodeRef source_node, ConstNodeRef target_node) const
+{
+    if (source_node == target_node) {
+        return false;
+    }
+
+    for (const auto& node_ref : source_node.getConnections()) {
+        if (node_ref == target_node) {
+            // Connection already exists
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void ImNodeFlow::createLink(PinRef source_pin, PinRef target_pin)
 {
     if (!canLink(source_pin, target_pin)) {
         return;
     }
 
     auto new_link = std::make_unique<detail::pin_link_t>();
-
     detail::PinLinkRef<> { *this, *new_link }.connect(source_pin, target_pin);
-
     m_impl->pin_links.emplace_back(std::move(new_link));
+}
+
+void ImNodeFlow::createLink(NodeRef source_node, NodeRef target_node)
+{
+    if (!canLink(source_node, target_node)) {
+        return;
+    }
+
+    auto new_link = std::make_unique<detail::node_link_t>();
+    detail::NodeLinkRef<> { *this, *new_link }.connect(source_node, target_node);
+    m_impl->node_links.emplace_back(std::move(new_link));
 }
 
 void ImNodeFlow::droppedLinkPopUpContent(
@@ -402,6 +430,17 @@ void ImNodeFlow::update()
         ++iter;
     }
 
+    for (auto& l : m_impl->node_links) {
+        detail::NodeLinkRef<> link { *this, *l };
+
+        if (!link.isAlive()) {
+            link.destroy();
+            continue;
+        }
+
+        link.update();
+    }
+
     ImRect always_valid_bb {
         ImGui::GetMousePos() - ImVec2(1.F, 1.F),
         ImGui::GetMousePos() + ImVec2(1.F, 1.F),
@@ -445,7 +484,7 @@ void ImNodeFlow::update()
             PinRefLocalDTO<> dto { };
             IM_ASSERT(payload->DataSize == sizeof(dto));
             std::memcpy(&dto, payload->Data, sizeof(dto));
-            PinRef<> source_pin { dto };
+            PinRef source_pin { dto };
             // Links drop-off
             if (m_impl->droppedLinkPopUp
                 && (m_impl->droppedLinkPopUpComboKey == ImGuiKey_None
@@ -467,14 +506,14 @@ void ImNodeFlow::update()
         ImVec2 mouse_pos_on_popup;
         if (ImGui::BeginPopup("DroppedLinkPopUp")) {
             mouse_pos_on_popup = ImGui::GetMousePosOnOpeningCurrentPopup();
-            m_impl->droppedLinkPopUp(PinRef<> { *this, *m_impl->droppedLinkLeft });
+            m_impl->droppedLinkPopUp(PinRef { *this, *m_impl->droppedLinkLeft });
             ImGui::EndPopup();
         }
 
         splitter.SetCurrentChannel(draw_list, 0);
         detail::draw_bezier_from_pin_to_pos(
             ImGui::GetWindowDrawList(),
-            PinRef<true> { *this, *m_impl->droppedLinkLeft },
+            ConstPinRef { *this, *m_impl->droppedLinkLeft },
             mouse_pos_on_popup);
 
         splitter.Merge(draw_list);

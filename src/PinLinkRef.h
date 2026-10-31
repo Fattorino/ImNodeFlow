@@ -19,12 +19,12 @@ public:
 
     PinLinkRef(context_type& ctx, link_type& link);
 
-    [[nodiscard]] PinRef<TIsConst> outPin() const;
-    [[nodiscard]] PinRef<TIsConst> inPin() const;
+    [[nodiscard]] PinRefImpl<TIsConst> outPin() const;
+    [[nodiscard]] PinRefImpl<TIsConst> inPin() const;
 
     [[nodiscard]] bool isAlive() const;
 
-    void connect(pin_base_t& out_pin, pin_base_t& in_pin)
+    void connect(PinRef& out_pin, PinRef& in_pin)
         requires(!TIsConst);
 
     void destroy()

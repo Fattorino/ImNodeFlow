@@ -129,14 +129,18 @@ public:
     template <typename T, typename... Params>
     NodeRef emplaceNodeOnMouse(Params&&... args);
 
-    [[nodiscard]] bool canLink(PinRef<true> source_pin, PinRef<true> target_pin) const;
+    [[nodiscard]] bool canLink(ConstPinRef source_pin, ConstPinRef target_pin) const;
+
+    [[nodiscard]] bool canLink(ConstNodeRef source_node, ConstNodeRef target_node) const;
 
     /**
      * @brief Creates a link between two pins
      * @param source_pin Reference to the input pin
      * @param target_pint Reference to the output pin
      */
-    void createLink(PinRef<> source_pin, PinRef<> target_pin);
+    void createLink(PinRef source_pin, PinRef target_pin);
+
+    void createLink(NodeRef source_node, NodeRef target_node);
 
     /**
      * @brief Pop-up when link is "dropped"

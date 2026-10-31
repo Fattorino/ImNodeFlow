@@ -14,7 +14,7 @@ public:
     virtual ~IPin() = default;
 
     [[nodiscard]] virtual uint64_t getTypeID() const = 0;
-    virtual void calculate(PinRef<> self) = 0;
+    virtual void calculate(PinRef self) = 0;
     virtual void prime() = 0;
 };
 

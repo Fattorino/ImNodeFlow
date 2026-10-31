@@ -42,6 +42,8 @@ struct node_t {
     std::unique_ptr<node_group_arena_t> child_arena;
     std::unique_ptr<INodeBehaviour> behaviour;
 
+    std::vector<detail::node_link_t*> links;
+
     std::vector<std::unique_ptr<detail::pin_base_t>> ins;
     std::vector<std::unique_ptr<detail::dynamic_pin_t>> dynamicIns;
     std::vector<std::unique_ptr<detail::pin_base_t>> outs;

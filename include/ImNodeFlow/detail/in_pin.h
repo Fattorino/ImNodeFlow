@@ -1,5 +1,6 @@
 #ifndef IMNODEFLOW_DETAIL_INPIN_H
 #define IMNODEFLOW_DETAIL_INPIN_H
+#include "ImNodeFlow/fwd.h"
 #pragma once
 
 #include "ImNodeFlow/PinInfo.h"
@@ -36,7 +37,7 @@ struct in_pin_t final : public IPin {
         return get_type_id<T>();
     }
 
-    void calculate(PinRef<> self) final
+    void calculate(PinRef self) final
     {
         T next_value = this->emptyVal;
 

@@ -1,5 +1,6 @@
 #include "PinLinkRef.h"
 
+#include "ImNodeFlow/PinConnStrat.h"
 #include "ImNodeFlow/PinRef.h"
 
 #include "./imgui_bezier_items.h"
@@ -10,7 +11,9 @@
 #include "imgui_internal.h"
 #include "pin_link.h"
 
+#include <algorithm>
 #include <cassert>
+#include <iterator>
 #include <utility>
 
 namespace ImFlow::detail {
@@ -23,15 +26,15 @@ PinLinkRef<TIsConst>::PinLinkRef(context_type& ctx, link_type& link)
 }
 
 template <bool TIsConst>
-PinRef<TIsConst> PinLinkRef<TIsConst>::outPin() const
+PinRefImpl<TIsConst> PinLinkRef<TIsConst>::outPin() const
 {
-    return PinRef<TIsConst> { m_ctx, *m_link.get().out_pin };
+    return PinRefImpl<TIsConst> { m_ctx, *m_link.get().out_pin };
 }
 
 template <bool TIsConst>
-PinRef<TIsConst> PinLinkRef<TIsConst>::inPin() const
+PinRefImpl<TIsConst> PinLinkRef<TIsConst>::inPin() const
 {
-    return PinRef<TIsConst> { m_ctx, *m_link.get().in_pin };
+    return PinRefImpl<TIsConst> { m_ctx, *m_link.get().in_pin };
 }
 
 template <bool TIsConst>
@@ -44,15 +47,15 @@ bool PinLinkRef<TIsConst>::isAlive() const
 }
 
 template <bool TIsConst>
-void PinLinkRef<TIsConst>::connect(pin_base_t& out_pin, pin_base_t& in_pin)
+void PinLinkRef<TIsConst>::connect(PinRef& out_pin, PinRef& in_pin)
     requires(!TIsConst)
 {
     this->destroy();
 
-    auto& link = m_link.get();
+    pin_link_t& link = m_link.get();
     link.marked_for_deletion = false;
-    link.out_pin = &out_pin;
-    link.in_pin = &in_pin;
+    link.out_pin = &static_cast<pin_base_t&>(out_pin);
+    link.in_pin = &static_cast<pin_base_t&>(in_pin);
 
     assert(link.out_pin != link.in_pin
         && "Links cannot be created starting and ending in the same node");
@@ -63,8 +66,15 @@ void PinLinkRef<TIsConst>::connect(pin_base_t& out_pin, pin_base_t& in_pin)
         std::swap(link.out_pin, link.in_pin);
     }
 
-    this->outPin().addLink(&link);
-    this->inPin().addLink(&link);
+    if (link.out_pin->strat == PinConnStrat::AllowOnlySingleConnection) {
+        this->outPin().deleteAllLinks();
+    }
+    link.out_pin->links.emplace_back(&link);
+
+    if (link.in_pin->strat == PinConnStrat::AllowOnlySingleConnection) {
+        this->inPin().deleteAllLinks();
+    }
+    link.in_pin->links.emplace_back(&link);
 }
 
 template <bool TIsConst>
@@ -73,11 +83,23 @@ void PinLinkRef<TIsConst>::destroy()
 {
     auto& link = m_link.get();
     if (link.out_pin != nullptr) {
-        this->outPin().removeLink(&link);
+        auto iter = std::find(
+            std::begin(link.out_pin->links),
+            std::end(link.out_pin->links),
+            &link);
+        if (iter != std::end(link.out_pin->links)) {
+            link.out_pin->links.erase(iter);
+        }
         link.out_pin = nullptr;
     }
     if (link.in_pin != nullptr) {
-        this->inPin().removeLink(&link);
+        auto iter = std::find(
+            std::begin(link.in_pin->links),
+            std::end(link.in_pin->links),
+            &link);
+        if (iter != std::end(link.in_pin->links)) {
+            link.in_pin->links.erase(iter);
+        }
         link.in_pin = nullptr;
     }
     link.marked_for_deletion = true;

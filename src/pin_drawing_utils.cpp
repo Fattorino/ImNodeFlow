@@ -13,7 +13,7 @@ namespace ImFlow::detail {
 
 void draw_bezier_from_pin_to_pos(
     ImDrawList* draw_list,
-    PinRef<true> pin,
+    ConstPinRef pin,
     ImVec2 pos)
 {
     // Links drag-out

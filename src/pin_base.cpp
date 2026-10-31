@@ -31,7 +31,7 @@ pin_base_t::pin_base_t(
     , underlying_pin { std::move(impl) }
 {
     if (!renderer) {
-        renderer = [](PinRef<> pin) -> void {
+        renderer = [](PinRef pin) -> void {
             ImGui::Text("%s", pin.getName().c_str());
         };
     }

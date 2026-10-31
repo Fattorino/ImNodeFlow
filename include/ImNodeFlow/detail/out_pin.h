@@ -9,6 +9,7 @@
 #include "ImNodeFlow/detail/IPin.h"
 #include "ImNodeFlow/detail/fwd.h"
 #include "ImNodeFlow/detail/type_id.h"
+#include "ImNodeFlow/fwd.h"
 
 #include <cstdint>
 
@@ -33,7 +34,7 @@ struct out_pin_t final : public IPin {
         return get_type_id<T>();
     }
 
-    void calculate(PinRef<> self) final
+    void calculate(PinRef self) final
     {
         this->valNext = this->behaviour(self.getParent());
     }

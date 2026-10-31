@@ -1,7 +1,9 @@
 #ifndef IMNODEFLOW_NODEREF_H
 #define IMNODEFLOW_NODEREF_H
+#include <vector>
 #pragma once
 
+#include "ImNodeFlow/NodeStyle.h"
 #include "ImNodeFlow/NodeUID.h"
 #include "ImNodeFlow/PinInfo.h"
 #include "ImNodeFlow/PinUID.h"
@@ -131,36 +133,36 @@ public:
      * @param uid Unique identifier of the pin
      * @return Pointer to the pin, if it exists
      */
-    std::optional<PinRef<TIsConst>> inPin(const PinUID& uid);
+    std::optional<PinRefImpl<TIsConst>> inPin(const PinUID& uid);
 
     /**
      * @brief Get generic reference to input pin with the specified name
      * @param uid Unique identifier of the pin
      * @return Pointer to the pin, if it exists
      */
-    std::optional<PinRef<TIsConst>> inPin(std::string_view name);
+    std::optional<PinRefImpl<TIsConst>> inPin(std::string_view name);
 
-    std::optional<PinRef<TIsConst>> tempInPin(const PinUID& uid);
+    std::optional<PinRefImpl<TIsConst>> tempInPin(const PinUID& uid);
 
-    std::optional<PinRef<TIsConst>> tempInPin(std::string_view name);
+    std::optional<PinRefImpl<TIsConst>> tempInPin(std::string_view name);
 
     /**
      * @brief Get generic reference to output pin
      * @param uid Unique identifier of the pin
      * @return Pointer to the pin, if it exists
      */
-    std::optional<PinRef<TIsConst>> outPin(const PinUID& uid);
+    std::optional<PinRefImpl<TIsConst>> outPin(const PinUID& uid);
 
     /**
      * @brief Get generic reference to output pin of the same name
      * @param name Unique identifier of the pin
      * @return Pointer to the pin, if it exists
      */
-    std::optional<PinRef<TIsConst>> outPin(std::string_view name);
+    std::optional<PinRefImpl<TIsConst>> outPin(std::string_view name);
 
-    std::optional<PinRef<TIsConst>> tempOutPin(const PinUID& uid);
+    std::optional<PinRefImpl<TIsConst>> tempOutPin(const PinUID& uid);
 
-    std::optional<PinRef<TIsConst>> tempOutPin(std::string_view name);
+    std::optional<PinRefImpl<TIsConst>> tempOutPin(std::string_view name);
 
     /**
      * @brief Get generic reference to input pin
@@ -206,6 +208,9 @@ public:
      * @brief Delete itself
      */
     void destroy()
+        requires(!TIsConst);
+
+    void deleteAllLinks()
         requires(!TIsConst);
 
     /*
@@ -255,6 +260,8 @@ public:
      */
     ImVec2 getTLPos() const;
 
+    ImVec2 getCenterGridPos() const;
+
     /**
      * @brief Get node's style
      * @return Shared pointer to the node's style
@@ -268,6 +275,11 @@ public:
     [[nodiscard]] bool anyChildActivated() const;
 
     [[nodiscard]] bool hasChildNodes() const;
+
+    [[nodiscard]] std::vector<NodeRefImpl<TIsConst>> getConnections() const;
+
+    void linkTo(NodeRef other)
+        requires(!TIsConst);
 
     /**
      * @brief Get selected status
@@ -386,7 +398,7 @@ public:
      * FIXME: Remove internal methods from public API
      * @internal For internal use only
      */
-    operator node_type&()
+    operator node_type&() const
     {
         return m_node.get();
     }
@@ -397,19 +409,19 @@ public:
     }
 
 private:
-    PinRef<TIsConst>
+    PinRefImpl<TIsConst>
     addIN_impl(BasePinInfo info, std::unique_ptr<detail::IPin> pin_impl)
         requires(!TIsConst);
 
-    PinRef<TIsConst>
+    PinRefImpl<TIsConst>
     showIN_impl(BasePinInfo info, std::unique_ptr<detail::IPin> pin_impl)
         requires(!TIsConst);
 
-    PinRef<TIsConst>
+    PinRefImpl<TIsConst>
     addOUT_impl(BasePinInfo info, std::unique_ptr<detail::IPin> pin_impl)
         requires(!TIsConst);
 
-    PinRef<TIsConst>
+    PinRefImpl<TIsConst>
     showOUT_impl(BasePinInfo info, std::unique_ptr<detail::IPin> pin_impl)
         requires(!TIsConst);
 

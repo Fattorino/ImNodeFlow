@@ -26,7 +26,7 @@ public:
         requires(!TIsConst);
     void update()
         requires(!TIsConst);
-    [[nodiscard]] PinRef<TIsConst> pin() const;
+    [[nodiscard]] PinRefImpl<TIsConst> pin() const;
     [[nodiscard]] bool isStale() const;
 
 private:

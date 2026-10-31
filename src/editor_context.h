@@ -1,5 +1,7 @@
 #ifndef IMNODEFLOW_EDITOR_CONTEXT_H
 #define IMNODEFLOW_EDITOR_CONTEXT_H
+#include "ImNodeFlow/detail/fwd.h"
+#include <memory>
 #pragma once
 
 #include "ImNodeFlow/NodeUID.h"
@@ -33,8 +35,8 @@ struct editor_context_t {
     std::vector<std::unique_ptr<node_t>> newNodesQueue;
 
     detail::node_group_arena_t root_arena;
-
     std::vector<std::unique_ptr<pin_link_t>> pin_links;
+    std::vector<std::unique_ptr<node_link_t>> node_links;
 
     dropped_link_popup_handler_t droppedLinkPopUp;
     ImGuiKey droppedLinkPopUpComboKey = ImGuiKey_None;

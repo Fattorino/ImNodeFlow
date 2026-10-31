@@ -12,9 +12,11 @@
 #include "ImNodeFlow/detail/fwd.h"
 
 #include "./DynamicPinRef.h"
+#include "./NodeLinkRef.h"
 #include "./dynamic_pin.h"
 #include "./editor_context.h"
 #include "./node.h"
+#include "./node_link.h"
 #include "./pin_base.h"
 
 #include "ImNodeFlow/fwd.h"
@@ -45,14 +47,15 @@ void NodeRefImpl<TIsConst>::destroy()
     if (node.behaviour) {
         node.behaviour.reset();
     }
+    this->deleteAllLinks();
     for (auto& elem : node.ins) {
-        PinRef<> { m_ctx, *elem }.destroy();
+        PinRef { m_ctx, *elem }.destroy();
     }
     for (auto& elem : node.dynamicIns) {
         detail::DynamicPinRef<> { m_ctx, *elem }.destroy();
     }
     for (auto& elem : node.outs) {
-        PinRef<> { m_ctx, *elem }.destroy();
+        PinRef { m_ctx, *elem }.destroy();
     }
     for (auto& elem : node.dynamicOuts) {
         detail::DynamicPinRef<> { m_ctx, *elem }.destroy();
@@ -63,6 +66,17 @@ void NodeRefImpl<TIsConst>::destroy()
         node.child_arena.reset();
     }
     node.destroyed = true;
+}
+
+template <bool TIsConst>
+void NodeRefImpl<TIsConst>::deleteAllLinks()
+    requires(!TIsConst)
+{
+    auto& node = m_node.get();
+    auto links = std::move(node.links);
+    for (auto& l : links) {
+        detail::NodeLinkRef { m_ctx, *l }.destroy();
+    }
 }
 
 template <bool TIsConst>
@@ -120,6 +134,14 @@ ImVec2 NodeRefImpl<TIsConst>::getTLPos() const
 }
 
 template <bool TIsConst>
+ImVec2 NodeRefImpl<TIsConst>::getCenterGridPos() const
+{
+    auto tl_pos = this->getTLPos();
+    auto size = this->getFullSize();
+    return tl_pos + size * 0.5;
+}
+
+template <bool TIsConst>
 const NodeStyle& NodeRefImpl<TIsConst>::getStyle() const
 {
     return m_node.get().style;
@@ -165,6 +187,31 @@ bool NodeRefImpl<TIsConst>::hasChildNodes() const
 {
     detail::node_t const& node = m_node.get();
     return node.child_arena && !node.child_arena->nodes.empty();
+}
+
+template <bool TIsConst>
+std::vector<NodeRefImpl<TIsConst>>
+NodeRefImpl<TIsConst>::getConnections() const
+{
+    detail::node_t const& node = m_node.get();
+    std::vector<NodeRefImpl<TIsConst>> result;
+    result.reserve(node.links.size());
+    for (auto& l : node.links) {
+        if (l->source_node != &node) {
+            result.emplace_back(m_ctx, *l->source_node);
+        } else {
+            result.emplace_back(m_ctx, *l->target_node);
+        }
+    }
+    return result;
+}
+
+template <bool TIsConst>
+void NodeRefImpl<TIsConst>::linkTo(NodeRef other)
+    requires(!TIsConst)
+{
+    auto& ctx = m_ctx.get();
+    ctx.createLink(*this, other);
 }
 
 template <bool TIsConst>
@@ -426,7 +473,7 @@ NodeRefImpl<TIsConst>::dropOUT(std::string_view name)
 }
 
 template <bool TIsConst>
-std::optional<PinRef<TIsConst>>
+std::optional<PinRefImpl<TIsConst>>
 NodeRefImpl<TIsConst>::inPin(const PinUID& uid)
 {
     auto& node = m_node.get();
@@ -436,7 +483,7 @@ NodeRefImpl<TIsConst>::inPin(const PinUID& uid)
         [&uid](const auto& p) {
             return p->uid == uid;
         });
-    std::optional<PinRef<TIsConst>> result;
+    std::optional<PinRefImpl<TIsConst>> result;
     if (it != node.ins.end()) {
         result.emplace(m_ctx, **it);
     }
@@ -444,7 +491,7 @@ NodeRefImpl<TIsConst>::inPin(const PinUID& uid)
 }
 
 template <bool TIsConst>
-std::optional<PinRef<TIsConst>>
+std::optional<PinRefImpl<TIsConst>>
 NodeRefImpl<TIsConst>::inPin(std::string_view name)
 {
     auto& node = m_node.get();
@@ -454,7 +501,7 @@ NodeRefImpl<TIsConst>::inPin(std::string_view name)
         [&name](const auto& p) {
             return p->name == name;
         });
-    std::optional<PinRef<TIsConst>> result;
+    std::optional<PinRefImpl<TIsConst>> result;
     if (it != node.ins.end()) {
         result.emplace(m_ctx, **it);
     }
@@ -462,7 +509,7 @@ NodeRefImpl<TIsConst>::inPin(std::string_view name)
 }
 
 template <bool TIsConst>
-std::optional<PinRef<TIsConst>>
+std::optional<PinRefImpl<TIsConst>>
 NodeRefImpl<TIsConst>::tempInPin(const PinUID& uid)
 {
     auto& node = m_node.get();
@@ -472,7 +519,7 @@ NodeRefImpl<TIsConst>::tempInPin(const PinUID& uid)
         [&uid](const auto& p) {
             return p->pin.uid == uid;
         });
-    std::optional<PinRef<TIsConst>> result;
+    std::optional<PinRefImpl<TIsConst>> result;
     if (it != node.dynamicIns.end()) {
         detail::DynamicPinRef<TIsConst> dyn_pin { m_ctx, **it };
         if constexpr (!TIsConst) {
@@ -484,7 +531,7 @@ NodeRefImpl<TIsConst>::tempInPin(const PinUID& uid)
 }
 
 template <bool TIsConst>
-std::optional<PinRef<TIsConst>>
+std::optional<PinRefImpl<TIsConst>>
 NodeRefImpl<TIsConst>::tempInPin(std::string_view name)
 {
     auto& node = m_node.get();
@@ -494,7 +541,7 @@ NodeRefImpl<TIsConst>::tempInPin(std::string_view name)
         [&name](const auto& p) {
             return p->pin.name == name;
         });
-    std::optional<PinRef<TIsConst>> result;
+    std::optional<PinRefImpl<TIsConst>> result;
     if (it != node.dynamicIns.end()) {
         detail::DynamicPinRef<TIsConst> dyn_pin { m_ctx, **it };
         if constexpr (!TIsConst) {
@@ -506,7 +553,7 @@ NodeRefImpl<TIsConst>::tempInPin(std::string_view name)
 }
 
 template <bool TIsConst>
-std::optional<PinRef<TIsConst>>
+std::optional<PinRefImpl<TIsConst>>
 NodeRefImpl<TIsConst>::outPin(const PinUID& uid)
 {
     auto& node = m_node.get();
@@ -516,7 +563,7 @@ NodeRefImpl<TIsConst>::outPin(const PinUID& uid)
         [&uid](const auto& p) {
             return p->uid == uid;
         });
-    std::optional<PinRef<TIsConst>> result;
+    std::optional<PinRefImpl<TIsConst>> result;
     if (it != node.outs.end()) {
         result.emplace(m_ctx, **it);
     }
@@ -524,7 +571,7 @@ NodeRefImpl<TIsConst>::outPin(const PinUID& uid)
 }
 
 template <bool TIsConst>
-std::optional<PinRef<TIsConst>>
+std::optional<PinRefImpl<TIsConst>>
 NodeRefImpl<TIsConst>::outPin(std::string_view name)
 {
     auto& node = m_node.get();
@@ -534,7 +581,7 @@ NodeRefImpl<TIsConst>::outPin(std::string_view name)
         [&name](const auto& p) {
             return p->name == name;
         });
-    std::optional<PinRef<TIsConst>> result;
+    std::optional<PinRefImpl<TIsConst>> result;
     if (it != node.outs.end()) {
         result.emplace(m_ctx, **it);
     }
@@ -542,7 +589,7 @@ NodeRefImpl<TIsConst>::outPin(std::string_view name)
 }
 
 template <bool TIsConst>
-std::optional<PinRef<TIsConst>>
+std::optional<PinRefImpl<TIsConst>>
 NodeRefImpl<TIsConst>::tempOutPin(const PinUID& uid)
 {
     auto& node = m_node.get();
@@ -552,7 +599,7 @@ NodeRefImpl<TIsConst>::tempOutPin(const PinUID& uid)
         [&uid](const auto& p) {
             return p->pin.uid == uid;
         });
-    std::optional<PinRef<TIsConst>> result;
+    std::optional<PinRefImpl<TIsConst>> result;
     if (it != node.dynamicOuts.end()) {
         detail::DynamicPinRef<TIsConst> dyn_pin { m_ctx, **it };
         if constexpr (!TIsConst) {
@@ -564,7 +611,7 @@ NodeRefImpl<TIsConst>::tempOutPin(const PinUID& uid)
 }
 
 template <bool TIsConst>
-std::optional<PinRef<TIsConst>>
+std::optional<PinRefImpl<TIsConst>>
 NodeRefImpl<TIsConst>::tempOutPin(std::string_view name)
 {
     auto& node = m_node.get();
@@ -574,7 +621,7 @@ NodeRefImpl<TIsConst>::tempOutPin(std::string_view name)
         [&name](const auto& p) {
             return p->pin.name == name;
         });
-    std::optional<PinRef<TIsConst>> result;
+    std::optional<PinRefImpl<TIsConst>> result;
     if (it != node.dynamicOuts.end()) {
         detail::DynamicPinRef<TIsConst> dyn_pin { m_ctx, **it };
         if constexpr (!TIsConst) {
@@ -930,7 +977,7 @@ void NodeRefImpl<TIsConst>::update()
 }
 
 template <bool TIsConst>
-PinRef<TIsConst>
+PinRefImpl<TIsConst>
 NodeRefImpl<TIsConst>::addIN_impl(
     BasePinInfo info,
     std::unique_ptr<detail::IPin> pin_impl)
@@ -943,11 +990,11 @@ NodeRefImpl<TIsConst>::addIN_impl(
         std::move(info),
         std::move(pin_impl)));
 
-    return PinRef<TIsConst> { m_ctx, *node.ins.back() };
+    return PinRefImpl<TIsConst> { m_ctx, *node.ins.back() };
 }
 
 template <bool TIsConst>
-PinRef<TIsConst>
+PinRefImpl<TIsConst>
 NodeRefImpl<TIsConst>::showIN_impl(
     BasePinInfo info,
     std::unique_ptr<detail::IPin> pin_impl)
@@ -966,7 +1013,7 @@ NodeRefImpl<TIsConst>::showIN_impl(
 }
 
 template <bool TIsConst>
-PinRef<TIsConst>
+PinRefImpl<TIsConst>
 NodeRefImpl<TIsConst>::addOUT_impl(
     BasePinInfo info,
     std::unique_ptr<detail::IPin> pin_impl)
@@ -979,11 +1026,11 @@ NodeRefImpl<TIsConst>::addOUT_impl(
         std::move(info),
         std::move(pin_impl)));
 
-    return PinRef<TIsConst> { m_ctx, *node.outs.back() };
+    return PinRefImpl<TIsConst> { m_ctx, *node.outs.back() };
 }
 
 template <bool TIsConst>
-PinRef<TIsConst>
+PinRefImpl<TIsConst>
 NodeRefImpl<TIsConst>::showOUT_impl(
     BasePinInfo info,
     std::unique_ptr<detail::IPin> pin_impl)

@@ -9,12 +9,14 @@ class InPinRef;
 template <typename T, bool TIsConst = false>
 class OutPinRef;
 template <bool TIsConst = false>
-class PinRef;
+class PinRefImpl;
 template <bool TIsConst = false>
 class NodeRefImpl;
 template <bool TIsConst = false>
 class NodeGroupArenaRef;
 
+using PinRef = PinRefImpl<false>;
+using ConstPinRef = PinRefImpl<true>;
 using NodeRef = NodeRefImpl<false>;
 using ConstNodeRef = NodeRefImpl<true>;
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ImNodeFlow/detail/fwd.h"
+#include "ImNodeFlow/fwd.h"
 
 #include "imgui.h"
 
@@ -8,7 +8,7 @@ namespace ImFlow::detail {
 
 void draw_bezier_from_pin_to_pos(
     ImDrawList* draw_list,
-    PinRef<true> pin,
+    ConstPinRef pin,
     ImVec2 pos);
 
 } // namespace ImFlow::detail

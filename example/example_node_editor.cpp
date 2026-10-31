@@ -134,7 +134,7 @@ public:
         node.addOUT<int>({
             .name = "Out",
             .style = ImFlow::PinStyles::red,
-            .renderer = [](ImFlow::PinRef<> pin) -> void {
+            .renderer = [](ImFlow::PinRef pin) -> void {
                 ImGui::TextUnformatted("<OUTPIN>");
             },
             .behaviour = [this](ImFlow::NodeRef node) -> int {
@@ -300,7 +300,7 @@ NodeEditor::NodeEditor(float width, float height)
             }
         }
     });
-    mINF.droppedLinkPopUpContent([this](ImFlow::PinRef<> pin) -> void {
+    mINF.droppedLinkPopUpContent([this](ImFlow::PinRef pin) -> void {
         if (pin.getType() == ImFlow::PinType::Output
             && pin.getTypeID() == ImFlow::detail::get_type_id<int>()) {
             ImVec2 mouse_screen_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
@@ -327,11 +327,13 @@ NodeEditor::NodeEditor(float width, float height)
     auto result = mINF.emplaceNode<ResultNode>({ 340, 20 });
     auto multi_adder = mINF.emplaceNode<MultipleInputAdder>({ 360, 140 });
 
+    result.setIndestructable(true);
+
     n1.setParentNode(result);
     n2.setParentNode(result);
     multi_adder.setParentNode(result);
 
-    result.setIndestructable(true);
+    n1.linkTo(n2);
 
     // Add links between nodes
     n1.outPin("Out")->linkTo(*result.inPin("A"));

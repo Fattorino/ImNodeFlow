@@ -8,11 +8,12 @@ class IPin;
 
 struct dynamic_pin_t;
 struct editor_context_t;
-struct pin_link_t;
 struct node_group_arena_t;
 struct node_group_t;
+struct node_link_t;
 struct node_t;
 struct pin_base_t;
+struct pin_link_t;
 struct root_node_group_t;
 
 template <typename T>

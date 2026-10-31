@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <utility>
 #include <vector>
 
 namespace ImFlow {
@@ -23,7 +24,7 @@ namespace ImFlow {
 namespace {
 
     ImRect
-    getSocketHitBounds(PinRef<true> pin, float expand_radius = -1.0F)
+    getSocketHitBounds(ConstPinRef pin, float expand_radius = -1.0F)
     {
         if (expand_radius < 0.0f) {
             expand_radius = pin.getStyle().socket_hovered_radius;
@@ -37,7 +38,7 @@ namespace {
     }
 
     bool drawSocket(
-        PinRef<true> pin,
+        ConstPinRef pin,
         bool* hovered = nullptr,
         ImVec2* socketPos = nullptr)
     {
@@ -53,7 +54,7 @@ namespace {
         float thickness = pin.getStyle().socket_thickness;
         bool circle_filled = false;
 
-        if (PinRef<true> { pin }.isConnected()) {
+        if (ConstPinRef { pin }.isConnected()) {
             circle_filled = true;
             radius = pin.getStyle().socket_connected_radius;
         } else if (pin.isHovered()) {
@@ -65,7 +66,7 @@ namespace {
             PinRefLocalDTO<> dto { };
             IM_ASSERT(payload->DataSize == sizeof(dto));
             std::memcpy(&dto, payload->Data, sizeof(dto));
-            PinRef<> source_pin { dto };
+            PinRef source_pin { dto };
             bool is_compatible = pin.canLink(source_pin);
             if (is_compatible) {
                 radius *= 1.25F;
@@ -144,7 +145,7 @@ namespace {
     }
 
     void drawDragDropPinSourceAndTarget(
-        PinRef<> pin,
+        PinRef pin,
         bool* out_source_active = nullptr,
         bool* out_target_active = nullptr)
     {
@@ -164,7 +165,7 @@ namespace {
                 PinRefLocalDTO<> dto { };
                 IM_ASSERT(payload->DataSize == sizeof(dto));
                 std::memcpy(&dto, payload->Data, sizeof(dto));
-                pin.linkTo(PinRef<> { dto });
+                pin.linkTo(PinRef { dto });
             }
 
             ImGui::EndDragDropTarget();
@@ -178,7 +179,7 @@ namespace {
 } // anonymous namespace
 
 template <bool TIsConst>
-void PinRef<TIsConst>::update()
+void PinRefImpl<TIsConst>::update()
     requires(!TIsConst)
 {
     detail::pin_base_t& pin = m_pin.get();
@@ -248,8 +249,8 @@ void PinRef<TIsConst>::update()
 }
 
 template <bool TIsConst>
-PinRef<TIsConst>&
-PinRef<TIsConst>::renderer(pin_rendering_handler_t r)
+PinRefImpl<TIsConst>&
+PinRefImpl<TIsConst>::renderer(pin_rendering_handler_t r)
     requires(!TIsConst)
 {
     auto& base = m_pin.get();
@@ -258,11 +259,11 @@ PinRef<TIsConst>::renderer(pin_rendering_handler_t r)
 }
 
 template <bool TIsConst>
-bool PinRef<TIsConst>::canLink(PinRef<TIsConst> other) const
+bool PinRefImpl<TIsConst>::canLink(ConstPinRef other) const
 {
     auto& pin = m_pin.get();
 
-    if (&m_ctx.get() != &other.m_ctx.get()) {
+    if (&m_ctx.get() != &other.getContext()) {
         return false;
     }
 
@@ -270,7 +271,7 @@ bool PinRef<TIsConst>::canLink(PinRef<TIsConst> other) const
 }
 
 template <bool TIsConst>
-void PinRef<TIsConst>::linkTo(PinRef<TIsConst> other)
+void PinRefImpl<TIsConst>::linkTo(PinRef other)
     requires(!TIsConst)
 {
     auto& base = m_pin.get();
@@ -285,74 +286,35 @@ void PinRef<TIsConst>::linkTo(PinRef<TIsConst> other)
 }
 
 template <bool TIsConst>
-void PinRef<TIsConst>::deleteAllLinks()
+void PinRefImpl<TIsConst>::deleteAllLinks()
     requires(!TIsConst)
 {
     auto& pin = m_pin.get();
     auto links = std::move(pin.links);
     for (auto& l : links) {
-        detail::PinLinkRef link { m_ctx, *l };
-        link.destroy();
+        detail::PinLinkRef { m_ctx, *l }.destroy();
     }
 }
 
 template <bool TIsConst>
-void PinRef<TIsConst>::addLink(detail::pin_link_t* link)
-    requires(!TIsConst)
-{
-    auto& base = m_pin.get();
-
-    auto iter = std::find(
-        base.links.begin(),
-        base.links.end(),
-        link);
-
-    if (iter != base.links.end()) {
-        return;
-    }
-
-    if (base.strat == PinConnStrat::AllowOnlySingleConnection) {
-        this->deleteAllLinks();
-    }
-
-    base.links.emplace_back(link);
-}
-
-template <bool TIsConst>
-void PinRef<TIsConst>::removeLink(detail::pin_link_t* link)
-    requires(!TIsConst)
-{
-    auto& base = m_pin.get();
-
-    auto iter = std::find(
-        base.links.begin(),
-        base.links.end(),
-        link);
-
-    if (iter != base.links.end()) {
-        base.links.erase(iter);
-    }
-}
-
-template <bool TIsConst>
-bool PinRef<TIsConst>::isConnected() const
+bool PinRefImpl<TIsConst>::isConnected() const
 {
     auto& base = m_pin.get();
     return !base.links.empty();
 }
 
 template <bool TIsConst>
-bool PinRef<TIsConst>::isHovered() const
+bool PinRefImpl<TIsConst>::isHovered() const
 {
     auto& base = m_pin.get();
     return !base.isHovered;
 }
 
 template <bool TIsConst>
-std::vector<PinRef<TIsConst>>
-PinRef<TIsConst>::getConnections() const
+std::vector<PinRefImpl<TIsConst>>
+PinRefImpl<TIsConst>::getConnections() const
 {
-    std::vector<PinRef<TIsConst>> result;
+    std::vector<PinRefImpl<TIsConst>> result;
 
     auto& pin = this->m_pin.get();
     result.reserve(pin.links.size());
@@ -384,123 +346,138 @@ PinRef<TIsConst>::getConnections() const
 }
 
 template <bool TIsConst>
-PinUID PinRef<TIsConst>::getUid() const
+PinUID PinRefImpl<TIsConst>::getUid() const
 {
     return m_pin.get().uid;
 }
 
 template <bool TIsConst>
-const std::string& PinRef<TIsConst>::getName() const
+const std::string& PinRefImpl<TIsConst>::getName() const
 {
     return m_pin.get().name;
 }
 
 template <bool TIsConst>
-const ImVec2& PinRef<TIsConst>::getPos() const
+const ImVec2& PinRefImpl<TIsConst>::getPos() const
 {
     return m_pin.get().pos;
 }
 
 template <bool TIsConst>
-const ImVec2& PinRef<TIsConst>::getSize() const
+const ImVec2& PinRefImpl<TIsConst>::getSize() const
 {
     return m_pin.get().size;
 }
 
 template <bool TIsConst>
-NodeRefImpl<TIsConst> PinRef<TIsConst>::getParent() const
+NodeRefImpl<TIsConst> PinRefImpl<TIsConst>::getParent() const
 {
     return NodeRefImpl<TIsConst>(m_ctx, *m_pin.get().parent);
 }
 
 template <bool TIsConst>
-PinType PinRef<TIsConst>::getType() const
+PinType PinRefImpl<TIsConst>::getType() const
 {
     return m_pin.get().type;
 }
 
 template <bool TIsConst>
-uint64_t PinRef<TIsConst>::getTypeID() const
+uint64_t PinRefImpl<TIsConst>::getTypeID() const
 {
     return m_pin.get().underlying_pin->getTypeID();
 }
 
 template <bool TIsConst>
-const PinStyle& PinRef<TIsConst>::getStyle() const
+const PinStyle& PinRefImpl<TIsConst>::getStyle() const
 {
     return m_pin.get().style;
 }
 
 template <bool TIsConst>
-void PinRef<TIsConst>::setStyle(PinStyle style)
+void PinRefImpl<TIsConst>::setStyle(PinStyle style)
     requires(!TIsConst)
 {
     m_pin.get().style = std::move(style);
 }
 
 template <bool TIsConst>
-void PinRef<TIsConst>::allowSameNodeConnections(bool state)
+void PinRefImpl<TIsConst>::allowSameNodeConnections(bool state)
     requires(!TIsConst)
 {
     m_pin.get().allowSelfConnection = state;
 }
 
 template <bool TIsConst>
-bool PinRef<TIsConst>::allowsSameNodeConnections() const
+bool PinRefImpl<TIsConst>::allowsSameNodeConnections() const
 {
     return m_pin.get().allowSelfConnection;
 }
 
 template <bool TIsConst>
-ImVec2 PinRef<TIsConst>::pinPoint() const
+ImVec2 PinRefImpl<TIsConst>::pinPoint() const
 {
     return m_pin.get().pinPoint;
 }
 
 template <bool TIsConst>
-float PinRef<TIsConst>::calcWidth() const
+float PinRefImpl<TIsConst>::calcWidth() const
 {
     return ImGui::CalcTextSize(m_pin.get().name.c_str()).x;
 }
 
 template <bool TIsConst>
-void PinRef<TIsConst>::setPos(ImVec2 pos)
+void PinRefImpl<TIsConst>::setPos(ImVec2 pos)
     requires(!TIsConst)
 {
     m_pin.get().pos = pos;
 }
 
 template <bool TIsConst>
-void PinRef<TIsConst>::setSocketHitboxEnabled(bool enabled)
+void PinRefImpl<TIsConst>::setSocketHitboxEnabled(bool enabled)
     requires(!TIsConst)
 {
     m_pin.get().socketHitboxEnabled = enabled;
 }
 
 template <bool TIsConst>
-void PinRef<TIsConst>::calculate()
+void PinRefImpl<TIsConst>::calculate()
     requires(!TIsConst)
 {
     m_pin.get().underlying_pin->calculate(*this);
 }
 
 template <bool TIsConst>
-void PinRef<TIsConst>::prime()
+void PinRefImpl<TIsConst>::prime()
     requires(!TIsConst)
 {
     m_pin.get().underlying_pin->prime();
 }
 
 template <bool TIsConst>
-void PinRef<TIsConst>::destroy()
+void PinRefImpl<TIsConst>::destroy()
     requires(!TIsConst)
 {
     this->deleteAllLinks();
 }
 
 template <bool TIsConst>
+ImNodeFlow&
+PinRefImpl<TIsConst>::getContext() const
+    requires(!TIsConst)
+{
+    return m_ctx.get();
+}
+
+template <bool TIsConst>
+ImNodeFlow const&
+PinRefImpl<TIsConst>::getContext() const
+{
+    return m_ctx.get();
+}
+
+template <bool TIsConst>
 detail::IPin&
-PinRef<TIsConst>::getDetail() const
+PinRefImpl<TIsConst>::getDetail() const
     requires(!TIsConst)
 {
     return *m_pin.get().underlying_pin;
@@ -508,12 +485,12 @@ PinRef<TIsConst>::getDetail() const
 
 template <bool TIsConst>
 detail::IPin const&
-PinRef<TIsConst>::getDetail() const
+PinRefImpl<TIsConst>::getDetail() const
 {
     return *m_pin.get().underlying_pin;
 }
 
-template class PinRef<false>;
-template class PinRef<true>;
+template class PinRefImpl<false>;
+template class PinRefImpl<true>;
 
 } // namespace ImFlow
