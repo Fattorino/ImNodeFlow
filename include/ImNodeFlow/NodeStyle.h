@@ -13,6 +13,8 @@ class NodeStyle {
 public:
     /// @brief Body's background color
     ImU32 bg = IM_COL32(55, 64, 75, 255);
+    /// @brief Body's background color when hovered
+    ImU32 bg_hovered = IM_COL32(80, 94, 110, 255);
     /// @brief Header's background color
     ImU32 header_bg = IM_COL32(71, 142, 173, 255);
     /// @brief Header title color

@@ -845,43 +845,6 @@ void NodeRefImpl<TIsConst>::update()
     node.size = ImGui::GetItemRectSize();
     ImVec2 headerSize = ImVec2(node.size.x + paddingBR.x, headerH);
 
-    // Background
-    drawListSplitter.SetCurrentChannel(draw_list, 1);
-    draw_list->AddRectFilled(
-        offset + node.pos - paddingTL,
-        offset + node.pos + node.size + paddingBR,
-        node.style.bg,
-        node.style.radius);
-    draw_list->AddRectFilled(
-        offset + node.pos - paddingTL,
-        offset + node.pos + headerSize,
-        node.style.header_bg,
-        node.style.radius,
-        ImDrawFlags_RoundCornersTop);
-    node.fullSize = node.size + paddingTL + paddingBR;
-    ImU32 col = node.style.border_color;
-    float thickness = node.style.border_thickness;
-    ImVec2 ptl = paddingTL;
-    ImVec2 pbr = paddingBR;
-    if (this->isSelected()) {
-        col = node.style.border_selected_color;
-        thickness = node.style.border_selected_thickness;
-    }
-    if (thickness < 0.f) {
-        ptl.x -= thickness / 2;
-        ptl.y -= thickness / 2;
-        pbr.x -= thickness / 2;
-        pbr.y -= thickness / 2;
-        thickness *= -1.f;
-    }
-    draw_list->AddRect(
-        offset + node.pos - ptl,
-        offset + node.pos + node.size + pbr,
-        col,
-        node.style.radius,
-        0,
-        thickness);
-
     ImRect header_bb {
         ctx.grid2screen(node.pos - paddingTL),
         ctx.grid2screen(node.pos + headerSize),
@@ -924,6 +887,47 @@ void NodeRefImpl<TIsConst>::update()
             ImGuiButtonFlags_PressedOnClick);
 
         node_released = ImGui::IsItemDeactivated();
+    }
+
+    // Background
+    {
+        auto bg_col = node_hovered ? node.style.bg_hovered : node.style.bg;
+
+        drawListSplitter.SetCurrentChannel(draw_list, 1);
+        draw_list->AddRectFilled(
+            offset + node.pos - paddingTL,
+            offset + node.pos + node.size + paddingBR,
+            bg_col,
+            node.style.radius);
+        draw_list->AddRectFilled(
+            offset + node.pos - paddingTL,
+            offset + node.pos + headerSize,
+            node.style.header_bg,
+            node.style.radius,
+            ImDrawFlags_RoundCornersTop);
+        node.fullSize = node.size + paddingTL + paddingBR;
+        ImU32 col = node.style.border_color;
+        float thickness = node.style.border_thickness;
+        ImVec2 ptl = paddingTL;
+        ImVec2 pbr = paddingBR;
+        if (this->isSelected()) {
+            col = node.style.border_selected_color;
+            thickness = node.style.border_selected_thickness;
+        }
+        if (thickness < 0.f) {
+            ptl.x -= thickness / 2;
+            ptl.y -= thickness / 2;
+            pbr.x -= thickness / 2;
+            pbr.y -= thickness / 2;
+            thickness *= -1.f;
+        }
+        draw_list->AddRect(
+            offset + node.pos - ptl,
+            offset + node.pos + node.size + pbr,
+            col,
+            node.style.radius,
+            0,
+            thickness);
     }
 
     if (header_hovered || node_hovered) {
