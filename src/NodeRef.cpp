@@ -202,15 +202,28 @@ bool NodeRefImpl<TIsConst>::hasChildNodes() const
 
 template <bool TIsConst>
 std::vector<NodeRefImpl<TIsConst>>
-NodeRefImpl<TIsConst>::getConnections() const
+NodeRefImpl<TIsConst>::getInboundConnections() const
 {
     detail::node_t const& node = m_node.get();
     std::vector<NodeRefImpl<TIsConst>> result;
     result.reserve(node.links.size());
     for (auto& l : node.links) {
-        if (l->source_node != &node) {
+        if (l->target_node == &node) {
             result.emplace_back(m_ctx, *l->source_node);
-        } else {
+        }
+    }
+    return result;
+}
+
+template <bool TIsConst>
+std::vector<NodeRefImpl<TIsConst>>
+NodeRefImpl<TIsConst>::getOutboundConnections() const
+{
+    detail::node_t const& node = m_node.get();
+    std::vector<NodeRefImpl<TIsConst>> result;
+    result.reserve(node.links.size());
+    for (auto& l : node.links) {
+        if (l->source_node == &node) {
             result.emplace_back(m_ctx, *l->target_node);
         }
     }

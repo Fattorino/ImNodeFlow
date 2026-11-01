@@ -181,7 +181,7 @@ bool ImNodeFlow::canLink(ConstNodeRef source_node, ConstNodeRef target_node) con
         return false;
     }
 
-    for (const auto& node_ref : source_node.getConnections()) {
+    for (const auto& node_ref : source_node.getOutboundConnections()) {
         if (node_ref == target_node) {
             // Connection already exists
             return false;

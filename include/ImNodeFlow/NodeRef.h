@@ -307,7 +307,9 @@ public:
 
     [[nodiscard]] bool hasChildNodes() const;
 
-    [[nodiscard]] std::vector<NodeRefImpl<TIsConst>> getConnections() const;
+    [[nodiscard]] std::vector<NodeRefImpl<TIsConst>> getInboundConnections() const;
+
+    [[nodiscard]] std::vector<NodeRefImpl<TIsConst>> getOutboundConnections() const;
 
     void linkTo(NodeRef other)
         requires(!TIsConst);
