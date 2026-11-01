@@ -20,15 +20,13 @@ void draw_bezier_from_pin_to_pos(
     if (pin.getType() == PinType::Output) {
         detail::smart_bezier(
             draw_list,
-            pin.pinPoint(),
-            pos,
+            detail::smart_bezier_controls_from_two_points(pin.pinPoint(), pos),
             pin.getStyle().color,
             pin.getStyle().extra.link_dragged_thickness);
     } else {
         detail::smart_bezier(
             draw_list,
-            pos,
-            pin.pinPoint(),
+            detail::smart_bezier_controls_from_two_points(pos, pin.pinPoint()),
             pin.getStyle().color,
             pin.getStyle().extra.link_dragged_thickness);
     }

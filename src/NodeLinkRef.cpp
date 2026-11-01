@@ -113,7 +113,10 @@ void NodeLinkRef<TIsConst>::update()
     }
 
     auto mouse_pos = ImGui::GetMousePos();
-    link.hovered = detail::smart_bezier_collider(mouse_pos, start, end, 2.5);
+    link.hovered = detail::smart_bezier_collider(
+        mouse_pos,
+        detail::smart_bezier_controls_from_two_points(start, end),
+        2.5);
 
     if (link.hovered) {
         ImRect always_valid_bb {
@@ -166,8 +169,7 @@ void NodeLinkRef<TIsConst>::update()
 
     smart_bezier_gradient(
         ImGui::GetWindowDrawList(),
-        start,
-        end,
+        detail::smart_bezier_controls_from_two_points(start, end),
         start_color,
         end_color,
         thickness,
