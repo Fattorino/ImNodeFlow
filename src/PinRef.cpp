@@ -7,6 +7,7 @@
 #include "ImNodeFlow/detail/fwd.h"
 
 #include "./PinLinkRef.h"
+#include "./imgui_compat.h"
 #include "./pin_base.h"
 #include "./pin_drawing_utils.h"
 
@@ -138,12 +139,12 @@ namespace {
                 pin.style.extra.bg_radius);
         }
 
-        draw_list->AddRect(
+        compat::AddRect(
+            draw_list,
             pin.pos - pin.style.extra.padding,
             pin.pos + pin.size + pin.style.extra.padding,
             pin.style.extra.border_color,
             pin.style.extra.bg_radius,
-            0,
             pin.style.extra.border_thickness);
     }
 

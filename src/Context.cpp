@@ -10,6 +10,7 @@
 #include "./PinLinkRef.h"
 #include "./editor_context.h"
 #include "./imgui_button_flags_helper.h"
+#include "./imgui_compat.h"
 #include "./node.h"
 #include "./node_link.h"
 #include "./pin_drawing_utils.h"
@@ -367,7 +368,6 @@ void ImNodeFlow::update()
 
     // Create child canvas
     m_impl->context.begin();
-    ImGui::GetIO().IniFilename = nullptr;
 
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
@@ -534,13 +534,14 @@ void ImNodeFlow::update()
             this->grid2screen(boxClip.GetBL()),
             this->grid2screen(boxClip.GetTR()),
             m_impl->box.selectionColor);
-        draw_list->AddRect(
+        compat::AddRect(
+            draw_list,
             this->grid2screen(boxClip.GetBL()),
             this->grid2screen(boxClip.GetTR()),
             m_impl->box.borderColor,
             0.0F,
-            0,
-            1.5F);
+            1.5F,
+            0);
 
         bool shouldMarkSelected = false;
 

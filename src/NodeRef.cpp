@@ -17,6 +17,7 @@
 #include "./dynamic_pin.h"
 #include "./editor_context.h"
 #include "./imgui_bezier_items.h"
+#include "./imgui_compat.h"
 #include "./node.h"
 #include "./node_link.h"
 #include "./pin_base.h"
@@ -1029,7 +1030,11 @@ void NodeRefImpl<TIsConst>::update()
             offset + node.pos + headerSize,
             node.style.header_bg,
             node.style.radius,
+#if IMGUI_VERSION_NUM >= 19300
+            ImDrawFlags_RoundTop);
+#else
             ImDrawFlags_RoundCornersTop);
+#endif
         node.fullSize = node.size + paddingTL + paddingBR;
         ImU32 col = node.style.border_color;
         float thickness = node.style.border_thickness;
@@ -1046,13 +1051,14 @@ void NodeRefImpl<TIsConst>::update()
             pbr.y -= thickness / 2;
             thickness *= -1.f;
         }
-        draw_list->AddRect(
+        compat::AddRect(
+            draw_list,
             offset + node.pos - ptl,
             offset + node.pos + node.size + pbr,
             col,
             node.style.radius,
-            0,
-            thickness);
+            thickness,
+            ImDrawFlags_None);
     }
 
     if (header_hovered || node_hovered) {

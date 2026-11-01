@@ -13,11 +13,9 @@ CopyIOEvents(ImGuiContext* src, ImGuiContext* dst, ImVec2 origin, float scale)
     dst->PlatformImeData = src->PlatformImeData;
     dst->IO.DeltaTime = src->IO.DeltaTime;
 
-    // Intentionally copy InputEventsTrail (last frame's already-processed events)
-    // rather than InputEventsQueue (this frame's pending events). Copying the queue
-    // would cause every event to be processed twice — once by the outer context,
-    // once here — resulting in duplicated inputs. The trade-off is exactly one
-    // frame of input latency inside the inner context.
+    // The outer NewFrame() has already consumed this frame's events into the
+    // trail. Forward those same events to the inner frame. The remaining queue
+    // contains events the outer context deferred, not the current frame's input.
     dst->InputEventsQueue = src->InputEventsTrail;
     for (ImGuiInputEvent& e : dst->InputEventsQueue) {
         if (e.Type == ImGuiInputEventType_MousePos) {
@@ -300,6 +298,8 @@ ContainedContext::begin()
     if (!m_ctx)
         m_ctx = ImGui::CreateContext(ImGui::GetIO().Fonts);
     ImGui::SetCurrentContext(m_ctx);
+    // Disable persistence before the first NewFrame(), which can load an INI file.
+    ImGui::GetIO().IniFilename = nullptr;
     ImGuiStyle& new_style = ImGui::GetStyle();
     new_style = orig_style;
 
@@ -391,7 +391,7 @@ ContainedContext::end()
 
     // AppendDrawData is called with the outer context active, so ImGui::GetIO()
     // inside it correctly reads the outer context's BackendFlags.
-    for (int i = 0; i < draw_data->CmdListsCount; ++i)
+    for (int i = 0; i < draw_data->CmdLists.Size; ++i)
         AppendDrawData(draw_data->CmdLists[i], m_origin, m_scale);
 
     m_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && !m_anyWindowHovered;

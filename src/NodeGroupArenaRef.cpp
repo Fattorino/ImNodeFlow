@@ -4,6 +4,7 @@
 #include "ImNodeFlow/NodeRef.h"
 #include "ImNodeFlow/fwd.h"
 
+#include "./imgui_compat.h"
 #include "./node.h"
 #include "./node_group.h"
 
@@ -263,7 +264,8 @@ void NodeGroupArenaRef<TIsConst>::draw_outline(ConstNodeRef parentNode) const
         color_rgb.w * 0.25F,
     });
 
-    draw_list->AddRect(
+    compat::AddRect(
+        draw_list,
         ctx.grid2screen(arena_outline.Min),
         ctx.grid2screen(arena_outline.Max),
         color,
