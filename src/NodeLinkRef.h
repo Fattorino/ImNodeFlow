@@ -24,6 +24,11 @@ public:
         ConstNodeRef sourceNode,
         ConstNodeRef targetNode);
 
+    static cubic_bezier_controls_t
+    getCubicLineToMouse(
+        ImNodeFlow& ctx,
+        ConstNodeRef sourceNode);
+
     [[nodiscard]] bool isAlive() const;
 
     [[nodiscard]] NodeRefImpl<TIsConst> sourceNode() const;

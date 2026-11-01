@@ -2,7 +2,6 @@
 
 #include "ImNodeFlow/Context.h"
 #include "ImNodeFlow/NodeGroupArenaRef.h"
-#include "ImNodeFlow/NodeRef.h"
 #include "ImNodeFlow/NodeStyle.h"
 #include "ImNodeFlow/NodeUID.h"
 #include "ImNodeFlow/PinInfo.h"
@@ -11,21 +10,23 @@
 #include "ImNodeFlow/PinUID.h"
 #include "ImNodeFlow/detail/IPin.h"
 #include "ImNodeFlow/detail/fwd.h"
+#include "ImNodeFlow/fwd.h"
 
 #include "./DynamicPinRef.h"
 #include "./NodeLinkRef.h"
 #include "./dynamic_pin.h"
 #include "./editor_context.h"
+#include "./imgui_bezier_items.h"
 #include "./node.h"
 #include "./node_link.h"
 #include "./pin_base.h"
 
-#include "ImNodeFlow/fwd.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -887,6 +888,30 @@ void NodeRefImpl<TIsConst>::update()
             ImGuiButtonFlags_PressedOnClick);
 
         node_released = ImGui::IsItemDeactivated();
+    }
+
+    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoPreviewTooltip)) {
+        auto dto = this->serialize();
+        ImGui::SetDragDropPayload("NODE_REF_LOCAL_DTO", &dto, sizeof(dto));
+        ImGui::EndDragDropSource();
+
+        auto line = detail::NodeLinkRef<true>::getCubicLineToMouse(m_ctx, *this);
+
+        detail::smart_bezier(
+            ImGui::GetForegroundDrawList(),
+            line,
+            node.style.header_bg,
+            node.style.link_thickness);
+    }
+
+    if (ImGui::BeginDragDropTarget()) {
+        const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("NODE_REF_LOCAL_DTO", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+        if (payload != nullptr) {
+            NodeRefLocalDTO<> dto { };
+            IM_ASSERT(payload->DataSize == sizeof(dto));
+            std::memcpy(&dto, payload->Data, sizeof(dto));
+            NodeRef { dto }.linkTo(*this);
+        }
     }
 
     // Background

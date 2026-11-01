@@ -5,6 +5,7 @@
 #include "ImNodeFlow/detail/fwd.h"
 #include "ImNodeFlow/fwd.h"
 
+#include "./imgui_bezier_items.h"
 #include "./imgui_bezier_widgets.h"
 #include "./node.h"
 #include "./node_link.h"
@@ -32,8 +33,27 @@ NodeLinkRef<TIsConst>::getCubicLineBetween(
     ConstNodeRef sourceNode,
     ConstNodeRef targetNode)
 {
-    ImVec2 start = sourceNode.getTLPos() + sourceNode.getFullSize() * ImVec2(1.F, 0.25F);
-    ImVec2 end = targetNode.getTLPos() + targetNode.getFullSize() * ImVec2(0.F, 0.25F);
+    ImVec2 start = sourceNode.getTLPos() + sourceNode.getFullSize() * ImVec2(1.F, 0.F);
+    ImVec2 end = targetNode.getTLPos();
+
+    start.y += ImGui::GetTextLineHeight();
+    end.y += ImGui::GetTextLineHeight();
+
+    return detail::smart_bezier_controls_from_two_points(
+        ctx.grid2screen(start),
+        ctx.grid2screen(end));
+}
+
+template <bool TIsConst>
+cubic_bezier_controls_t
+NodeLinkRef<TIsConst>::getCubicLineToMouse(
+    ImNodeFlow& ctx,
+    ConstNodeRef sourceNode)
+{
+    ImVec2 start = sourceNode.getTLPos() + sourceNode.getFullSize() * ImVec2(1.F, 0.F);
+    ImVec2 end = ctx.screen2grid(ImGui::GetMousePos());
+
+    start.y += ImGui::GetTextLineHeight();
 
     return detail::smart_bezier_controls_from_two_points(
         ctx.grid2screen(start),

@@ -1,6 +1,5 @@
 #ifndef IMNODEFLOW_NODEREF_H
 #define IMNODEFLOW_NODEREF_H
-#include <vector>
 #pragma once
 
 #include "ImNodeFlow/NodeStyle.h"
@@ -10,11 +9,27 @@
 #include "ImNodeFlow/detail/fwd.h"
 #include "ImNodeFlow/fwd.h"
 
+#include <cassert>
 #include <optional>
 #include <string_view>
 #include <type_traits>
+#include <vector>
 
 namespace ImFlow {
+
+template <bool TIsConst = false>
+struct NodeRefLocalDTO {
+    using context_type = std::conditional_t<
+        TIsConst, const ImNodeFlow, ImNodeFlow>;
+    using pin_base_type = std::conditional_t<
+        TIsConst, const detail::node_t, detail::node_t>;
+
+    context_type* ctx;
+    pin_base_type* node;
+};
+
+static_assert(std::is_trivially_copyable_v<NodeRefLocalDTO<false>>);
+static_assert(std::is_trivially_copyable_v<NodeRefLocalDTO<true>>);
 
 /**
  * @brief Parent class for custom nodes
@@ -31,6 +46,22 @@ public:
      * @param internal_node Reference to the referred to internal node
      */
     explicit NodeRefImpl(context_type& ctx, node_type& internal_node);
+
+    explicit NodeRefImpl(NodeRefLocalDTO<TIsConst> dto)
+        : m_ctx(*dto.ctx)
+        , m_node(*dto.node)
+    {
+        assert(dto.ctx != nullptr);
+        assert(dto.node != nullptr);
+    }
+
+    [[nodiscard]] NodeRefLocalDTO<TIsConst> serialize() const
+    {
+        return NodeRefLocalDTO<TIsConst> {
+            .ctx = &m_ctx.get(),
+            .node = &m_node.get(),
+        };
+    }
 
     /**
      * @brief Main loop of the node
