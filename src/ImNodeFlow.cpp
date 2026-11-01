@@ -140,7 +140,12 @@ namespace ImFlow {
         draw_list->AddRectFilled(offset + m_pos - paddingTL, offset + m_pos + m_size + paddingBR, m_style->bg,
                                  m_style->radius);
         draw_list->AddRectFilled(offset + m_pos - paddingTL, offset + m_pos + headerSize, m_style->header_bg,
-                                 m_style->radius, ImDrawFlags_RoundCornersTop);
+                                 m_style->radius,
+#if IMGUI_VERSION_NUM >= 19300
+                                 ImDrawFlags_RoundTop);
+#else
+                                 ImDrawFlags_RoundCornersTop);
+#endif
         m_fullSize = m_size + paddingTL + paddingBR;
         ImU32 col = m_style->border_color;
         float thickness = m_style->border_thickness;
@@ -157,7 +162,11 @@ namespace ImFlow {
             pbr.y -= thickness / 2;
             thickness *= -1.f;
         }
+#if IMGUI_VERSION_NUM >= 19280
+        draw_list->AddRect(offset + m_pos - ptl, offset + m_pos + m_size + pbr, col, m_style->radius, thickness, 0);
+#else
         draw_list->AddRect(offset + m_pos - ptl, offset + m_pos + m_size + pbr, col, m_style->radius, 0, thickness);
+#endif
 
 
         if (ImGui::IsWindowHovered() && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl) &&
@@ -249,7 +258,6 @@ namespace ImFlow {
 
         // Create child canvas
         m_context.begin();
-        ImGui::GetIO().IniFilename = nullptr;
 
         ImDrawList *draw_list = ImGui::GetWindowDrawList();
 
