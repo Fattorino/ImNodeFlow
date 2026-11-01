@@ -2,6 +2,8 @@
 #define IMGUI_BEZIER_ITEMS_H
 #pragma once
 
+#include "imgui.h"
+
 namespace ImFlow::detail {
 
 struct cubic_bezier_controls_t {

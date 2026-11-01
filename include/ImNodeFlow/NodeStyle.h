@@ -30,6 +30,15 @@ public:
     float border_thickness = -1.35f;
     /// @brief Border thickness when selected
     float border_selected_thickness = 2.f;
+
+    /// @brief Link thickness
+    float link_thickness = 3.f;
+    /// @brief Link thickness when dragged
+    float link_dragged_thickness = 2.2f;
+    /// @brief Link thickness when hovered
+    float link_hovered_thickness = 4.f;
+    /// @brief Thickness of the outline of a selected link
+    float link_selected_outline_thickness = 1.f;
 };
 
 namespace NodeStyles {

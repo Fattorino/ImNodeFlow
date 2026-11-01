@@ -26,6 +26,21 @@ NodeLinkRef<TIsConst>::NodeLinkRef(context_type& ctx, link_type& link)
 }
 
 template <bool TIsConst>
+cubic_bezier_controls_t
+NodeLinkRef<TIsConst>::getCubicLineBetween(
+    ImNodeFlow& ctx,
+    ConstNodeRef sourceNode,
+    ConstNodeRef targetNode)
+{
+    ImVec2 start = sourceNode.getTLPos() + sourceNode.getFullSize() * ImVec2(1.F, 0.25F);
+    ImVec2 end = targetNode.getTLPos() + targetNode.getFullSize() * ImVec2(0.F, 0.25F);
+
+    return detail::smart_bezier_controls_from_two_points(
+        ctx.grid2screen(start),
+        ctx.grid2screen(end));
+}
+
+template <bool TIsConst>
 bool NodeLinkRef<TIsConst>::isAlive() const
 {
     auto& link = m_link.get();
@@ -103,20 +118,16 @@ void NodeLinkRef<TIsConst>::update()
         return;
     }
 
-    ImVec2 start = ctx.grid2screen(sourceNode().getCenterGridPos());
-    ImVec2 end = ctx.grid2screen(targetNode().getCenterGridPos());
+    auto line = this->getCubicLineBetween(ctx, sourceNode(), targetNode());
 
-    float thickness = 5.F;
+    float thickness = sourceNode().getStyle().link_thickness;
 
     if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         link.selected = false;
     }
 
     auto mouse_pos = ImGui::GetMousePos();
-    link.hovered = detail::smart_bezier_collider(
-        mouse_pos,
-        detail::smart_bezier_controls_from_two_points(start, end),
-        2.5);
+    link.hovered = detail::smart_bezier_collider(mouse_pos, line, 2.5);
 
     if (link.hovered) {
         ImRect always_valid_bb {
@@ -138,7 +149,7 @@ void NodeLinkRef<TIsConst>::update()
     }
 
     if (link.hovered) {
-        thickness = 10.F;
+        thickness = sourceNode().getStyle().link_hovered_thickness;
     }
 
     auto start_color = sourceNode().getStyle().header_bg;
@@ -169,7 +180,7 @@ void NodeLinkRef<TIsConst>::update()
 
     smart_bezier_gradient(
         ImGui::GetWindowDrawList(),
-        detail::smart_bezier_controls_from_two_points(start, end),
+        line,
         start_color,
         end_color,
         thickness,

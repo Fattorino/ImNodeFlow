@@ -8,6 +8,19 @@
 #include <memory>
 #include <optional>
 
+class NodeWithNoPins final : public ImFlow::INodeBehaviour {
+public:
+    void setup(ImFlow::NodeRef node) final
+    {
+        node.setTitle("Empty Node");
+        node.setStyle(ImFlow::NodeStyles::cyan);
+    }
+
+    void draw([[maybe_unused]] ImFlow::NodeRef node) final
+    {
+    }
+};
+
 class NumberGenerator final : public ImFlow::INodeBehaviour {
 public:
     void setup(ImFlow::NodeRef node) final
@@ -321,6 +334,8 @@ NodeEditor::NodeEditor(float width, float height)
             ImGui::CloseCurrentPopup();
         }
     });
+
+    auto empty_node = mINF.emplaceNode<NodeWithNoPins>({ 60, 240 });
 
     auto n1 = mINF.emplaceNode<SimpleSum>({ 40, 40 });
     auto n2 = mINF.emplaceNode<SimpleSum>({ 40, 150 });

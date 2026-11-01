@@ -3,6 +3,8 @@
 #include "ImNodeFlow/detail/fwd.h"
 #include "ImNodeFlow/fwd.h"
 
+#include "./imgui_bezier_items.h"
+
 #include <functional>
 #include <type_traits>
 
@@ -15,6 +17,12 @@ public:
     using link_type = std::conditional_t<TIsConst, const node_link_t, node_link_t>;
 
     NodeLinkRef(context_type& ctx, link_type& link);
+
+    static cubic_bezier_controls_t
+    getCubicLineBetween(
+        ImNodeFlow& ctx,
+        ConstNodeRef sourceNode,
+        ConstNodeRef targetNode);
 
     [[nodiscard]] bool isAlive() const;
 
