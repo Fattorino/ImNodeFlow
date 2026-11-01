@@ -925,6 +925,8 @@ void NodeRefImpl<TIsConst>::update()
             std::memcpy(&dto, payload->Data, sizeof(dto));
             NodeRef { dto }.linkTo(*this);
         }
+
+        ImGui::EndDragDropTarget();
     }
 
     // Background
