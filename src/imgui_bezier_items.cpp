@@ -63,22 +63,25 @@ void smart_bezier_gradient(
     ImVec2 p22 = controls.p3;
     ImVec2 p2 = controls.p4;
 
-    const int segments = 32;
+    int vtx_buffer_old_size = draw_list->VtxBuffer.Size;
+    draw_list->AddBezierCubic(
+        controls.p1,
+        controls.p2,
+        controls.p3,
+        controls.p4,
+        color1,
+        thickness);
+    int vtx_buffer_new_size = draw_list->VtxBuffer.Size;
+
     ImVec4 c1 = ImGui::ColorConvertU32ToFloat4(color1);
     ImVec4 c2 = ImGui::ColorConvertU32ToFloat4(color2);
-    ImVec2 prev = p1;
-    for (int i = 1; i <= segments; ++i) {
-        float t = (float)i / (float)segments;
-        float u = 1.f - t;
-        ImVec2 pt(
-            u * u * u * p1.x + 3 * u * u * t * p11.x + 3 * u * t * t * p22.x + t * t * t * p2.x,
-            u * u * u * p1.y + 3 * u * u * t * p11.y + 3 * u * t * t * p22.y + t * t * t * p2.y);
-        float tm = ((float)i - 0.5f) / (float)segments;
+
+    for (int i = vtx_buffer_old_size; i != vtx_buffer_new_size; i++) {
+        float alpha = float(i - vtx_buffer_old_size) / float(vtx_buffer_new_size - vtx_buffer_old_size - 1);
         if (blend != 1.f) // symmetric contrast curve around the midpoint
-            tm = (tm < 0.5f) ? 0.5f * powf(2.f * tm, blend) : 1.f - 0.5f * powf(2.f * (1.f - tm), blend);
-        ImU32 col = ImGui::ColorConvertFloat4ToU32(ImLerp(c1, c2, tm));
-        draw_list->AddLine(prev, pt, col, thickness);
-        prev = pt;
+            alpha = (alpha < 0.5f) ? 0.5f * powf(2.f * alpha, blend) : 1.f - 0.5f * powf(2.f * (1.f - alpha), blend);
+        ImU32 col = ImGui::ColorConvertFloat4ToU32(ImLerp(c1, c2, alpha));
+        draw_list->VtxBuffer.Data[i].col = col;
     }
 }
 
