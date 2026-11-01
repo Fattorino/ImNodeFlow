@@ -32,43 +32,43 @@ cubic_bezier_controls_t smart_bezier_controls_from_two_points(
 
 void smart_bezier(
     ImDrawList* draw_list,
-    cubic_bezier_controls_t const& controls,
+    cubic_bezier_controls_t const& line,
     ImU32 color,
     float thickness)
 {
     draw_list->AddBezierCubic(
-        controls.p1,
-        controls.p2,
-        controls.p3,
-        controls.p4,
+        line.p1,
+        line.p2,
+        line.p3,
+        line.p4,
         color,
         thickness);
 }
 
 void smart_bezier_gradient(
     ImDrawList* draw_list,
-    cubic_bezier_controls_t const& controls,
+    cubic_bezier_controls_t const& line,
     ImU32 color1,
     ImU32 color2,
     float thickness,
     float blend)
 {
     if (color1 == color2) {
-        smart_bezier(draw_list, controls, color1, thickness);
+        smart_bezier(draw_list, line, color1, thickness);
         return;
     }
 
-    ImVec2 p1 = controls.p1;
-    ImVec2 p11 = controls.p2;
-    ImVec2 p22 = controls.p3;
-    ImVec2 p2 = controls.p4;
+    ImVec2 p1 = line.p1;
+    ImVec2 p11 = line.p2;
+    ImVec2 p22 = line.p3;
+    ImVec2 p2 = line.p4;
 
     int vtx_buffer_old_size = draw_list->VtxBuffer.Size;
     draw_list->AddBezierCubic(
-        controls.p1,
-        controls.p2,
-        controls.p3,
-        controls.p4,
+        line.p1,
+        line.p2,
+        line.p3,
+        line.p4,
         color1,
         thickness);
     int vtx_buffer_new_size = draw_list->VtxBuffer.Size;

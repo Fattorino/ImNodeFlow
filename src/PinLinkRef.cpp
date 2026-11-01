@@ -2,14 +2,15 @@
 
 #include "ImNodeFlow/PinConnStrat.h"
 #include "ImNodeFlow/PinRef.h"
+#include "ImNodeFlow/PinType.h"
 
 #include "./imgui_bezier_items.h"
+#include "./imgui_bezier_widgets.h"
 #include "./pin_base.h"
+#include "./pin_link.h"
 
-#include "ImNodeFlow/PinType.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "pin_link.h"
 
 #include <algorithm>
 #include <cassert>
@@ -117,74 +118,30 @@ void PinLinkRef<TIsConst>::update()
 
     ImVec2 start = outPin().pinPoint();
     ImVec2 end = inPin().pinPoint();
-    float thickness = outPin().getStyle().extra.link_thickness;
+    auto line = detail::smart_bezier_controls_from_two_points(start, end);
 
     if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         link.selected = false;
     }
 
-    auto mouse_pos = ImGui::GetMousePos();
-    link.hovered = detail::smart_bezier_collider(
-        mouse_pos,
-        detail::smart_bezier_controls_from_two_points(start, end),
-        2.5);
-
-    if (link.hovered) {
-        ImRect always_valid_bb {
-            mouse_pos - ImVec2(1.F, 1.F),
-            mouse_pos + ImVec2(1.F, 1.F),
-        };
-
-        bool pressed = false;
-        if (ImGui::ItemAdd(always_valid_bb, ImGui::GetID(this))) {
-            pressed = ImGui::ButtonBehavior(
-                always_valid_bb,
-                ImGui::GetID(this),
-                &link.hovered,
-                nullptr,
-                ImGuiButtonFlags_PressedOnClick);
-        }
-
-        link.selected = link.selected || pressed;
-    }
-
-    if (link.hovered) {
-        thickness = outPin().getStyle().extra.link_hovered_thickness;
-    }
-
     auto start_color = outPin().getStyle().color;
     auto end_color = inPin().getStyle().color;
 
-    if (link.selected) {
-        double t = ImGui::GetTime();
+    float thickness = link.hovered
+        ? outPin().getStyle().extra.link_hovered_thickness
+        : outPin().getStyle().extra.link_thickness;
 
-        float v0 = std::sin(t * 2.F) * 0.1F + 0.85F;
-        float v1 = std::sin(t * 2.F + 2.F) * 0.1F + 0.85F;
-
-        ImVec4 start_rgb {
-            v0,
-            v0,
-            v0,
-            1.F,
-        };
-        ImVec4 end_rgb {
-            v1,
-            v1,
-            v1,
-            1.F,
-        };
-
-        start_color = ImGui::ColorConvertFloat4ToU32(start_rgb);
-        end_color = ImGui::ColorConvertFloat4ToU32(end_rgb);
-    }
-
-    smart_bezier_gradient(
-        ImGui::GetWindowDrawList(),
-        detail::smart_bezier_controls_from_two_points(start, end),
+    bool pressed = detail::smart_bezier_widget(
+        ImGui::GetID(&link),
+        line,
         start_color,
         end_color,
+        link.selected,
+        &link.hovered,
         thickness,
         m_ctx.get().getStyle().link_gradient_blend);
+
+    link.selected = link.selected || pressed;
 
     if (link.selected && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
         this->destroy();
