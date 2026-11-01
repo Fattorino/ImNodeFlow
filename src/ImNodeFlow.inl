@@ -235,18 +235,19 @@ namespace ImFlow
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImVec2 tl = pinPoint() - ImVec2(m_style->socket_radius, m_style->socket_radius);
         ImVec2 br = pinPoint() + ImVec2(m_style->socket_radius, m_style->socket_radius);
+        const bool hovered = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(tl, br);
 
         if (isConnected())
             draw_list->AddCircleFilled(pinPoint(), m_style->socket_connected_radius, m_style->color, m_style->socket_shape);
         else
         {
-            if (ImGui::IsItemHovered() || ImGui::IsMouseHoveringRect(tl, br))
+            if (ImGui::IsItemHovered() || hovered)
                 draw_list->AddCircle(pinPoint(), m_style->socket_hovered_radius, m_style->color, m_style->socket_shape, m_style->socket_thickness);
             else
                 draw_list->AddCircle(pinPoint(), m_style->socket_radius, m_style->color, m_style->socket_shape, m_style->socket_thickness);
         }
 
-        if (ImGui::IsMouseHoveringRect(tl, br))
+        if (hovered)
             (*m_inf)->hovering(this);
     }
 

@@ -10,10 +10,10 @@ namespace ImFlow {
         float thickness = m_left->getStyle()->extra.link_thickness;
         bool mouseClickState = m_inf->getSingleUseClick();
 
-        if (!ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        if (ImGui::IsWindowHovered() && !ImGui::IsKeyDown(ImGuiKey_LeftCtrl) && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
             m_selected = false;
 
-        if (smart_bezier_collider(ImGui::GetMousePos(), start, end, 2.5)) {
+        if (ImGui::IsWindowHovered() && smart_bezier_collider(ImGui::GetMousePos(), start, end, 2.5)) {
             m_hovered = true;
             thickness = m_left->getStyle()->extra.link_hovered_thickness;
             if (mouseClickState) {
@@ -27,7 +27,7 @@ namespace ImFlow {
                          thickness + m_left->getStyle()->extra.link_selected_outline_thickness);
         smart_bezier(start, end, m_left->getStyle()->color, thickness);
 
-        if (m_selected && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+        if (ImGui::IsWindowFocused() && !ImGui::IsAnyItemActive() && m_selected && ImGui::IsKeyPressed(ImGuiKey_Delete, false))
             m_right->deleteLink();
     }
 
@@ -42,8 +42,9 @@ namespace ImFlow {
     bool BaseNode::isHovered() {
         ImVec2 paddingTL = {m_style->padding.x, m_style->padding.y};
         ImVec2 paddingBR = {m_style->padding.z, m_style->padding.w};
-        return ImGui::IsMouseHoveringRect(m_inf->grid2screen(m_pos - paddingTL),
-                                          m_inf->grid2screen(m_pos + m_size + paddingBR));
+        return ImGui::IsWindowHovered()
+            && ImGui::IsMouseHoveringRect(m_inf->grid2screen(m_pos - paddingTL),
+                                         m_inf->grid2screen(m_pos + m_size + paddingBR));
     }
 
     void BaseNode::update() {
@@ -184,7 +185,7 @@ namespace ImFlow {
         if (ImGui::IsWindowFocused() && ImGui::IsKeyPressed(ImGuiKey_Delete) && !ImGui::IsAnyItemActive() && isSelected())
             destroy();
 
-        bool onHeader = ImGui::IsMouseHoveringRect(offset + m_pos - paddingTL, offset + m_pos + headerSize);
+        bool onHeader = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(offset + m_pos - paddingTL, offset + m_pos + headerSize);
         if (onHeader && mouseClickState) {
             m_inf->consumeSingleUseClick();
             m_dragged = true;
@@ -254,10 +255,11 @@ namespace ImFlow {
         m_hovering = nullptr;
         m_hoveredNode = nullptr;
         m_draggingNode = m_draggingNodeNext;
-        m_singleUseClick = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
 
         // Create child canvas
         m_context.begin();
+        // Query the canvas context so popups and active widgets can own the click.
+        m_singleUseClick = ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
 
         ImDrawList *draw_list = ImGui::GetWindowDrawList();
 
