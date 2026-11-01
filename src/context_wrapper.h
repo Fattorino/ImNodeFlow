@@ -202,7 +202,6 @@ private:
     ImFlow::ContainedContextConfig m_config;
 
     ImVec2 m_origin;
-    ImVec2 m_pos;
     ImVec2 m_size;
     ImGuiContext* m_ctx = nullptr;
     ImGuiContext* m_original_ctx = nullptr;
@@ -216,6 +215,7 @@ private:
     float m_scale = m_config.default_zoom,
           m_scaleTarget = m_config.default_zoom;
     ImVec2 m_scroll = { 0.f, 0.f };
+    ImVec2 m_scroll_next = { 0.f, 0.f };
 };
 
 inline ContainedContext::~ContainedContext()
@@ -289,7 +289,6 @@ ContainedContext::begin()
     // rasterizes fonts at the correct scale before we switch context below.
     setFontDensity();
     ImGui::PopStyleColor();
-    m_pos = ImGui::GetWindowPos();
 
     m_size = ImGui::GetContentRegionAvail();
     m_origin = ImGui::GetCursorScreenPos();
@@ -353,7 +352,7 @@ ContainedContext::begin()
 inline void
 ContainedContext::updateScroll()
 {
-    m_scroll += ImGui::GetIO().MouseDelta;
+    m_scroll_next += ImGui::GetIO().MouseDelta;
 }
 
 inline void
@@ -369,6 +368,12 @@ ContainedContext::end()
 
     if (m_config.extra_window_wrapper)
         ImGui::End();
+
+    // These popups belong to canvas widgets, not independently movable windows.
+    // Set this before Render() ends the frame and starts empty-space window drags.
+    for (ImGuiWindow* window : m_ctx->Windows)
+        if ((window->Flags & (ImGuiWindowFlags_Popup | ImGuiWindowFlags_Modal)) == ImGuiWindowFlags_Popup)
+            window->Flags |= ImGuiWindowFlags_NoMove;
 
     ImGui::Render();
 
@@ -395,6 +400,10 @@ ContainedContext::end()
         AppendDrawData(draw_data->CmdLists[i], m_origin, m_scale);
 
     m_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && !m_anyWindowHovered;
+    const ImVec2 previous_scroll = m_scroll;
+
+    m_scroll += m_scroll_next;
+    m_scroll_next = ImVec2(0.f, 0.f);
 
     // Zooming
     if (m_config.zoom_enabled && m_hovered && ImGui::GetIO().MouseWheel != 0.f) {
@@ -403,7 +412,7 @@ ContainedContext::end()
         m_scaleTarget = m_scaleTarget > m_config.zoom_max ? m_config.zoom_max : m_scaleTarget;
 
         if (m_config.zoom_smoothness == 0.f) {
-            m_scroll += (ImGui::GetMousePos() - m_pos) / m_scaleTarget - (ImGui::GetMousePos() - m_pos) / m_scale;
+            m_scroll += (ImGui::GetMousePos() - m_origin) / m_scaleTarget - (ImGui::GetMousePos() - m_origin) / m_scale;
             m_scale = m_scaleTarget;
         }
     }
@@ -411,11 +420,11 @@ ContainedContext::end()
     // the threshold comparison always false — correct by accident but fragile.
     if (m_config.zoom_smoothness > 0.f && abs(m_scaleTarget - m_scale) >= 0.015f / m_config.zoom_smoothness) {
         float cs = (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
-        m_scroll += (ImGui::GetMousePos() - m_pos) / (m_scale + cs) - (ImGui::GetMousePos() - m_pos) / m_scale;
+        m_scroll += (ImGui::GetMousePos() - m_origin) / (m_scale + cs) - (ImGui::GetMousePos() - m_origin) / m_scale;
         m_scale += (m_scaleTarget - m_scale) / m_config.zoom_smoothness;
 
         if (abs(m_scaleTarget - m_scale) < 0.015f / m_config.zoom_smoothness) {
-            m_scroll += (ImGui::GetMousePos() - m_pos) / m_scaleTarget - (ImGui::GetMousePos() - m_pos) / m_scale;
+            m_scroll += (ImGui::GetMousePos() - m_origin) / m_scaleTarget - (ImGui::GetMousePos() - m_origin) / m_scale;
             m_scale = m_scaleTarget;
         }
     }
@@ -423,6 +432,28 @@ ContainedContext::end()
     // Zoom reset
     if (ImGui::IsKeyPressed(m_config.reset_zoom_key, false))
         m_scaleTarget = m_config.default_zoom;
+
+    // Nodes apply scroll when drawn; popup windows retain their own positions.
+    // Move their windows and opening anchors by the same amount for the next frame.
+    // Difference rounded offsets, rather than rounding every movement, so smooth
+    // zoom cannot accumulate pixel rounding error between popup and widget.
+    const ImVec2 delta = ImFloor(m_scroll) - ImFloor(previous_scroll);
+    if (delta.x != 0.f || delta.y != 0.f) {
+        ImGuiContext* outer = ImGui::GetCurrentContext();
+        ImGui::SetCurrentContext(m_ctx);
+        for (ImGuiWindow* window : m_ctx->Windows)
+            if ((window->RootWindow->Flags & (ImGuiWindowFlags_Popup | ImGuiWindowFlags_Modal)) == ImGuiWindowFlags_Popup) {
+                ImGui::SetWindowPos(window, window->Pos + delta);
+                // NewFrame hit testing precedes Begin's recalculation of this rectangle.
+                window->OuterRectClipped.Translate(delta);
+            }
+        for (ImGuiPopupData& popup : m_ctx->OpenPopupStack)
+            if (!popup.Window || !(popup.Window->Flags & ImGuiWindowFlags_Modal)) {
+                popup.OpenPopupPos += delta;
+                popup.OpenMousePos += delta;
+            }
+        ImGui::SetCurrentContext(outer);
+    }
 
     // Update inner context MousePos for the NEXT frame's input. ImGui reads
     // MousePos at NewFrame(), so writing it here (end of this frame) is correct.
