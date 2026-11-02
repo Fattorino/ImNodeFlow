@@ -153,6 +153,13 @@ ImVec2 NodeRefImpl<TIsConst>::getCenterGridPos() const
 }
 
 template <bool TIsConst>
+NodeStyle& NodeRefImpl<TIsConst>::getStyle() const
+    requires(!TIsConst)
+{
+    return m_node.get().style;
+}
+
+template <bool TIsConst>
 const NodeStyle& NodeRefImpl<TIsConst>::getStyle() const
 {
     return m_node.get().style;

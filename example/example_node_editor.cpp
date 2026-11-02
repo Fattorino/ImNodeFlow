@@ -26,7 +26,7 @@ public:
     {
         node
             .setTitle("FSMStart")
-            .setStyle(ImFlow::NodeStyles::red)
+            .setStyle(ImFlow::NodeStyles::cyan)
             .setAllowInboundLinks(false)
             .setAllowOutboundLinks(true);
     }
@@ -96,9 +96,9 @@ public:
         ImGui::Text("Name: %s", m_name.c_str());
 
         if (isActive()) {
-            node.setStyle(ImFlow::NodeStyles::green);
+            node.getStyle().header_bg = ImFlow::NodeStyles::green.header_bg;
         } else {
-            node.setStyle(ImFlow::NodeStyles::cyan);
+            node.getStyle().header_bg = ImFlow::NodeStyles::cyan.header_bg;
         }
 
         m_active = m_activeNext;
@@ -152,8 +152,7 @@ public:
         }
 
         uintptr_t user_data = behavior->getUserData();
-        return user_data == uintptr_t(UserNodeType::FSM_STATE)
-            || user_data == uintptr_t(UserNodeType::FSM_START);
+        return user_data == uintptr_t(UserNodeType::FSM_STATE);
     }
 
     bool receiveTrigger(ImFlow::NodeRef node)

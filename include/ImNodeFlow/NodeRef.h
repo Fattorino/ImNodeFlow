@@ -293,6 +293,9 @@ public:
 
     ImVec2 getCenterGridPos() const;
 
+    NodeStyle& getStyle() const
+        requires(!TIsConst);
+
     /**
      * @brief Get node's style
      * @return Shared pointer to the node's style

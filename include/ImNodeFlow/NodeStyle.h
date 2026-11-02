@@ -17,6 +17,8 @@ public:
     ImU32 bg_hovered = IM_COL32(80, 94, 110, 255);
     /// @brief Header's background color
     ImU32 header_bg = IM_COL32(71, 142, 173, 255);
+    /// @brief Header's background color
+    ImU32 group_bg = header_bg;
     /// @brief Header title color
     ImColor header_title_color = ImColor(233, 241, 244, 255);
     /// @brief Border color

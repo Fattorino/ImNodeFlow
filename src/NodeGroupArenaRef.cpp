@@ -252,7 +252,7 @@ void NodeGroupArenaRef<TIsConst>::draw_outline(ConstNodeRef parentNode) const
 
     ImRect arena_outline = this->get_bounding_box(parentNode);
 
-    auto color = parentNode.getStyle().header_bg;
+    auto color = parentNode.getStyle().group_bg;
     auto radius = parentNode.getStyle().radius;
 
     auto color_rgb = ImGui::ColorConvertU32ToFloat4(color);
