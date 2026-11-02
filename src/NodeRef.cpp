@@ -166,6 +166,19 @@ bool NodeRefImpl<TIsConst>::isActivated() const
 }
 
 template <bool TIsConst>
+std::vector<NodeRefImpl<TIsConst>>
+NodeRefImpl<TIsConst>::getChildNodes() const
+{
+    std::vector<NodeRefImpl<TIsConst>> result;
+    auto child_arena = this->getChildArena();
+    if (child_arena.has_value()) {
+        result.reserve(child_arena->getNodesCount());
+        child_arena->getNodes(result);
+    }
+    return result;
+}
+
+template <bool TIsConst>
 std::optional<NodeGroupArenaRef<TIsConst>>
 NodeRefImpl<TIsConst>::getChildArena() const
 {

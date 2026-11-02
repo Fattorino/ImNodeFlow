@@ -301,6 +301,8 @@ public:
 
     [[nodiscard]] bool isActivated() const;
 
+    [[nodiscard]] std::vector<NodeRefImpl<TIsConst>> getChildNodes() const;
+
     [[nodiscard]] std::optional<NodeGroupArenaRef<TIsConst>> getChildArena() const;
 
     [[nodiscard]] bool anyChildActivated() const;

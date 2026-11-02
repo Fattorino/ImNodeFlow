@@ -118,6 +118,11 @@ private:
 
 class FSMEvent final : public ImFlow::INodeBehaviour {
 public:
+    FSMEvent(std::string name)
+        : m_event_name(std::move(name))
+    {
+    }
+
     void setup(ImFlow::NodeRef node) final
     {
         node
@@ -129,7 +134,7 @@ public:
 
     void draw([[maybe_unused]] ImFlow::NodeRef node) final
     {
-        if (ImGui::Button("Trigger")) {
+        if (ImGui::Button(m_event_name.c_str())) {
             this->attemptTrigger(node);
         }
     }
@@ -151,30 +156,46 @@ public:
             || user_data == uintptr_t(UserNodeType::FSM_START);
     }
 
-    void attemptTrigger(ImFlow::NodeRef node)
+    bool receiveTrigger(ImFlow::NodeRef node)
     {
-        bool event_will_trigger = false;
+        bool trigger = false;
 
-        for (auto inbound : node.getInboundConnections()) {
-            auto* behavior = inbound.getBehavior();
-            if (behavior == nullptr) {
-                continue;
-            }
-            if (behavior->getUserData() == uintptr_t(UserNodeType::FSM_START)) {
-                event_will_trigger = true;
-                continue;
-            }
-            if (behavior->getUserData() != uintptr_t(UserNodeType::FSM_STATE)) {
-                continue;
-            }
-            auto* fsm_state = static_cast<FSMState*>(behavior);
-            if (fsm_state->isActive()) {
-                event_will_trigger = true;
-                fsm_state->deactivate();
+        for (auto child : node.getChildNodes()) {
+            if (this->receiveTrigger(child)) {
+                trigger = true;
             }
         }
 
-        if (!event_will_trigger) {
+        auto* behavior = node.getBehavior();
+        if (behavior == nullptr) {
+            return trigger;
+        }
+        if (behavior->getUserData() == uintptr_t(UserNodeType::FSM_START)) {
+            return true;
+        }
+        if (behavior->getUserData() != uintptr_t(UserNodeType::FSM_STATE)) {
+            return trigger;
+        }
+        auto* fsm_state = static_cast<FSMState*>(behavior);
+        if (fsm_state->isActive()) {
+            trigger = true;
+            fsm_state->deactivate();
+        }
+
+        return trigger;
+    }
+
+    void attemptTrigger(ImFlow::NodeRef node)
+    {
+        bool receivedSignal = false;
+
+        for (auto inbound : node.getInboundConnections()) {
+            if (this->receiveTrigger(inbound)) {
+                receivedSignal = true;
+            }
+        }
+
+        if (!receivedSignal) {
             return;
         }
 
@@ -190,6 +211,9 @@ public:
             fsm_state->activate();
         }
     }
+
+private:
+    std::string m_event_name;
 };
 
 bool FSMSink::acceptInboundNodeConnection(ImFlow::NodeRef self, ImFlow::NodeRef inbound)
@@ -210,7 +234,7 @@ bool FSMSink::acceptInboundNodeConnection(ImFlow::NodeRef self, ImFlow::NodeRef 
     }
 
     auto pos = (self.getTLPos() + inbound.getTLPos()) / 2.F;
-    auto event_node = self.getContext().emplaceNode<FSMEvent>(pos);
+    auto event_node = self.getContext().emplaceNode<FSMEvent>(pos, "Trigger");
     inbound.linkTo(event_node);
     event_node.linkTo(self);
 
@@ -235,7 +259,7 @@ bool FSMState::acceptInboundNodeConnection(ImFlow::NodeRef self, ImFlow::NodeRef
 
     auto pos = (self.getTLPos() + inbound.getTLPos()) / 2.F;
 
-    auto event_node = self.getContext().emplaceNode<FSMEvent>(pos);
+    auto event_node = self.getContext().emplaceNode<FSMEvent>(pos, "Trigger");
     inbound.linkTo(event_node);
     event_node.linkTo(self);
 
@@ -562,7 +586,7 @@ NodeEditor::NodeEditor(float width, float height)
                     mINF.emplaceNodeAt<FSMState>(mouse_screen_pos, "new state");
                     ImGui::CloseCurrentPopup();
                 } else if (ImGui::Button("FSM Event")) {
-                    mINF.emplaceNodeAt<FSMEvent>(mouse_screen_pos);
+                    mINF.emplaceNodeAt<FSMEvent>(mouse_screen_pos, "Trigger");
                     ImGui::CloseCurrentPopup();
                 } else if (ImGui::Button("FSM Sink")) {
                     mINF.emplaceNodeAt<FSMSink>(mouse_screen_pos);
@@ -605,8 +629,6 @@ NodeEditor::NodeEditor(float width, float height)
     n2.setParentNode(result);
     multi_adder.setParentNode(result);
 
-    n1.linkTo(n2);
-
     // Add links between nodes
     n1.outPin("Out")->linkTo(*result.inPin("A"));
     n2.outPin("Out")->linkTo(*result.inPin("B"));
@@ -620,11 +642,47 @@ NodeEditor::NodeEditor(float width, float height)
     n1.outPin("Out")->linkTo(*collapsingNode.inPin("A"));
     n2.outPin("Out")->linkTo(*collapsingNode.inPin("B"));
 
-    auto fsm_state0 = mINF.emplaceNode<FSMState>({ 700, 100 }, "S0");
-    auto fsm_state1 = mINF.emplaceNode<FSMState>({ 820, 100 }, "S1");
-    auto fsm_state2 = mINF.emplaceNode<FSMState>({ 700, 180 }, "S2");
-    auto fsm_state3 = mINF.emplaceNode<FSMState>({ 820, 180 }, "S3");
-    auto fsm_state4 = mINF.emplaceNode<FSMState>({ 700, 250 }, "S4");
+    //
+    // Finite state machine example
+    //
+    auto fsm_start = mINF.emplaceNode<FSMStart>({ 600, 100 });
+    auto fsm_s0 = mINF.emplaceNode<FSMState>({ 800, 100 }, "Idle");
+    auto fsm_s1 = mINF.emplaceNode<FSMState>({ 800, 300 }, "Walk to waypoint");
+    auto fsm_s2 = mINF.emplaceNode<FSMState>({ 1250, 100 }, "Keep distance");
+    auto fsm_s3 = mINF.emplaceNode<FSMState>({ 1500, 300 }, "Close distance");
+    auto fsm_s4 = mINF.emplaceNode<FSMState>({ 1500, 400 }, "Fire arrow");
+
+    auto fsm_e0 = mINF.emplaceNode<FSMEvent>({ 930, 200 }, "Set waypoint");
+    auto fsm_e1 = mINF.emplaceNode<FSMEvent>({ 720, 200 }, "Waypoint reached");
+    auto fsm_e2 = mINF.emplaceNode<FSMEvent>({ 1080, 100 }, "Enemy sighted");
+    auto fsm_e3 = mINF.emplaceNode<FSMEvent>({ 1080, 200 }, "Enemy lost");
+    auto fsm_e4 = mINF.emplaceNode<FSMEvent>({ 1250, 200 }, "Enemy too close");
+    auto fsm_e5 = mINF.emplaceNode<FSMEvent>({ 1250, 300 }, "Enemy too far away");
+    auto fsm_e6 = mINF.emplaceNode<FSMEvent>({ 1250, 400 }, "Enemy in range");
+
+    fsm_s0.setParentNode(fsm_start);
+    fsm_e2.setParentNode(fsm_start);
+    fsm_e3.setParentNode(fsm_start);
+    fsm_s2.setParentNode(fsm_start);
+
+    fsm_s1.setParentNode(fsm_s0);
+    fsm_e0.setParentNode(fsm_s0);
+    fsm_e1.setParentNode(fsm_s0);
+
+    fsm_s3.setParentNode(fsm_s2);
+    fsm_s4.setParentNode(fsm_s2);
+    fsm_e4.setParentNode(fsm_s2);
+    fsm_e5.setParentNode(fsm_s2);
+    fsm_e6.setParentNode(fsm_s2);
+
+    fsm_start.linkTo(fsm_s0);
+    fsm_s0.linkTo(fsm_e0), fsm_e0.linkTo(fsm_s1);
+    fsm_s1.linkTo(fsm_e1), fsm_e1.linkTo(fsm_s0);
+    fsm_s0.linkTo(fsm_e2), fsm_e2.linkTo(fsm_s2);
+    fsm_s2.linkTo(fsm_e3), fsm_e3.linkTo(fsm_s0);
+    fsm_s2.linkTo(fsm_e4), fsm_e4.linkTo(fsm_s2);
+    fsm_s2.linkTo(fsm_e5), fsm_e5.linkTo(fsm_s3);
+    fsm_s2.linkTo(fsm_e6), fsm_e6.linkTo(fsm_s4);
 
     // An example of how to make a digital circuit for a clock using only
     // not gates.
