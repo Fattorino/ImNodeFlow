@@ -494,6 +494,10 @@ void NodeRefImpl<TIsConst>::prepareNextFrame()
     node.provisionallySelected = node.provisionallySelectedNext;
     node.provisionallySelectedNext = false;
 
+    if (node.behaviour) {
+        node.behaviour->prepareNextFrame(*this);
+    }
+
     auto child_arena = this->getChildArena();
     if (child_arena.has_value()) {
         child_arena->prepareNextFrame();

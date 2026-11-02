@@ -100,7 +100,10 @@ public:
         } else {
             node.getStyle().header_bg = ImFlow::NodeStyles::cyan.header_bg;
         }
+    }
 
+    void prepareNextFrame([[maybe_unused]] ImFlow::NodeRef node) final
+    {
         m_active = m_activeNext;
     }
 

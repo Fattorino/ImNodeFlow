@@ -13,6 +13,8 @@ void INodeBehaviour::setup(NodeRef node) { }
 
 void INodeBehaviour::draw(NodeRef node) { }
 
+void INodeBehaviour::prepareNextFrame(NodeRef node) { }
+
 uintptr_t INodeBehaviour::getUserData() { return 0; }
 
 bool INodeBehaviour::acceptInboundNodeConnection(NodeRef self, NodeRef inbound)

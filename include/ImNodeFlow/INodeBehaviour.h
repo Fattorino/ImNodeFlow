@@ -32,6 +32,13 @@ public:
     virtual void draw(NodeRef node);
 
     /**
+     * @brief Called each frame, after all nodes are drawn. This update can
+     * be used for internal node updates, as is shown in the FSM example to
+     * make the simulation deterministic.
+     */
+    virtual void prepareNextFrame(NodeRef node);
+
+    /**
      * @brief Fetches the underlying node's user data. (can be anything)
      */
     virtual uintptr_t getUserData();

@@ -414,7 +414,6 @@ void ImNodeFlow::update()
 
     // Update and draw nodes
     root_arena.update();
-
     root_arena.prepareNextFrame();
 
     // Update and draw links
