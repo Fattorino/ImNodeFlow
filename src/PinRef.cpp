@@ -15,7 +15,10 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
 #include <cstring>
+#include <format>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -151,7 +154,9 @@ namespace {
     {
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoPreviewTooltip)) {
             auto dto = pin.serialize();
-            ImGui::SetDragDropPayload("PIN_REF_LOCAL_DTO", &dto, sizeof(dto));
+            auto type_id = pin.getTypeID();
+            std::string payload_id = "PIN_REF_LOCAL_DTO_" + std::to_string(type_id);
+            ImGui::SetDragDropPayload(payload_id.c_str(), &dto, sizeof(dto));
             ImGui::EndDragDropSource();
 
             if (out_source_active != nullptr) {
@@ -160,7 +165,10 @@ namespace {
         }
 
         if (ImGui::BeginDragDropTarget()) {
-            const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PIN_REF_LOCAL_DTO", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+            auto type_id = pin.getTypeID();
+            std::string payload_id = "PIN_REF_LOCAL_DTO_" + std::to_string(type_id);
+            const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_id.c_str(),
+                ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
             if (payload != nullptr) {
                 PinRefLocalDTO<> dto { };
                 IM_ASSERT(payload->DataSize == sizeof(dto));

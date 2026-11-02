@@ -38,6 +38,8 @@ struct node_t {
     bool destroyed = false;
     bool dragging = false;
     bool indestructable = false;
+    bool allowInboundLinksToOtherNodes = true;
+    bool allowOutboundLinksToOtherNodes = true;
 
     std::unique_ptr<node_group_arena_t> child_arena;
     std::unique_ptr<INodeBehaviour> behaviour;

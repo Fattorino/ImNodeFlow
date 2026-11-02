@@ -354,6 +354,12 @@ public:
     NodeRefImpl& setStyle(NodeStyle style)
         requires(!TIsConst);
 
+    NodeRefImpl& setAllowInboundLinks(bool value)
+        requires(!TIsConst);
+
+    NodeRefImpl& setAllowOutboundLinks(bool value)
+        requires(!TIsConst);
+
     /**
      * @brief Set node's style
      * @param style New style
@@ -378,6 +384,16 @@ public:
      */
     NodeRefImpl& setProvisionallySelected(bool state)
         requires(!TIsConst);
+
+    ImNodeFlow& getContext() const
+        requires(!TIsConst);
+
+    ImNodeFlow const& getContext() const;
+
+    INodeBehaviour* getBehavior() const
+        requires(!TIsConst);
+
+    INodeBehaviour const* getBehavior() const;
 
     std::optional<NodeRefImpl<TIsConst>> getParentNode() const;
 

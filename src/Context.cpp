@@ -41,6 +41,8 @@ NodeRef ImNodeFlow::addNode(const ImVec2& grid_coords, NodeInfo node_info)
             .pos = node_pos,
             .posTarget = node_pos,
             .style = std::move(node_info.style),
+            .allowInboundLinksToOtherNodes = node_info.allow_inbound_links_to_other_nodes,
+            .allowOutboundLinksToOtherNodes = node_info.allow_outbound_links_to_other_nodes,
             .behaviour = std::move(node_info.behaviour),
         });
 

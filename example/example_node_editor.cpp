@@ -5,21 +5,257 @@
 #include "ImNodeFlow/detail/type_id.h"
 #include "imgui.h"
 
+#include <cstdint>
+#include <format>
 #include <memory>
 #include <optional>
+#include <string>
+#include <utility>
 
-class NodeWithNoPins final : public ImFlow::INodeBehaviour {
+enum class UserNodeType : uint64_t {
+    INVALID, // null
+    FSM_STATE,
+    FSM_EVENT,
+    FSM_START,
+    FSM_SINK,
+};
+
+class FSMStart : public ImFlow::INodeBehaviour {
 public:
     void setup(ImFlow::NodeRef node) final
     {
-        node.setTitle("Empty Node");
-        node.setStyle(ImFlow::NodeStyles::cyan);
+        node
+            .setTitle("FSMStart")
+            .setStyle(ImFlow::NodeStyles::red)
+            .setAllowInboundLinks(false)
+            .setAllowOutboundLinks(true);
+    }
+
+    uintptr_t getUserData() final
+    {
+        return uintptr_t(UserNodeType::FSM_START);
     }
 
     void draw([[maybe_unused]] ImFlow::NodeRef node) final
     {
+        if (ImGui::Button("Trigger")) {
+            this->trigger(node);
+        }
+    }
+
+    void trigger(ImFlow::NodeRef node);
+};
+
+class FSMSink : public ImFlow::INodeBehaviour {
+public:
+    void setup(ImFlow::NodeRef node) final
+    {
+        node
+            .setTitle("FSMSink")
+            .setStyle(ImFlow::NodeStyles::red)
+            .setAllowInboundLinks(true)
+            .setAllowOutboundLinks(false);
+    }
+
+    uintptr_t getUserData() final
+    {
+        return uintptr_t(UserNodeType::FSM_SINK);
+    }
+
+    void draw([[maybe_unused]] ImFlow::NodeRef node) final
+    {
+        ImGui::Text("Sink");
+    }
+
+    bool acceptInboundNodeConnection(ImFlow::NodeRef self, ImFlow::NodeRef inbound) final;
+};
+
+class FSMState final : public ImFlow::INodeBehaviour {
+public:
+    explicit FSMState(std::string name)
+        : m_name(std::move(name))
+    {
+    }
+
+    void setup(ImFlow::NodeRef node) final
+    {
+        node
+            .setTitle("FSMState")
+            .setStyle(ImFlow::NodeStyles::cyan)
+            .setAllowInboundLinks(true)
+            .setAllowOutboundLinks(true);
+    }
+
+    uintptr_t getUserData() final
+    {
+        return uintptr_t(UserNodeType::FSM_STATE);
+    }
+
+    void draw([[maybe_unused]] ImFlow::NodeRef node) final
+    {
+        ImGui::Text("Name: %s", m_name.c_str());
+
+        if (isActive()) {
+            node.setStyle(ImFlow::NodeStyles::green);
+        } else {
+            node.setStyle(ImFlow::NodeStyles::cyan);
+        }
+
+        m_active = m_activeNext;
+    }
+
+    bool acceptInboundNodeConnection(ImFlow::NodeRef self, ImFlow::NodeRef inbound) final;
+
+    void activate() { m_activeNext = true; }
+    void deactivate() { m_activeNext = false; }
+    bool isActive() const { return m_active; }
+
+private:
+    std::string m_name;
+    bool m_active = false;
+    bool m_activeNext = false;
+};
+
+class FSMEvent final : public ImFlow::INodeBehaviour {
+public:
+    void setup(ImFlow::NodeRef node) final
+    {
+        node
+            .setTitle("FSMEvent")
+            .setStyle(ImFlow::NodeStyles::brown)
+            .setAllowInboundLinks(true)
+            .setAllowOutboundLinks(true);
+    }
+
+    void draw([[maybe_unused]] ImFlow::NodeRef node) final
+    {
+        if (ImGui::Button("Trigger")) {
+            this->attemptTrigger(node);
+        }
+    }
+
+    uintptr_t getUserData() final
+    {
+        return uintptr_t(UserNodeType::FSM_EVENT);
+    }
+
+    bool acceptInboundNodeConnection(ImFlow::NodeRef self, ImFlow::NodeRef inbound) final
+    {
+        auto* behavior = inbound.getBehavior();
+        if (behavior == nullptr) {
+            return false;
+        }
+
+        uintptr_t user_data = behavior->getUserData();
+        return user_data == uintptr_t(UserNodeType::FSM_STATE)
+            || user_data == uintptr_t(UserNodeType::FSM_START);
+    }
+
+    void attemptTrigger(ImFlow::NodeRef node)
+    {
+        bool event_will_trigger = false;
+
+        for (auto inbound : node.getInboundConnections()) {
+            auto* behavior = inbound.getBehavior();
+            if (behavior == nullptr) {
+                continue;
+            }
+            if (behavior->getUserData() == uintptr_t(UserNodeType::FSM_START)) {
+                event_will_trigger = true;
+                continue;
+            }
+            if (behavior->getUserData() != uintptr_t(UserNodeType::FSM_STATE)) {
+                continue;
+            }
+            auto* fsm_state = static_cast<FSMState*>(behavior);
+            if (fsm_state->isActive()) {
+                event_will_trigger = true;
+                fsm_state->deactivate();
+            }
+        }
+
+        if (!event_will_trigger) {
+            return;
+        }
+
+        for (auto outbound : node.getOutboundConnections()) {
+            auto* behavior = outbound.getBehavior();
+            if (behavior == nullptr) {
+                continue;
+            }
+            if (behavior->getUserData() != uintptr_t(UserNodeType::FSM_STATE)) {
+                continue;
+            }
+            auto* fsm_state = static_cast<FSMState*>(behavior);
+            fsm_state->activate();
+        }
     }
 };
+
+bool FSMSink::acceptInboundNodeConnection(ImFlow::NodeRef self, ImFlow::NodeRef inbound)
+{
+    auto* behavior = inbound.getBehavior();
+    if (behavior == nullptr) {
+        return false;
+    }
+
+    auto user_data = behavior->getUserData();
+
+    if (user_data == uintptr_t(UserNodeType::FSM_EVENT)) {
+        return true;
+    }
+
+    if (user_data != uintptr_t(UserNodeType::FSM_STATE)) {
+        return false;
+    }
+
+    auto pos = (self.getTLPos() + inbound.getTLPos()) / 2.F;
+    auto event_node = self.getContext().emplaceNode<FSMEvent>(pos);
+    inbound.linkTo(event_node);
+    event_node.linkTo(self);
+
+    return false;
+}
+
+bool FSMState::acceptInboundNodeConnection(ImFlow::NodeRef self, ImFlow::NodeRef inbound)
+{
+    auto* behavior = inbound.getBehavior();
+    if (behavior == nullptr) {
+        return false;
+    }
+
+    auto user_data = behavior->getUserData();
+    if (user_data == uintptr_t(UserNodeType::FSM_START)
+        || user_data == uintptr_t(UserNodeType::FSM_EVENT)) {
+        return true;
+    }
+    if (behavior->getUserData() != uintptr_t(UserNodeType::FSM_STATE)) {
+        return false;
+    }
+
+    auto pos = (self.getTLPos() + inbound.getTLPos()) / 2.F;
+
+    auto event_node = self.getContext().emplaceNode<FSMEvent>(pos);
+    inbound.linkTo(event_node);
+    event_node.linkTo(self);
+
+    return false; // Reject direct connection
+}
+
+void FSMStart::trigger(ImFlow::NodeRef node)
+{
+    for (auto outbound : node.getOutboundConnections()) {
+        auto* behavior = outbound.getBehavior();
+        if (behavior == nullptr) {
+            continue;
+        }
+        if (behavior->getUserData() != uintptr_t(UserNodeType::FSM_STATE)) {
+            continue;
+        }
+        auto* fsm_state = static_cast<FSMState*>(behavior);
+        fsm_state->activate();
+    }
+}
 
 class NumberGenerator final : public ImFlow::INodeBehaviour {
 public:
@@ -289,27 +525,50 @@ NodeEditor::NodeEditor(float width, float height)
             }
         } else {
             ImVec2 mouse_screen_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
-            bool should_close = true;
-            if (ImGui::Button("Number Generator")) {
-                mINF.emplaceNodeAt<NumberGenerator>(mouse_screen_pos);
-            } else if (ImGui::Button("Number Display")) {
-                mINF.emplaceNodeAt<NumberDisplay>(mouse_screen_pos);
-            } else if (ImGui::Button("SimpleSum")) {
-                mINF.emplaceNodeAt<SimpleSum>(mouse_screen_pos);
-            } else if (ImGui::Button("ResultNode")) {
-                mINF.emplaceNodeAt<ResultNode>(mouse_screen_pos);
-            } else if (ImGui::Button("MultipleInputAdder")) {
-                mINF.emplaceNodeAt<MultipleInputAdder>(mouse_screen_pos);
-            } else if (ImGui::Button("CollapsingNode")) {
-                mINF.emplaceNodeAt<CollapsingNode>(mouse_screen_pos);
-            } else if (ImGui::Button("Not Gate")) {
-                mINF.emplaceNodeAt<NotGate>(mouse_screen_pos);
-            } else {
-                should_close = false;
+            if (ImGui::TreeNode("Math")) {
+                if (ImGui::Button("Number Generator")) {
+                    mINF.emplaceNodeAt<NumberGenerator>(mouse_screen_pos);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::Button("Number Display")) {
+                    mINF.emplaceNodeAt<NumberDisplay>(mouse_screen_pos);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::Button("SimpleSum")) {
+                    mINF.emplaceNodeAt<SimpleSum>(mouse_screen_pos);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::Button("ResultNode")) {
+                    mINF.emplaceNodeAt<ResultNode>(mouse_screen_pos);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::Button("MultipleInputAdder")) {
+                    mINF.emplaceNodeAt<MultipleInputAdder>(mouse_screen_pos);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::Button("CollapsingNode")) {
+                    mINF.emplaceNodeAt<CollapsingNode>(mouse_screen_pos);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::TreePop();
             }
-
-            if (should_close) {
-                ImGui::CloseCurrentPopup();
+            if (ImGui::TreeNode("Logic Gates")) {
+                if (ImGui::Button("Not Gate")) {
+                    mINF.emplaceNodeAt<NotGate>(mouse_screen_pos);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNode("FSM")) {
+                if (ImGui::Button("FSM Start")) {
+                    mINF.emplaceNodeAt<FSMStart>(mouse_screen_pos);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::Button("FSM State")) {
+                    mINF.emplaceNodeAt<FSMState>(mouse_screen_pos, "new state");
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::Button("FSM Event")) {
+                    mINF.emplaceNodeAt<FSMEvent>(mouse_screen_pos);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::Button("FSM Sink")) {
+                    mINF.emplaceNodeAt<FSMSink>(mouse_screen_pos);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::TreePop();
             }
         }
     });
@@ -334,8 +593,6 @@ NodeEditor::NodeEditor(float width, float height)
             ImGui::CloseCurrentPopup();
         }
     });
-
-    auto empty_node = mINF.emplaceNode<NodeWithNoPins>({ 60, 240 });
 
     auto n1 = mINF.emplaceNode<SimpleSum>({ 40, 40 });
     auto n2 = mINF.emplaceNode<SimpleSum>({ 40, 150 });
@@ -362,6 +619,12 @@ NodeEditor::NodeEditor(float width, float height)
 
     n1.outPin("Out")->linkTo(*collapsingNode.inPin("A"));
     n2.outPin("Out")->linkTo(*collapsingNode.inPin("B"));
+
+    auto fsm_state0 = mINF.emplaceNode<FSMState>({ 700, 100 }, "S0");
+    auto fsm_state1 = mINF.emplaceNode<FSMState>({ 820, 100 }, "S1");
+    auto fsm_state2 = mINF.emplaceNode<FSMState>({ 700, 180 }, "S2");
+    auto fsm_state3 = mINF.emplaceNode<FSMState>({ 820, 180 }, "S3");
+    auto fsm_state4 = mINF.emplaceNode<FSMState>({ 700, 250 }, "S4");
 
     // An example of how to make a digital circuit for a clock using only
     // not gates.

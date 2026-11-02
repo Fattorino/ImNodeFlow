@@ -1,6 +1,7 @@
 #ifndef IMNODEFLOW_PINREF_H
 #define IMNODEFLOW_PINREF_H
 #include <cassert>
+#include <string>
 #pragma once
 
 #include "ImNodeFlow/PinStyle.h"

@@ -286,6 +286,24 @@ NodeRefImpl<TIsConst>& NodeRefImpl<TIsConst>::setStyle(NodeStyle style)
 }
 
 template <bool TIsConst>
+NodeRefImpl<TIsConst>& NodeRefImpl<TIsConst>::setAllowInboundLinks(bool value)
+    requires(!TIsConst)
+{
+    detail::node_t& node = m_node.get();
+    node.allowInboundLinksToOtherNodes = value;
+    return *this;
+}
+
+template <bool TIsConst>
+NodeRefImpl<TIsConst>& NodeRefImpl<TIsConst>::setAllowOutboundLinks(bool value)
+    requires(!TIsConst)
+{
+    detail::node_t& node = m_node.get();
+    node.allowOutboundLinksToOtherNodes = value;
+    return *this;
+}
+
+template <bool TIsConst>
 NodeRefImpl<TIsConst>& NodeRefImpl<TIsConst>::setIndestructable(bool indestruct)
     requires(!TIsConst)
 {
@@ -308,6 +326,40 @@ NodeRefImpl<TIsConst>& NodeRefImpl<TIsConst>::setProvisionallySelected(bool stat
 {
     m_node.get().provisionallySelectedNext = state;
     return *this;
+}
+
+template <bool TIsConst>
+ImNodeFlow& NodeRefImpl<TIsConst>::getContext() const
+    requires(!TIsConst)
+{
+    return m_ctx.get();
+}
+
+template <bool TIsConst>
+ImNodeFlow const& NodeRefImpl<TIsConst>::getContext() const
+{
+    return m_ctx.get();
+}
+
+template <bool TIsConst>
+INodeBehaviour* NodeRefImpl<TIsConst>::getBehavior() const
+    requires(!TIsConst)
+{
+    detail::node_t& node = m_node.get();
+    if (node.behaviour) {
+        return &*node.behaviour;
+    }
+    return nullptr;
+}
+
+template <bool TIsConst>
+INodeBehaviour const* NodeRefImpl<TIsConst>::getBehavior() const
+{
+    detail::node_t const& node = m_node.get();
+    if (node.behaviour) {
+        return &*node.behaviour;
+    }
+    return nullptr;
 }
 
 template <bool TIsConst>
@@ -903,7 +955,8 @@ void NodeRefImpl<TIsConst>::update()
         node_released = ImGui::IsItemDeactivated();
     }
 
-    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoPreviewTooltip)) {
+    if (node.allowOutboundLinksToOtherNodes
+        && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoPreviewTooltip)) {
         auto dto = this->serialize();
         ImGui::SetDragDropPayload("NODE_REF_LOCAL_DTO", &dto, sizeof(dto));
         ImGui::EndDragDropSource();
@@ -917,16 +970,24 @@ void NodeRefImpl<TIsConst>::update()
             node.style.link_thickness);
     }
 
-    if (ImGui::BeginDragDropTarget()) {
-        const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("NODE_REF_LOCAL_DTO", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+    if (node.allowInboundLinksToOtherNodes
+        && ImGui::BeginDragDropTarget()) {
+        const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("NODE_REF_LOCAL_DTO");
+        std::optional<NodeRef> inbound;
+
         if (payload != nullptr) {
             NodeRefLocalDTO<> dto { };
             IM_ASSERT(payload->DataSize == sizeof(dto));
             std::memcpy(&dto, payload->Data, sizeof(dto));
-            NodeRef { dto }.linkTo(*this);
+            inbound.emplace(dto);
         }
-
         ImGui::EndDragDropTarget();
+
+        if (inbound.has_value()) {
+            if (node.behaviour && node.behaviour->acceptInboundNodeConnection(*this, *inbound)) {
+                inbound->linkTo(*this);
+            }
+        }
     }
 
     // Background
