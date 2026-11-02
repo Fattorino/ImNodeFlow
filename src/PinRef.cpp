@@ -11,6 +11,7 @@
 #include "./pin_base.h"
 #include "./pin_drawing_utils.h"
 
+#include "ImNodeFlow/fwd.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
@@ -155,9 +156,7 @@ namespace {
     {
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoPreviewTooltip)) {
             auto dto = pin.serialize();
-            auto type_id = pin.getTypeID();
-            std::string payload_id = "PIN_REF_LOCAL_DTO_" + std::to_string(type_id);
-            ImGui::SetDragDropPayload(payload_id.c_str(), &dto, sizeof(dto));
+            ImGui::SetDragDropPayload("PIN_REF_LOCAL_DTO", &dto, sizeof(dto));
             ImGui::EndDragDropSource();
 
             if (out_source_active != nullptr) {
@@ -166,15 +165,19 @@ namespace {
         }
 
         if (ImGui::BeginDragDropTarget()) {
-            auto type_id = pin.getTypeID();
-            std::string payload_id = "PIN_REF_LOCAL_DTO_" + std::to_string(type_id);
-            const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(payload_id.c_str(),
-                ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
-            if (payload != nullptr) {
+            const ImGuiPayload* payload = ImGui::GetDragDropPayload();
+            if (payload != nullptr && payload->IsDataType("PIN_REF_LOCAL_DTO")) {
                 PinRefLocalDTO<> dto { };
                 IM_ASSERT(payload->DataSize == sizeof(dto));
                 std::memcpy(&dto, payload->Data, sizeof(dto));
-                pin.linkTo(PinRef { dto });
+                PinRef incoming { dto };
+                if (incoming.getTypeID() == pin.getTypeID()
+                    && ImGui::AcceptDragDropPayload(
+                           "PIN_REF_LOCAL_DTO",
+                           ImGuiDragDropFlags_AcceptNoDrawDefaultRect)
+                        != nullptr) {
+                    incoming.linkTo(pin);
+                }
             }
 
             ImGui::EndDragDropTarget();
