@@ -1,3 +1,7 @@
+#pragma once
+
+#include "ImNodeFlow/Context.h"
+
 #include "ImNodeFlow/NodeRef.h"
 #include "ImNodeFlow/fwd.h"
 

@@ -1,3 +1,7 @@
+#pragma once
+
+#include "ImNodeFlow/PinRef.h"
+
 #include "ImNodeFlow/PinType.h"
 #include "ImNodeFlow/detail/fwd.h"
 #include "ImNodeFlow/detail/type_id.h"
