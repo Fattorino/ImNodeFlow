@@ -24,6 +24,7 @@
 #include <cstring>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -344,9 +345,16 @@ bool ImNodeFlow::getNodeDragAmmount(ImVec2* out_vec_amount)
     return should_apply_drag;
 }
 
-void ImNodeFlow::hoveredNode(detail::node_t* hovering)
+void ImNodeFlow::drawRightClickPopup(detail::node_t* hovered_node)
 {
-    m_impl->hoveredNode = hovering;
+    if (ImGui::BeginPopup("RightClickPopUp")) {
+        std::optional<NodeRef> arg;
+        if (hovered_node != nullptr) {
+            arg.emplace(*this, *hovered_node);
+        }
+        m_impl->rightClickPopUp(std::move(arg));
+        ImGui::EndPopup();
+    }
 }
 
 void ImNodeFlow::update()
@@ -451,11 +459,13 @@ void ImNodeFlow::update()
 
     int mouse_context_button_flags = ImGuiButtonFlags_PressedOnClick
         | detail::getButtonFlagsForMouseButton(grid_cfg.selection_box_button)
-        | detail::getButtonFlagsForMouseButton(grid_cfg.scroll_button);
+        | detail::getButtonFlagsForMouseButton(grid_cfg.scroll_button)
+        | detail::getButtonFlagsForMouseButton(ImGuiMouseButton_Right);
 
     bool mouse_context_hovered = false;
     bool mouse_context_held = false;
     bool mouse_context_pressed = false;
+    bool mouse_context_released = false;
     ImGuiID mouse_context_id = ImGui::GetID("##mouse_context");
 
     ImGui::ItemAdd(always_valid_bb, mouse_context_id);
@@ -465,6 +475,7 @@ void ImNodeFlow::update()
         &mouse_context_hovered,
         &mouse_context_held,
         mouse_context_button_flags);
+    mouse_context_released = ImGui::IsItemDeactivated();
 
     auto active_id_mouse_button = ImGui::GetCurrentContext()->ActiveIdMouseButton;
     if (mouse_context_pressed) {
@@ -520,10 +531,14 @@ void ImNodeFlow::update()
         splitter.Merge(draw_list);
     }
 
-    if (mouse_context_held
-        && grid_cfg.selection_box_button != grid_cfg.scroll_button
+    if (grid_cfg.selection_box_button != grid_cfg.scroll_button
         && active_id_mouse_button == grid_cfg.scroll_button) {
-        m_impl->context.updateScroll();
+        if (mouse_context_pressed) {
+            m_impl->scroll_start = ImGui::GetMousePos();
+        }
+        if (mouse_context_held) {
+            m_impl->context.updateScroll();
+        }
     }
 
     if (m_impl->box.active) {
@@ -562,18 +577,23 @@ void ImNodeFlow::update()
     }
 
     // Right-click PopUp
-    if (m_impl->rightClickPopUp && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && ImGui::IsWindowHovered()) {
-        m_impl->hoveredNodeAux = m_impl->hoveredNode;
-        ImGui::OpenPopup("RightClickPopUp");
-    }
-    if (ImGui::BeginPopup("RightClickPopUp")) {
-        std::optional<NodeRef> arg;
-        if (m_impl->hoveredNodeAux != nullptr) {
-            arg.emplace(*this, *m_impl->hoveredNodeAux);
+    if (m_impl->rightClickPopUp
+        && mouse_context_released
+        && ImGui::IsMouseReleased(ImGuiMouseButton_Right)) {
+        bool wants_to_open_popup = true;
+
+        // When the scrolling button is the same as the popup button, let's
+        // only open the popup when the mouse hasn't moved at all.
+        if (grid_cfg.scroll_button == ImGuiMouseButton_Right
+            && m_impl->scroll_start != ImGui::GetMousePos()) {
+            wants_to_open_popup = false;
         }
-        m_impl->rightClickPopUp(std::move(arg));
-        ImGui::EndPopup();
+
+        if (wants_to_open_popup) {
+            ImGui::OpenPopup("RightClickPopUp");
+        }
     }
+    this->drawRightClickPopup(nullptr);
 
     m_impl->context.end();
 

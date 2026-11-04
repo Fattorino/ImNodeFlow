@@ -17,6 +17,7 @@
 #include "./dynamic_pin.h"
 #include "./editor_context.h"
 #include "./imgui_bezier_items.h"
+#include "./imgui_button_flags_helper.h"
 #include "./imgui_compat.h"
 #include "./node.h"
 #include "./node_link.h"
@@ -964,7 +965,9 @@ void NodeRefImpl<TIsConst>::update()
             header_id,
             &header_hovered,
             &header_held,
-            ImGuiButtonFlags_PressedOnClick);
+            ImGuiButtonFlags_PressedOnClick
+                | detail::getButtonFlagsForMouseButton(ImGuiMouseButton_Left)
+                | detail::getButtonFlagsForMouseButton(ImGuiMouseButton_Right));
 
         header_released = ImGui::IsItemDeactivated();
     }
@@ -1061,22 +1064,26 @@ void NodeRefImpl<TIsConst>::update()
             ImDrawFlags_None);
     }
 
-    if (header_hovered || node_hovered) {
-        ctx.hoveredNode(&node);
-    }
-
     if (node_pressed || header_pressed) {
-        node.wantsDeselect = node.selected;
-        setSelected(true);
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            node.wantsDeselect = node.selected;
+            setSelected(true);
+        } else if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+            ImGui::OpenPopup("RightClickPopUp");
+        }
     }
-    if ((node_released || header_released) && node.wantsDeselect) {
+    ctx.drawRightClickPopup(&node);
+    if ((node_released || header_released)
+        && ImGui::IsMouseReleased(ImGuiMouseButton_Left)
+        && node.wantsDeselect) {
         setSelected(false);
     }
-
-    if (header_pressed) {
+    if (header_pressed
+        && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         ctx.startNodeDrag();
     }
-    if (header_released) {
+    if (header_released
+        && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
         ctx.stopNodeDrag();
     }
 

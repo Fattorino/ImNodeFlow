@@ -265,11 +265,11 @@ public:
     bool getNodeDragAmmount(ImVec2* out_vec_amount);
 
     /**
-     * @brief Set what node is being hovered
-     * @param hovering Pointer to the hovered node
+     * @brief Draws the right click popup menu
+     * @param hovered_node Pointer to the hovered node
      * @internal For internal use only
      */
-    void hoveredNode(detail::node_t* hovering);
+    void drawRightClickPopup(detail::node_t* hovered_node);
 
     /**
      * @brief Convert coordinates from screen to grid

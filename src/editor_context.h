@@ -43,7 +43,8 @@ struct editor_context_t {
     pin_base_t* droppedLinkLeft = nullptr;
     right_click_popup_handler_t rightClickPopUp;
     drag_drop_target_handler_t dragdropTarget;
-    node_t* hoveredNodeAux = nullptr;
+
+    ImVec2 scroll_start;
 
     node_t* hoveredNode = nullptr;
     ImVec2 nodeDragStart;
